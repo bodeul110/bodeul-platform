@@ -36,6 +36,13 @@
 | 운영 Core API HTTP 검증 | `https://bodeul-core-api-s4vqtcl6ka-an.a.run.app`의 `/health` 200 `UP`, 무인증 `/api/auth/me`·`/api/places/search` 401 `missing_authorization`. 실제 Kakao 검색 성공이나 정상 Firebase 로그인까지 검증한 것으로 보지 않음 |
 | 운영 감사 도구 보완 | 배포 workflow의 세션 플래그·공개 설정·ProtoJSON의 false 기본값 생략을 감사 계약에 반영. 미완료 revision, 환경변수 누락/중복/추가, 타 프로젝트 Secret 참조 거부 포함 단위 테스트 33건 통과 |
 | 운영 Core API 설정 재조회 | Cloud Run v2와 Secret version 메타데이터를 읽어 서비스 준비 상태·운영 설정·공개 호출 3개 검사 모두 PASS. 실제 서버 생성에 맞춰 `cloudRun=present`로 기준 변경. 전체 인프라 감사의 GitHub 실행과는 구분 |
+| 배포 후 전체 운영 감사 | [#459](https://github.com/bodeul110/bodeul-platform/pull/459)의 master `e2d2a2f`에서 실행한 [36313836486](https://github.com/bodeul110/bodeul-platform/actions/runs/36313836486) 성공. contract·baseline-drift 모두 통과. App Check 준비와 Storage UBLA는 여전히 별도 출시 게이트 |
+| 운영 관리자 DB 로그인 | 사용자 승인과 직접 SQL 실행으로 기존 `bodeul_admin_service`를 LOGIN으로 전환. 새 운영 전용 비밀번호를 생성하고 개발 비밀번호는 재사용하지 않음. TLS 인증서 검증·실제 로그인·가이드 테이블 조회 검증 성공 |
+| 운영 관리자 DB 최소 권한 | 별도 SQL 재조회에서 연결 제한 5, 기존 `bodeul_admin_runtime` 상속, superuser·CREATEDB·CREATEROLE·REPLICATION·BYPASSRLS 모두 false, 업무 테이블 직접 쓰기 권한 0건 확인. 기존 허용 업무 함수 권한은 유지 |
+| 운영 관리자 DB 비밀값 | 11:16 UTC에 Vercel Production에만 `ADMIN_DATABASE_URL`을 sensitive 형식으로 등록. 메타데이터 재조회 완료. 비밀번호·DB URL 원문은 출력·파일 저장·커밋하지 않았고 Preview 설정은 변경하지 않음 |
+| 관리자 웹 운영 출시 | [웹 #75](https://github.com/bodeul110/bodeul-admin-web/pull/75)를 dev → master merge commit `559d950d612959f338c714bc61cbd5d0d13262dd`로 병합. 필수 CI 통과 후 Production 환경으로 다시 빌드. [Vercel 배포](https://vercel.com/bodeul110/bodeul-admin-web/3pxNQh2TaALMbAABzgTprj9fLDqs) `READY`, Functions `hnd1`, 기존 운영 주소가 새 배포를 가리킴 |
+| 관리자 웹 운영 HTTP 검증 | [운영 웹](https://bodeul-admin-web-iota.vercel.app/)의 로그인 화면에서 `운영 환경 / 운영 배포 · Production` 확인. access-context·가이드·결제 조회 GET에 무인증·잘못된 인증 형식·가짜 Firebase token을 보내 9건 모두 401·JSON·no-store·입력 token 비노출 확인. 인증된 업무 요청이나 실제 쓰기는 수행하지 않음 |
+| 업무 관리자 등록 상태 | 운영 DB의 `app_users` 중 ADMIN 0건, 활성 세부 관리자 역할 0건. DB 서비스 로그인 활성화와 사람의 업무 권한 부여는 별개이며 이번 작업에서 사람 계정 권한은 추가하지 않음 |
 
 ## 운영 적용 근거
 
@@ -66,10 +73,18 @@ Realtime 검사에는 SQL 세션의 claims를 사용했다. 실제 서명된 Fir
 
 Cloud Run API의 `reconciling`은 boolean이고 ProtoJSON은 false 기본값을 생략할 수 있다. 감사 도구는 생략과 명시적 false만 허용하면서 성공 상태, 최신 revision 일치, 유효한 generation 일치를 계속 요구한다. [Cloud Run API](https://docs.cloud.google.com/run/docs/reference/rest/v2/projects.locations.services), [ProtoJSON 기본값](https://protobuf.dev/programming-guides/json/#presence-and-default-values).
 
+### 관리자 서버 연결 판단
+
+- 작업 목적: 운영 관리자 서버가 개발 DB 자격 증명 없이 같은 운영 PostgreSQL에 독립적으로 연결하도록 준비한다.
+- 선택한 방식: 기존 관리자 전용 role의 로그인만 활성화하고, TLS와 직접 쓰기 차단을 확인한 뒤 Vercel Production에 새 자격 증명을 등록한다.
+- 대안: 개발 비밀번호 공유, postgres 계정 사용, Core API를 통한 관리자 proxy는 환경 혼합과 권한 확대를 유발하므로 제외했다.
+- 선택 이유: 현재 MVP 규모에서는 기존 Next.js 서버·DB role을 유지하고 환경별 자격 증명을 분리하는 편이 추가 서버와 운영 부담 없이 멘토가 제안한 서버 경계를 지킨다.
+- 리스크: 로컬에서의 실제 DB 연결과 운영 빌드·무인증 API 검증만으로 인증된 관리자 업무를 보장할 수 없다. 운영 관리자 역할·MFA·App Check와 정상 업무 요청은 별도로 검증한다.
+
 ## 남은 범위
 
-- 운영 관리자 DB 로그인과 Production `ADMIN_DATABASE_URL`을 준비한다. 현재 관리자 DB role은 `NOLOGIN`, 해당 Vercel 환경변수는 미등록이다.
+- 운영 Firebase 계정과 PostgreSQL ADMIN·세부 관리자 역할을 연결하고, 실제 로그인 후 Vercel 서버에서 DB 업무 조회가 성공하는지 검증한다. 현재 업무 관리자 등록은 0건이며 서비스 계정 권한을 사람의 관리자 권한으로 간주하지 않는다.
 - 운영 Core API의 실제 서명된 Firebase 토큰, 개발 토큰 거부 및 인증 후 Kakao 검색을 검증한다. 공유 쿼터와 키 폐기 영향은 [키 관리 결정](../architecture/kakao-local-core-api.md#개발운영-키-관리)을 따른다.
-- 웹 변경의 `dev → master` 출시와 실제 관리자 인증·DB 업무 연결, Android Release 설정 및 환경 간 정상 토큰 거부를 검증한다. 웹 Preview의 일반 HTTP 접근은 Vercel 로그인으로 전환되므로, 이를 앱 API의 200 성공으로 계산하지 않았다.
+- Android Release 설정, 환경 간 정상 토큰 거부와 실제 Realtime 소켓을 검증한다. 웹 Preview의 일반 HTTP 접근은 Vercel 로그인으로 전환되므로, 이를 앱 API의 200 성공으로 계산하지 않았다.
 
-개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정과 운영 Core API 배포·HTTP 기본 검증까지 반영했다. 관리자 웹의 운영 DB 업무 연결과 정상 로그인 후 환경 간 경계 검증은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
+개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정, 운영 Core API 배포와 관리자 웹 Production 출시·DB 자격 증명 등록까지 반영했다. 관리자 웹의 인증된 DB 업무 요청과 정상 로그인 후 환경 간 경계 검증은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
