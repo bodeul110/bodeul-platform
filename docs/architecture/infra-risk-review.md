@@ -1,6 +1,6 @@
 # 인프라 리스크와 보완 계획
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 초기에는 빠른 구현을 우선했기 때문에 모든 선택 근거가 사전에 정리되지는 않았다.
 현재는 구현된 구조를 기준으로 선택 이유, 대안, 단점, 전환 조건을 정리하고 있다.
@@ -9,7 +9,7 @@
 
 현재 가장 큰 리스크는 개발에서 검증한 PostgreSQL Core 업무 원본 경계와 자동 파기를 production에서 그대로 재현하는 것이다. 목표 구조는 Core 업무 도메인의 Supabase PostgreSQL 단일 원본, Spring Core API와 Next.js 관리자 서버의 분리된 접근, Firebase Auth·FCM·App Check·Storage와 일부 Firestore 결합 데이터 유지다.
 
-개발 Android의 예약·동행·리포트·후속 처리·채팅·읽음·위치는 PostgreSQL 단일 쓰기로 전환했고 Firestore client 쓰기를 차단했다. 매칭 배정은 관리자 서버의 admin-only 함수가 담당한다. 소스 schema는 V23까지 있지만 운영 DB는 9월 21일 일시정지 상태이며 최신 migration 적용을 재확인해야 한다. 과거 fixture·복원 기록을 현재 운영 검증 완료로 대체하지 않는다. 기존 매니저 위치는 기본 OFF이고 환자 중심 위치 정책의 구현·실검증은 별도다.
+Core 업무는 PostgreSQL 단일 쓰기이며 매칭 배정은 관리자 서버의 제한 함수가 담당한다. 9월 27일 양쪽 DB V23·운영 백업과 격리 복원·운영 Core 배포·관리자 DB 연결·최초 MFA 로그인을 확인했다. 남은 위험은 정상 업무·교차 환경 token·운영 Realtime 소켓·MFA/App Check 강제·복구 검증이다. [실행 기록](../reports/dev-production-separation-2026-09-27.md)의 SQL·HTTP·사용자 확인 범위를 구분한다. 기존 매니저 위치는 기본 OFF이고 환자 중심 위치 정책의 구현·실검증은 별도다.
 
 ## 리스크 요약
 

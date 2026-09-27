@@ -1,6 +1,6 @@
 # 개발·운영 환경 전환 계획
 
-최초 계획: 2026-07-18. 현재 코드·문서 대조: 2026-09-21
+최초 계획: 2026-07-18. 현재 코드·문서 대조: 2026-09-27
 
 ## 목표와 일정
 
@@ -13,14 +13,14 @@
 | 구분 | 코드·기록 기준 상태 | 남은 확인 |
 | --- | --- | --- |
 | 저장소 | Android/Core/Firebase 공용 계약은 메인, 관리자 웹·서버는 별도 저장소 | 변경되는 공용 계약을 두 저장소에서 함께 검증 |
-| 브랜치·배포 | 두 저장소 기본 브랜치는 `master`. Core Preview/Production은 수동 workflow 경계, Vercel은 Git target 구분 | 멘토가 제안한 `dev`/운영 브랜치 전략은 아직 적용 완료로 보지 않음 |
-| 데이터 전환 | Core 업무의 PostgreSQL 계약과 Firestore 직접 쓰기 차단 구현. 소스 migration V1~V23 | 환경별 실제 적용 버전·정합성은 [migration 목록](../architecture/database-migration-catalog.md) 기준 재확인 |
-| 관리자 웹 | 개발·운영 환경 표시와 로그인 화면 배포 기록 있음 | 운영 Auth 계정 등록은 DB 역할·MFA·업무 검증 완료가 아님 |
-| 운영 DB | 2026-09-21 일시정지 확인. 사용자 요청에 따라 재개하지 않음 | DB 재개, 최신 migration, 서버 비밀값과 역할을 각각 확인 |
-| 개발 API | [#429](https://github.com/bodeul110/Bodeul/issues/429)에 Preview 500/503 재확인 필요 | 관련 앱 수정 병합만으로 서버 복구를 단정하지 않음 |
-| 보관·복원 | 개발/운영 fixture와 격리 복원 기록 존재 | 과거 실행 기록은 최신 schema·실제 운영 데이터 복원 검증을 대신하지 않음 |
+| 브랜치·배포 | 두 저장소 `dev`→개발, `master`→운영. 기능 PR squash, 운영 승격 merge commit. Core Preview는 dev push/수동, Production은 수동 | 정상 운영 인증·업무 흐름과 rollback 검증 |
+| 데이터 전환 | 소스와 개발·운영 DB 모두 V23, 실패 이력 0건. Core 업무는 PostgreSQL, legacy 직접 쓰기 차단 | 환경별 실제 업무 데이터 정합성·권한 검증 |
+| 관리자 웹 | 전용 운영 DB 연결, 최초 개인 `SUPER_ADMIN`, TOTP 로그인·대시보드 진입 확인 | 업무별 동작·역할 거부, 전역 MFA 강제·복구는 별도 |
+| 운영 DB | Pro 조직에서 Healthy, V23 적용, 최소 권한·외부 dump·격리 복원 확인 | 제공자 자동 백업 복구 지점, Realtime 실제 token·socket 검증 |
+| 개발 API | [#429](https://github.com/bodeul110/bodeul-platform/issues/429)는 9월 24일 종료. 9월 27일 health 200·무인증 API 401 재확인 | 기본 smoke를 모든 앱 흐름 성공으로 보지 않음 |
+| 보관·복원 | 9월 27일 운영 V23 dump의 외부 보관·격리 복원 통과 | 파일 복원, 실제 데이터 규모의 RTO, 보존 job 확인 |
 
-최신 배포·계정 구분은 [관리자 웹 환경](admin-web-environments.md)과 [9월 21일 검증 기록](../reports/admin-web-environment-display-2026-09-21.md)에 둔다.
+최신 배포·계정 구분은 [관리자 웹 환경](admin-web-environments.md)과 [9월 27일 개발·운영 분리 기록](../reports/dev-production-separation-2026-09-27.md)에 둔다. 실행 절차는 [브랜치 전환 계획](dev-production-branch-transition-plan.md)을 따른다.
 
 ## 데이터 경계
 
@@ -41,9 +41,9 @@ Realtime의 `role: authenticated` claim은 관리자 역할이 아니다. App Ch
 | 순서 | 작업 | 종료 조건 |
 | --- | --- | --- |
 | 1 | 접근·환경·비용 확인 | 공용 관리 주체와 개인 개발자 최소권한 확인, 개발/운영별 실제 결제 연결·DB 상태·서버 접근 확인 |
-| 2 | 개발 환경 안정화 | #429 재현·복구 확인, 최신 migration과 역할별 API·앱·관리자 검증, 실패 시 복구 경로 확인 |
+| 2 | 개발 환경 안정화 | 종료된 #429 복구 증거 유지, 이후 변경의 migration과 역할별 API·앱·관리자 회귀 검증 |
 | 3 | 개발·운영 배포 전략 정착 | 브랜치와 GitHub Environment, WIF, Vercel target, 비밀값·DB가 서로 뒤섞이지 않음 |
-| 4 | 운영 DB 준비 | 재개 승인, 최신 백업, 개발에서 검증한 migration과 역할 적용, 최신 schema의 격리 복원·권한 검증 |
+| 4 | 운영 DB 준비 | V23·역할·격리 복원은 완료. 이후 migration도 사전 백업과 개발 검증 뒤 별도 적용 |
 | 5 | 운영 서버·앱 준비 | 운영 비밀값, 관리자 MFA·세부 역할, Auth 도메인·Kakao·App Check release 검증, 실제 업무 smoke |
 | 6 | Go/No-Go와 전환 | 운영자·복구 담당자 확인, 차단 항목 해소, 실제 전환일 결정 후 명시적 실행 |
 | 7 | 안정화·legacy 정리 | 오류·비용·정합성 점검 후 비교 자료의 필요성과 보존 예외를 확인하고 별도 삭제 승인 |
@@ -54,7 +54,7 @@ Realtime의 `role: authenticated` claim은 관리자 역할이 아니다. App Ch
 
 기존 승인 기준은 월 **150,000 KRW 이내**, 정상 계획 범위는 **100,000~130,000 KRW**다. 이는 청구액 보증이나 플랫폼의 자동 지출 차단 설정이 아니다. 현재 가입 등급·결제 연결은 별도로 조회한다.
 
-Supabase Pro/Micro 2개와 Vercel Pro 개발자 2석의 계획 비용, 사용량·환율·세금 가정은 [비용 모니터링](cost-monitoring.md) 한 곳에서 관리한다. 유료 전환은 실제 운영 시점과 서비스 이용 조건을 확인해 실행하고 임시 달력 날짜에 맞춰 자동 활성화하지 않는다.
+Supabase Pro/Micro 2개와 Vercel Pro 개발자 2석의 계획 비용, 사용량·환율·세금 가정은 [비용 모니터링](cost-monitoring.md) 한 곳에서 관리한다. Supabase Pro는 이미 전환했으며, Vercel 플랜·좌석은 별도 확인 대상이다. 추가 유료 변경은 임시 달력 날짜에 맞춰 자동 활성화하지 않는다.
 
 ## 운영 전환 조건
 
