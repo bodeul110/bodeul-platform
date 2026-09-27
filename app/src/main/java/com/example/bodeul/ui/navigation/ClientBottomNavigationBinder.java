@@ -21,6 +21,7 @@ public final class ClientBottomNavigationBinder {
             @NonNull ClientBottomNavigationTab selectedTab,
             @NonNull Listener listener
     ) {
+        ClientBottomNavigationInsets.apply(navigationView);
         navigationView.setSelectedItemId(resolveMenuItemId(selectedTab));
         navigationView.setOnItemReselectedListener(item -> {
             // 이미 선택한 최상위 화면에서는 중복 Activity를 만들지 않는다.

@@ -36,6 +36,7 @@ import com.example.bodeul.firebase.CompanionChatPushContract;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationBinder;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationInsets;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationRouter;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
 import com.example.bodeul.util.DocumentPreviewLauncher;
@@ -94,6 +95,7 @@ public class CompanionChatActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_companion_chat);
+        ClientBottomNavigationInsets.applyScrollableContent(findViewById(R.id.scrollCompanionChat));
 
         requestId = getIntent().getStringExtra(EXTRA_REQUEST_ID);
 
