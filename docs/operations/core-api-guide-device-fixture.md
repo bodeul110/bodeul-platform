@@ -7,7 +7,7 @@
 ## 선택한 방식
 
 - `Core API DB Migration` workflow의 `guide_device_fixture_action`으로 `setup`, `status`, `cleanup`을 실행한다.
-- 대상은 `master`의 `preview`와 Firebase 개발 프로젝트 `bodeul-dev`로 고정한다.
+- 대상은 `dev`의 `preview`와 Firebase 개발 프로젝트 `bodeul-dev`로 고정한다. 운영 `master`·DB에는 fixture를 만들지 않는다.
 - Supabase 개발 프로젝트 ref와 migration DB 사용자명도 실행기에서 다시 확인한다.
 - Preview 환경 secret의 현재 fixture 매니저 Firebase UID를 PostgreSQL 매니저 행과 정확히 연결한다.
 - 연결된 기존 매니저 행은 조회만 하고 수정하거나 삭제하지 않는다.

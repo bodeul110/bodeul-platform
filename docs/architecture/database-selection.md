@@ -4,7 +4,7 @@
 
 BoDeul의 초기 MVP는 Cloud Firestore를 주 저장소로 사용했다. 현재 운영 목표는 `Spring Core API + Next.js 관리자 서버 + 공용 Supabase PostgreSQL`이며 Firebase는 Auth, FCM, App Check, Storage, 결합 Functions와 인증 프로필·지원·서류 데이터만 유지한다.
 
-2026-07-19 기준 개발 Android의 예약·매칭·동행·리포트·후속 처리·채팅·읽음·위치 쓰기는 Core API와 PostgreSQL로 전환했다. production 기반·복원 이력은 있지만 9월 21일 운영 DB는 일시정지 상태다. 실제 사용자 트래픽 전환일은 미정이며 최신 migration·권한·복구 검증 후 결정한다. 이 문서의 Firestore 비교는 초기 선택 기록이며, 운영 전환 결정은 [PostgreSQL 운영 전환 결정](postgres-operational-transition.md)을 기준으로 본다.
+개발 Android의 Core 업무 쓰기는 PostgreSQL로 전환했다. 9월 27일에는 개발·운영 DB V23, 운영 Core 배포·관리자 DB 연결과 최초 MFA 로그인을 확인했다. 실제 사용자 트래픽 전환일은 미정이며 업무·보안·복구 게이트를 별도로 통과해야 한다. 이 문서의 Firestore 비교는 초기 선택 기록이다. 현재 결정은 [PostgreSQL 운영 전환 결정](postgres-operational-transition.md), 적용 증거는 [환경 분리 실행 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다.
 
 ## 초기 판단 기준
 

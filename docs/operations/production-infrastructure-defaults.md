@@ -1,16 +1,16 @@
 # Production 인프라 기본값
 
-기준일: 2026-09-22
+기준일: 2026-09-27
 
 이 문서는 BoDeul production 리소스의 식별자, 리전, 배포 경계와 운영 기준을 관리한다. 리소스 생성 기록과 현재 사용 가능 상태는 구분한다. 도메인은 보유 여부와 실제 연결을 확인하고, 새로 구매해야 한다고 단정하지 않는다.
 
 ## 현재 확인 요약
 
-- 2026-09-22 운영 Supabase는 일시정지를 유지한 채 표시 이름만 `bodeul-db-prod`로 변경했다. 8월 26일 재개·V15 복원 기록이 현재 가동을 의미하지 않는다.
-- 운영 관리자 웹 배포와 Firebase Auth 계정 등록은 확인 기록이 있다. DB 연결·세부 역할·MFA·실제 업무 흐름 완료와는 별개다.
-- 현재 소스는 Flyway V1~V23이다. 운영 적용 이력은 [migration 목록](../architecture/database-migration-catalog.md)과 해당 환경 조회로 확인한다.
+- 2026-09-27 개발·운영 Supabase는 Pro 조직에서 각각 Healthy이며, 두 DB 모두 Flyway V23·실패 이력 0건을 확인했다. 운영 V23 dump의 외부 보관과 격리 복원도 통과했다.
+- 운영 Core API는 배포 후 `/health` 200과 무인증 API 401을 확인했다. 운영 관리자 웹은 전용 DB 자격 증명 연결, 최초 개인 `SUPER_ADMIN` 등록과 TOTP 로그인 후 대시보드 진입까지 확인했다.
+- 환경 기반 구축 완료와 서비스 출시 승인은 다르다. 정상 운영 토큰·환경 교차 거부, Realtime 실제 구독, 관리자 업무 흐름, 보안 강제 모드와 rollback 검증은 남아 있다. [9월 27일 환경 분리 기록](../reports/dev-production-separation-2026-09-27.md)을 확인한다.
 - 2026-09-22 두 Google Cloud 프로젝트의 공식 조직 소속과 공용 결제 연결·활성을 확인했다. [명칭 기준](resource-naming.md)에 따라 표시 이름만 갱신했으며, 결제 연결·비밀값·IAM은 이름 정리 과정에서 변경하지 않았다.
-- 실제 전환일과 유료 전환일은 미정이다. 최신 확인 범위는 [관리자 웹 환경](admin-web-environments.md)을 따른다.
+- Supabase Pro 전환은 완료했으며, 실제 서비스 전환일은 미정이다. 관리자 웹의 확인 범위는 [관리자 웹 환경](admin-web-environments.md)을 따른다.
 
 ## 결정 요약
 
@@ -44,7 +44,7 @@
 | 배포 Environment | `core-api-production` | 수동 production 배포와 승인 보호 |
 | migration Environment | `core-api-migration-production` | 앱 배포와 DB 변경을 분리한다. |
 | 인프라 감사 Environment | `production-infrastructure-audit` | metadata-only WIF 점검과 승인 보호 |
-| Supabase 표시 이름 / ref | `bodeul-db-prod` / `aoijbzgozbopsxzrasbb` | 개발 프로젝트와 별도 생성. 이름 변경 후에도 일시정지 유지 |
+| Supabase 표시 이름 / ref | `bodeul-db-prod` / `aoijbzgozbopsxzrasbb` | 개발 DB와 분리, Pro 조직, Healthy, V23 확인 |
 | Supabase 리전 | `ap-northeast-1` | Tokyo |
 | Vercel 프로젝트 | `bodeul-admin-web` | 기존 프로젝트를 유지한다. |
 | Vercel production branch | `master` | 보호된 PR 병합만 허용한다. |
@@ -56,12 +56,12 @@
 
 | 환경 | Google Cloud/Firebase | Supabase | Vercel | 용도 |
 | --- | --- | --- | --- | --- |
-| 개발 | `bodeul-dev` | `bodeul-db-dev` | Preview | PR, 실연동, 실기기 검증 |
-| production | `bodeul-prod-110` (표시 이름 `bodeul-prod`) | `bodeul-db-prod` | Production | 출시 전 격리 운영 |
+| 개발 (`dev`) | `bodeul-dev` | `bodeul-db-dev` | Preview | PR, 실연동, 실기기 검증 |
+| production (`master`) | `bodeul-prod-110` (표시 이름 `bodeul-prod`) | `bodeul-db-prod` | Production | 출시 전 격리 운영 |
 
 Vercel Preview에는 개발 Firebase와 개발 관리자 DB 값만 둔다. Production에는 production 값만 두며, 값이 없을 때 서버 API가 설정 오류로 종료되는 fail-closed 상태를 유지한다. Firebase authorized domain에는 실제 관리자 도메인과 출시 전 검증에 필요한 Vercel 도메인만 정확한 호스트명으로 등록하고 wildcard를 사용하지 않는다.
 
-Production Supabase는 2026-08-26 재개 후 V15 migration 전후 백업·격리 복원을 통과한 기록이 있다. 이후 2026-09-21 일시정지가 확인됐다. 재개와 최신 schema 검증, 실제 사용자 데이터 투입 전 운영용 백업 등급 전환은 별도 게이트다.
+Production Supabase의 9월 21일 일시정지 기록은 과거 상태다. 9월 27일에는 재개·Pro 전환·V23 적용과 격리 복원을 확인했다. 제공자 자동 백업의 실제 복구 지점과 파일 백업, 서비스 전환 후 정상 업무 검증은 별도로 확인한다.
 
 동시 릴리스가 늘거나 production과 같은 데이터 규모·외부 연동으로 장기간 QA해야 할 때 세 번째 staging 프로젝트를 검토한다. 현재 MVP 규모에서는 비용과 운영 대상을 늘리는 효과가 더 크므로 추가하지 않는다.
 
@@ -69,8 +69,8 @@ Production Supabase는 2026-08-26 재개 후 V15 migration 전후 백업·격리
 
 ### 관리자 웹
 
-- `master` PR에는 `lint-and-build`, CodeQL과 Vercel Preview 성공을 요구한다.
-- 보호 규칙을 통과한 squash merge를 production 배포 승인으로 간주한다.
+- 기능 PR은 `dev`로 보내고 `lint-and-build`, CodeQL과 Vercel Preview를 확인한 뒤 squash merge한다.
+- 운영 승격은 검증된 `dev`에서 `master`로 release PR을 만들고 merge commit으로 반영한다. 기능 PR의 `dev` 병합은 production 배포 승인이 아니다.
 - Vercel은 같은 프로젝트의 `master` 병합을 Production에 자동 배포한다.
 - 배포 후 루트 200, 무인증 관리자 API 401, 함수 리전 `hnd1`을 확인한다.
 - 이전 정상 deployment로 즉시 rollback할 수 있어야 한다.
@@ -89,6 +89,8 @@ Production Supabase는 2026-08-26 재개 후 V15 migration 전후 백업·격리
 초기 production 런타임은 1 vCPU, 1 GiB, 최소 인스턴스 0, 최대 인스턴스 2, 인스턴스당 DB pool 2로 시작한다. 최대 DB 연결을 4개로 제한하면서 초기 트래픽에 두 인스턴스까지 대응하는 현재 MVP 기준이다. 실제 지연·연결 수와 비용을 확인한 뒤 조정한다.
 
 Kakao Local은 production REST 키를 Secret Manager에서만 주입하고 호출 허용 IP는 초기에는 활성화하지 않는다. Kakao 문서상 호출 허용 IP는 선택적 보안 기능이며, 고정 outbound에는 VPC 경로, Cloud NAT, 외부 IP와 추가 비용·장애 지점이 생긴다. 현재 MVP에서는 인증·역할 인가·분당 제한·6시간 캐시·키 회전·로그 비노출을 우선 통제로 사용한다. 전환 조건과 순서는 [Kakao Local Core API 경계](../architecture/kakao-local-core-api.md)를 따른다.
+
+9월 27일 사용자 승인에 따라 기존 개발 Kakao 키를 운영의 별도 Secret 항목에도 등록했다. 같은 Kakao 앱·키이므로 쿼터와 폐기 영향은 공유하며, DB 비밀번호는 공유하지 않는다.
 
 production Secret Manager ID는 다음으로 고정한다.
 
@@ -117,7 +119,7 @@ production DB도 개발 DB와 같은 역할 경계를 사용하되 자격 증명
 
 ## 백업과 복원
 
-- 실제 사용자 데이터를 받기 전에 production Supabase를 일일 백업을 제공하는 유료 등급 또는 동등한 보호 수준으로 전환한다.
+- Supabase Pro 전환은 완료했다. 실제 사용자 데이터를 받기 전에 제공자 일일 백업의 실제 복구 지점과 복원 권한을 확인한다.
 - 제공자 일일 백업은 최소 7일 보존을 기준으로 한다.
 - 매주 암호화한 logical dump를 제공자 외부의 제한된 저장소에 보관하고 4주 뒤 순환 삭제한다.
 - 최초 출시 전 복원 리허설을 완료하고 이후 분기마다 반복한다.
@@ -130,15 +132,15 @@ production DB도 개발 DB와 같은 역할 경계를 사용하되 자격 증명
 
 ## 보안과 모니터링
 
-- production secret은 Google Secret Manager와 Vercel Production 환경에만 새로 등록한다. 개발 secret을 복사하지 않는다.
+- production DB 자격 증명은 새로 만들어 Google Secret Manager와 Vercel Production에 등록했다. 개발 비밀번호는 복사하지 않는다. Kakao REST 키만 사용자 승인에 따라 같은 값을 별도 Secret 항목으로 관리한다.
 - 서비스 계정 JSON key는 발급하지 않고 GitHub OIDC와 WIF를 사용한다.
 - [Production 인프라 읽기 전용 점검](production-infrastructure-audit.md)은 Secret payload, Firestore 문서, Auth 사용자와 Storage 객체 권한 없이 project·IAM·서비스 metadata만 확인한다.
-- 모든 관리자 계정에 MFA를 적용하고 공용 계정을 금지한다.
+- 모든 관리자 계정에 MFA를 적용하고 공용 계정을 금지하는 것이 출시 기준이다. 현재 최초 개인 관리자의 TOTP 로그인은 확인했지만 전역 MFA 강제 모드 전환과 복구 절차 검증은 남아 있다.
 - 출시 전 최소 2명의 실명 운영자를 정해 한 명의 계정 잠금이 전체 운영 중단으로 이어지지 않게 한다.
 - `gcp-admins@bodeul.kr`에 주 관리자와 복구용 관리자 두 소유자 계정을 등록하고, 두 조직 및 개발·production 프로젝트 조회를 그룹 경유로 각각 검증했다. 이후 두 프로젝트와 두 조직의 `scp@bodeul.kr` 직접 관리자 IAM binding을 모두 제거해 0건으로 만들었다.
 - 개발자는 `developers@bodeul.kr`, production 조회 담당자는 `prod-operators@bodeul.kr`로 관리한다. 팀에서 제외된 이전 개발자의 `bodeul-dev` 직접 Editor 권한은 제거했으며, 현재 개발자의 직접 Editor 권한은 개별 그룹 경유 접근 검증 전까지만 유지한다. production 조회 그룹에는 로그·모니터링·Cloud Run·Secret 메타데이터 조회만 허용한다.
 - 알림용 Google Cloud budget은 개발 10,000 KRW, production 30,000 KRW와 50%·80%·100%를 계획 기준으로 둔다. 현재 결제 연결·알림 수신 설정은 [비용 모니터링](cost-monitoring.md)에 따라 재확인한다.
-- 실제 사용자 데이터 투입 전 Supabase 조직을 Pro로, 실제 운영 전 Vercel을 개발자 좌석 2개의 Pro로 전환한다.
+- Supabase 조직의 Pro 전환은 완료했다. 실제 운영 전 Vercel의 현재 플랜과 개발자 좌석 조건을 확인한다.
 - Supabase spend cap을 유지하고 PITR, custom domain과 Log Drain은 초기 운영 비용에 포함하지 않는다.
 - Cloud Run 오류율·지연·인스턴스 수, PostgreSQL 연결 수·용량·백업, Vercel 실패 배포와 Firebase Auth 오류를 확인한다.
 
@@ -146,11 +148,11 @@ production DB도 개발 DB와 같은 역할 경계를 사용하되 자격 증명
 
 1. 월 150,000 KRW 계획 한도와 게이트 기반 전환을 기준으로 한다. 결제 책임자, 사용할 도메인·주소, 운영자와 실제 일정은 출시 전에 확인한다.
 2. production Google Cloud 프로젝트를 만들고 Firebase를 활성화한다. 완료.
-3. production Supabase와 DB role의 생성 기록은 있다. 현재 일시정지 상태와 소스 V23까지의 실제 적용 여부를 재확인한다.
-4. WIF, 서비스 계정, Artifact Registry와 Secret Manager를 만든다. 완료. Cloud Run 서비스 생성은 첫 승인 배포에서 수행한다.
-5. Vercel Production 환경변수와 도메인을 연결한다.
-6. Firebase authorized domain, App Check, 관리자 MFA와 최소 권한을 검증한다.
-7. backup/restore, Cloud Run revision과 Vercel deployment rollback을 리허설한다.
+3. production Supabase Pro·Healthy, V23 적용과 역할 경계를 확인했다.
+4. WIF, 서비스 계정, Artifact Registry와 Secret Manager 구성 및 Cloud Run 첫 배포·기본 smoke를 완료했다. 정상 인증·외부 연동 검증은 별도다.
+5. Vercel Production 전용 DB 연결과 최초 관리자 MFA 로그인까지 완료했다. 업무별 동작과 사용할 최종 도메인은 확인한다.
+6. Firebase authorized domain, App Check 강제 모드, 관리자 MFA 강제·복구와 최소 권한을 검증한다.
+7. V23 DB 격리 복원은 완료했다. Cloud Run revision과 Vercel deployment rollback, 파일 복원은 별도로 리허설한다.
 8. smoke test와 운영 담당자 확인 뒤 트래픽을 전환한다.
 
 ## 기반 구축·검증 이력
