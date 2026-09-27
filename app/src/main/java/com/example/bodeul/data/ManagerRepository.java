@@ -160,9 +160,29 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
-    void saveMedicationNote(String managerUserId, String medicationNote, RepositoryCallback<ManagerDashboard> callback);
+    /** 복약 확인 입력은 화면에서 확인한 세션과 11단계가 그대로일 때만 적용한다. */
+    static boolean matchesMedicationExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "MEDICATION_CONFIRMATION".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
 
-    void savePharmacySummary(String managerUserId, String pharmacySummary, RepositoryCallback<ManagerDashboard> callback);
+    void saveMedicationNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String medicationNote,
+            RepositoryCallback<ManagerDashboard> callback);
+
+    void savePharmacySummary(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String pharmacySummary,
+            RepositoryCallback<ManagerDashboard> callback);
 
     void updatePreConsultationConfirmed(
             String managerUserId,
@@ -172,14 +192,23 @@ public interface ManagerRepository {
 
     void updatePrescriptionCollected(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean prescriptionCollected,
             RepositoryCallback<ManagerDashboard> callback
     );
 
-    void updatePharmacyCompleted(String managerUserId, boolean pharmacyCompleted, RepositoryCallback<ManagerDashboard> callback);
+    void updatePharmacyCompleted(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            boolean pharmacyCompleted,
+            RepositoryCallback<ManagerDashboard> callback);
 
     void updateMedicationGuidanceCompleted(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean medicationGuidanceCompleted,
             RepositoryCallback<ManagerDashboard> callback
     );

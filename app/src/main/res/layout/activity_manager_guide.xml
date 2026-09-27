@@ -221,6 +221,54 @@
             android:src="@drawable/ic_figma_reception_bell_vector" />
     </FrameLayout>
 
+    <FrameLayout
+        android:id="@+id/guideMedicationToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="@color/figma_mvp_background"
+        android:paddingStart="8dp"
+        android:paddingEnd="24dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/buttonBackGuideMedication"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/guide_back"
+            android:padding="16dp"
+            android:src="@drawable/ic_figma_guide_back_vector"
+            app:tint="@color/figma_mvp_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:layout_marginStart="54dp"
+            android:fontFamily="@font/pretendard_bold"
+            android:text="@string/guide_medication_toolbar_title"
+            android:textColor="@color/figma_mvp_primary"
+            android:textSize="18sp" />
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|center_vertical"
+            android:contentDescription="@null"
+            android:paddingStart="18dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="12dp"
+            android:src="@drawable/ic_figma_more_vertical" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_gravity="bottom"
+            android:background="@color/figma_mvp_divider" />
+    </FrameLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -320,6 +368,11 @@
             <include
                 android:id="@+id/managerGuidePrescriptionContent"
                 layout="@layout/include_manager_guide_prescription"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/managerGuideMedicationContent"
+                layout="@layout/include_manager_guide_medication"
                 android:visibility="gone" />
 
             <include
@@ -723,6 +776,19 @@
                 android:text="@string/guide_pre_consultation_review_hint"
                 android:textColor="@color/figma_mvp_text_tertiary"
                 android:textSize="11sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/textGuideMedicationFooterHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/pretendard_regular"
+                android:gravity="center"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/guide_medication_footer_hint"
+                android:textColor="@color/figma_mvp_text_secondary"
+                android:textSize="10sp"
                 android:visibility="gone" />
         </LinearLayout>
 

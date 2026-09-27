@@ -54,7 +54,7 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void advanceCurrentStep(
+    public synchronized void advanceCurrentStep(
             String managerUserId,
             String expectedSessionId,
             String expectedStepCode,
@@ -192,7 +192,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void saveMedicationNote(String managerUserId, String medicationNote, RepositoryCallback<ManagerDashboard> callback) {
+    public synchronized void saveMedicationNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String medicationNote,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        if (!hasExpectedMedicationStep(managerUserId, expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
         ManagerDashboard dashboard = managerStore.updateMedicationNote(managerUserId, medicationNote);
         if (dashboard == null) {
             callback.onError("복약 메모를 저장하지 못했습니다.");
@@ -202,7 +212,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void savePharmacySummary(String managerUserId, String pharmacySummary, RepositoryCallback<ManagerDashboard> callback) {
+    public synchronized void savePharmacySummary(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String pharmacySummary,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        if (!hasExpectedMedicationStep(managerUserId, expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
         ManagerDashboard dashboard = managerStore.updatePharmacySummary(managerUserId, pharmacySummary);
         if (dashboard == null) {
             callback.onError("약국 진행 요약을 저장하지 못했습니다.");
@@ -228,7 +248,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void updatePharmacyCompleted(String managerUserId, boolean pharmacyCompleted, RepositoryCallback<ManagerDashboard> callback) {
+    public synchronized void updatePharmacyCompleted(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            boolean pharmacyCompleted,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        if (!hasExpectedMedicationStep(managerUserId, expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
         ManagerDashboard dashboard = managerStore.updatePharmacyCompleted(managerUserId, pharmacyCompleted);
         if (dashboard == null) {
             callback.onError("약국 단계 상태를 저장하지 못했습니다.");
@@ -238,11 +268,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void updatePrescriptionCollected(
+    public synchronized void updatePrescriptionCollected(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean prescriptionCollected,
             RepositoryCallback<ManagerDashboard> callback
     ) {
+        if (!hasExpectedMedicationStep(managerUserId, expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
         ManagerDashboard dashboard = managerStore.updatePrescriptionCollected(
                 managerUserId,
                 prescriptionCollected
@@ -255,11 +291,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void updateMedicationGuidanceCompleted(
+    public synchronized void updateMedicationGuidanceCompleted(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean medicationGuidanceCompleted,
             RepositoryCallback<ManagerDashboard> callback
     ) {
+        if (!hasExpectedMedicationStep(managerUserId, expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
         ManagerDashboard dashboard = managerStore.updateMedicationGuidanceCompleted(
                 managerUserId,
                 medicationGuidanceCompleted
@@ -269,6 +311,16 @@ public class MockManagerRepository implements ManagerRepository {
             return;
         }
         callback.onSuccess(dashboard);
+    }
+
+    private boolean hasExpectedMedicationStep(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        ManagerDashboard current = managerStore.getManagerDashboard(managerUserId);
+        return current != null && ManagerRepository.matchesMedicationExpectation(
+                current.getSession(), expectedSessionId, expectedStepCode);
     }
 
     @Override

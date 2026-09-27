@@ -315,19 +315,35 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     @Override
     public void saveMedicationNote(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String medicationNote,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        updateSessionText(managerUserId, "medicationNote", medicationNote, callback);
+        updateMedicationText(
+                managerUserId,
+                expectedSessionId,
+                expectedStepCode,
+                "medicationNote",
+                medicationNote,
+                callback);
     }
 
     @Override
     public void savePharmacySummary(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String pharmacySummary,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        updateSessionText(managerUserId, "pharmacySummary", pharmacySummary, callback);
+        updateMedicationText(
+                managerUserId,
+                expectedSessionId,
+                expectedStepCode,
+                "pharmacySummary",
+                pharmacySummary,
+                callback);
     }
 
     @Override
@@ -346,11 +362,15 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     @Override
     public void updatePrescriptionCollected(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean prescriptionCollected,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        updateSessionBoolean(
+        updateMedicationBoolean(
                 managerUserId,
+                expectedSessionId,
+                expectedStepCode,
                 "prescriptionCollected",
                 prescriptionCollected,
                 callback);
@@ -359,20 +379,32 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     @Override
     public void updatePharmacyCompleted(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean pharmacyCompleted,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        updateSessionBoolean(managerUserId, "pharmacyCompleted", pharmacyCompleted, callback);
+        updateMedicationBoolean(
+                managerUserId,
+                expectedSessionId,
+                expectedStepCode,
+                "pharmacyCompleted",
+                pharmacyCompleted,
+                callback);
     }
 
     @Override
     public void updateMedicationGuidanceCompleted(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean medicationGuidanceCompleted,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        updateSessionBoolean(
+        updateMedicationBoolean(
                 managerUserId,
+                expectedSessionId,
+                expectedStepCode,
                 "medicationGuidanceCompleted",
                 medicationGuidanceCompleted,
                 callback);
@@ -596,6 +628,54 @@ public final class CoreApiManagerRepository implements ManagerRepository {
                 return;
             }
             sessionClient.updateText(
+                    session.getId(),
+                    field,
+                    value,
+                    expectedStepCode,
+                    refreshCallback(managerUserId, callback));
+        });
+    }
+
+    private void updateMedicationText(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String field,
+            String value,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesMedicationExpectation(
+                    session, expectedSessionId, expectedStepCode)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.updateText(
+                    session.getId(),
+                    field,
+                    value,
+                    expectedStepCode,
+                    refreshCallback(managerUserId, callback));
+        });
+    }
+
+    private void updateMedicationBoolean(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String field,
+            boolean value,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesMedicationExpectation(
+                    session, expectedSessionId, expectedStepCode)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.updateBoolean(
                     session.getId(),
                     field,
                     value,

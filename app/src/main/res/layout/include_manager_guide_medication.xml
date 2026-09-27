@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_badge_blue"
+        android:fontFamily="@font/pretendard_bold"
+        android:paddingStart="12dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="3dp"
+        android:text="@string/guide_medication_dashboard_badge"
+        android:textColor="@color/figma_mvp_primary"
+        android:textSize="12sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/pretendard_bold"
+        android:includeFontPadding="false"
+        android:text="@string/guide_medication_title"
+        android:textColor="@color/figma_mvp_text_primary"
+        android:textSize="30sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/pretendard_semibold"
+        android:lineSpacingExtra="3dp"
+        android:text="@string/guide_medication_body"
+        android:textColor="@color/figma_mvp_text_secondary"
+        android:textSize="14sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_figma_medication_current_card"
+            android:minHeight="208dp"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_figma_medication_compare_existing" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/pretendard_bold"
+                    android:text="@string/guide_medication_existing_title"
+                    android:textColor="@color/figma_mvp_text_tertiary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textGuideMedicationExistingSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_figma_medication_item"
+                android:fontFamily="@font/pretendard_semibold"
+                android:lineSpacingExtra="2dp"
+                android:minHeight="104dp"
+                android:padding="12dp"
+                android:text="@string/guide_medication_existing_empty"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_figma_medication_new_card"
+            android:minHeight="208dp"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="15dp"
+                    android:layout_height="17dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_figma_medication_compare_new" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/pretendard_bold"
+                    android:text="@string/guide_medication_prescription_title"
+                    android:textColor="@color/figma_mvp_primary"
+                    android:textSize="12sp" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_figma_prescription_orange_icon" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_figma_medication_item"
+                android:minHeight="104dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/guide_medication_accent" />
+
+                <TextView
+                    android:id="@+id/textGuideMedicationPrescriptionStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:lineSpacingExtra="2dp"
+                    android:paddingStart="12dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="12dp"
+                    android:text="@string/guide_medication_prescription_empty"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="8dp"
+        android:fontFamily="@font/pretendard_regular"
+        android:lineSpacingExtra="2dp"
+        android:text="@string/guide_medication_prescription_disclaimer"
+        android:textColor="@color/figma_mvp_text_tertiary"
+        android:textSize="11sp" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="1dp"
+        app:strokeColor="@color/figma_mvp_card_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/pretendard_bold"
+                    android:text="@string/guide_medication_receipt_title"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_figma_medication_badge"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:paddingStart="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="4dp"
+                    android:text="@string/guide_medication_new_prescription_badge"
+                    android:textColor="@color/guide_medication_accent"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_figma_medication_icon_circle">
+
+                    <ImageView
+                        android:layout_width="15dp"
+                        android:layout_height="17dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_figma_medication_compare_new" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/pretendard_medium"
+                        android:text="@string/guide_medication_prescription_row"
+                        android:textColor="@color/figma_mvp_text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/textGuideMedicationPrescriptionState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="@font/pretendard_bold"
+                        android:text="@string/guide_medication_status_pending"
+                        android:textColor="@color/figma_mvp_text_primary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonGuideMedicationTogglePrescription"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:maxLines="1"
+                    android:minHeight="48dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/guide_prescription_mark_collected"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_figma_medication_icon_circle">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_figma_medication_pharmacy" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/pretendard_medium"
+                        android:text="@string/guide_medication_pharmacy_row"
+                        android:textColor="@color/figma_mvp_text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/textGuideMedicationPharmacyState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="@font/pretendard_bold"
+                        android:text="@string/guide_medication_status_pending"
+                        android:textColor="@color/figma_mvp_text_primary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonGuideMedicationTogglePharmacy"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:maxLines="1"
+                    android:minHeight="48dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/guide_pharmacy_mark_completed"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_figma_medication_icon_circle">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_figma_medication_calendar" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/pretendard_medium"
+                        android:text="@string/guide_medication_guidance_row"
+                        android:textColor="@color/figma_mvp_text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/textGuideMedicationGuidanceState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="@font/pretendard_bold"
+                        android:text="@string/guide_medication_status_pending"
+                        android:textColor="@color/figma_mvp_text_primary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonGuideMedicationToggleGuidance"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:maxLines="1"
+                    android:minHeight="48dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:text="@string/guide_medication_guidance_mark_completed"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="22dp"
+                android:background="@color/figma_mvp_subtle_divider" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="@font/pretendard_bold"
+                    android:letterSpacing="0.1"
+                    android:text="@string/guide_medication_progress_title"
+                    android:textColor="@color/figma_mvp_text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/textGuideMedicationProgress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/pretendard_bold"
+                    android:text="@string/guide_medication_progress_format"
+                    android:textColor="@color/figma_mvp_primary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/progressGuideMedication"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:layout_marginTop="9dp"
+                android:max="3"
+                android:progress="0"
+                android:progressDrawable="@drawable/progress_figma_medication" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="20dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="1dp"
+        app:strokeColor="@color/figma_mvp_card_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/pretendard_bold"
+                android:text="@string/guide_medication_notes_title"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="18sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/pretendard_regular"
+                android:text="@string/guide_medication_notes_helper"
+                android:textColor="@color/figma_mvp_text_secondary"
+                android:textSize="12sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/BodeulFigmaFilledInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:hint="@string/guide_medication_pharmacy_note_label">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputGuideMedicationPharmacyNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:minLines="2"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuideMedicationSavePharmacyNote"
+                style="@style/BodeulOutlinedButton"
+                android:layout_marginTop="10dp"
+                android:text="@string/guide_pharmacy_save" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/BodeulFigmaFilledInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="@string/guide_medication_guidance_note_label">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputGuideMedicationGuidanceNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:minLines="2"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuideMedicationSaveGuidanceNote"
+                style="@style/BodeulOutlinedButton"
+                android:layout_marginTop="10dp"
+                android:text="@string/guide_medication_save" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

@@ -665,140 +665,247 @@ public class ManagerGuideViewModel extends ViewModel {
     }
 
     public void saveMedicationNote(String note) {
-        if (currentUser == null) return;
-        if (TextUtils.isEmpty(note)) {
-            _toastMessage.setValue("내용을 입력해 주세요.");
-            return;
-        }
-        managerRepository.saveMedicationNote(currentUser.getId(), note, new RepositoryCallback<ManagerDashboard>() {
-            @Override
-            public void onSuccess(ManagerDashboard result) {
-                _toastMessage.setValue("복약 메모를 저장했습니다.");
-                bindDashboard(result);
-            }
-
-            @Override
-            public void onError(String message) {
-                _toastMessage.setValue(message);
-            }
-        });
+        saveMedicationStepNote(note, false);
     }
 
     public void savePharmacySummary(String summary) {
-        if (currentUser == null) return;
-        if (TextUtils.isEmpty(summary)) {
-            _toastMessage.setValue("내용을 입력해 주세요.");
-            return;
-        }
-        managerRepository.savePharmacySummary(currentUser.getId(), summary, new RepositoryCallback<ManagerDashboard>() {
-            @Override
-            public void onSuccess(ManagerDashboard result) {
-                _toastMessage.setValue("약국 진행 내용을 저장했습니다.");
-                bindDashboard(result);
-            }
-
-            @Override
-            public void onError(String message) {
-                _toastMessage.setValue(message);
-            }
-        });
+        saveMedicationStepNote(summary, true);
     }
 
     public void togglePrescriptionCollected() {
-        if (currentUser == null) return;
-        managerRepository.getManagerDashboard(currentUser.getId(), new RepositoryCallback<ManagerDashboard>() {
-            @Override
-            public void onSuccess(ManagerDashboard result) {
-                boolean nextValue = !result.getSession().isPrescriptionCollected();
-                managerRepository.updatePrescriptionCollected(
-                        currentUser.getId(),
-                        nextValue,
-                        new RepositoryCallback<ManagerDashboard>() {
-                            @Override
-                            public void onSuccess(ManagerDashboard updated) {
-                                _toastMessage.setValue(nextValue
-                                        ? "처방전 수령을 완료로 표시했습니다."
-                                        : "처방전 수령 전으로 되돌렸습니다.");
-                                bindDashboard(updated);
-                            }
-
-                            @Override
-                            public void onError(String message) {
-                                _toastMessage.setValue(message);
-                            }
-                        }
-                );
-            }
-
-            @Override
-            public void onError(String message) {
-                _toastMessage.setValue(message);
-            }
-        });
+        toggleMedicationProgress(MedicationProgress.PRESCRIPTION);
     }
 
     public void togglePharmacyCompleted() {
-        if (currentUser == null) return;
-        managerRepository.getManagerDashboard(currentUser.getId(), new RepositoryCallback<ManagerDashboard>() {
-            @Override
-            public void onSuccess(ManagerDashboard result) {
-                boolean nextValue = !result.getSession().isPharmacyCompleted();
-                managerRepository.updatePharmacyCompleted(
-                        currentUser.getId(),
-                        nextValue,
-                        new RepositoryCallback<ManagerDashboard>() {
-                            @Override
-                            public void onSuccess(ManagerDashboard updated) {
-                                _toastMessage.setValue(nextValue ? "약 수령을 완료로 표시했습니다." : "약 수령 전으로 되돌렸습니다.");
-                                bindDashboard(updated);
-                            }
-
-                            @Override
-                            public void onError(String message) {
-                                _toastMessage.setValue(message);
-                            }
-                        }
-                );
-            }
-
-            @Override
-            public void onError(String message) {
-                _toastMessage.setValue(message);
-            }
-        });
+        toggleMedicationProgress(MedicationProgress.PHARMACY);
     }
 
     public void toggleMedicationGuidanceCompleted() {
-        if (currentUser == null) return;
-        managerRepository.getManagerDashboard(currentUser.getId(), new RepositoryCallback<ManagerDashboard>() {
-            @Override
-            public void onSuccess(ManagerDashboard result) {
-                boolean nextValue = !result.getSession().isMedicationGuidanceCompleted();
+        toggleMedicationProgress(MedicationProgress.GUIDANCE);
+    }
+
+    private void saveMedicationStepNote(String rawValue, boolean pharmacyNote) {
+        MedicationExpectation expectation = currentMedicationExpectation();
+        if (expectation == null) return;
+        String value = rawValue == null ? "" : rawValue.trim();
+        if (TextUtils.isEmpty(value)) {
+            _toastMessage.setValue("내용을 입력해 주세요.");
+            return;
+        }
+        if (!beginMutation()) return;
+        RepositoryCallback<ManagerDashboard> callback =
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        if (!acceptMedicationResult(result, expectation)) return;
+                        _toastMessage.setValue(pharmacyNote
+                                ? "약국 진행 내용을 저장했습니다."
+                                : "복약 메모를 저장했습니다.");
+                        bindDashboard(result);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        handleMedicationError(message);
+                    }
+                };
+        if (pharmacyNote) {
+            managerRepository.savePharmacySummary(
+                    currentUser.getId(),
+                    expectation.sessionId,
+                    expectation.stepCode,
+                    value,
+                    callback);
+        } else {
+            managerRepository.saveMedicationNote(
+                    currentUser.getId(),
+                    expectation.sessionId,
+                    expectation.stepCode,
+                    value,
+                    callback);
+        }
+    }
+
+    private void toggleMedicationProgress(MedicationProgress progress) {
+        MedicationExpectation expectation = currentMedicationExpectation();
+        if (expectation == null || !beginMutation()) return;
+        managerRepository.getManagerDashboard(
+                currentUser.getId(),
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        if (!matchesMedicationExpectation(result, expectation)) {
+                            rejectMedicationResult(result);
+                            return;
+                        }
+                        boolean nextValue = !progress.read(result.getSession());
+                        updateMedicationProgress(
+                                progress, expectation, nextValue);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        handleMedicationError(message);
+                    }
+                });
+    }
+
+    private void updateMedicationProgress(
+            MedicationProgress progress,
+            MedicationExpectation expectation,
+            boolean nextValue
+    ) {
+        RepositoryCallback<ManagerDashboard> callback =
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        if (!acceptMedicationResult(result, expectation)) return;
+                        _toastMessage.setValue(progress.successMessage(nextValue));
+                        bindDashboard(result);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        handleMedicationError(message);
+                    }
+                };
+        switch (progress) {
+            case PRESCRIPTION:
+                managerRepository.updatePrescriptionCollected(
+                        currentUser.getId(),
+                        expectation.sessionId,
+                        expectation.stepCode,
+                        nextValue,
+                        callback);
+                break;
+            case PHARMACY:
+                managerRepository.updatePharmacyCompleted(
+                        currentUser.getId(),
+                        expectation.sessionId,
+                        expectation.stepCode,
+                        nextValue,
+                        callback);
+                break;
+            case GUIDANCE:
                 managerRepository.updateMedicationGuidanceCompleted(
                         currentUser.getId(),
+                        expectation.sessionId,
+                        expectation.stepCode,
                         nextValue,
-                        new RepositoryCallback<ManagerDashboard>() {
-                            @Override
-                            public void onSuccess(ManagerDashboard updated) {
-                                _toastMessage.setValue(nextValue
-                                        ? "복약 안내를 완료로 표시했습니다."
-                                        : "복약 안내 전으로 되돌렸습니다.");
-                                bindDashboard(updated);
-                            }
+                        callback);
+                break;
+        }
+    }
 
-                            @Override
-                            public void onError(String message) {
-                                _toastMessage.setValue(message);
-                            }
-                        }
-                );
-            }
+    private void handleMedicationError(String message) {
+        finishMutation();
+        _toastMessage.setValue(message);
+        if (TextUtils.equals(ManagerRepository.MESSAGE_STALE_GUIDE_STEP, message)) {
+            loadDashboard();
+        }
+    }
 
-            @Override
-            public void onError(String message) {
-                _toastMessage.setValue(message);
+    @Nullable
+    private MedicationExpectation currentMedicationExpectation() {
+        UiState state = _uiState.getValue();
+        ManagerDashboard dashboard = state == null ? null : state.dashboard;
+        CompanionSession session = dashboard == null ? null : dashboard.getSession();
+        if (currentUser == null || session == null) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_NO_ACTIVE_SESSION);
+            return null;
+        }
+        String sessionId = session.getId();
+        String stepCode = session.getCurrentStepCode();
+        if (!ManagerRepository.matchesMedicationExpectation(
+                session, sessionId, stepCode)) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return null;
+        }
+        return new MedicationExpectation(sessionId, stepCode);
+    }
+
+    private boolean acceptMedicationResult(
+            ManagerDashboard result,
+            MedicationExpectation expectation
+    ) {
+        finishMutation();
+        if (matchesMedicationExpectation(result, expectation)) {
+            return true;
+        }
+        _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+        if (result == null) {
+            loadDashboard();
+        } else {
+            bindDashboard(result);
+        }
+        return false;
+    }
+
+    private void rejectMedicationResult(@Nullable ManagerDashboard result) {
+        finishMutation();
+        _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+        if (result == null) {
+            loadDashboard();
+        } else {
+            bindDashboard(result);
+        }
+    }
+
+    private boolean matchesMedicationExpectation(
+            @Nullable ManagerDashboard dashboard,
+            MedicationExpectation expectation
+    ) {
+        return dashboard != null
+                && ManagerRepository.matchesMedicationExpectation(
+                        dashboard.getSession(),
+                        expectation.sessionId,
+                        expectation.stepCode);
+    }
+
+    private static final class MedicationExpectation {
+        final String sessionId;
+        final String stepCode;
+
+        MedicationExpectation(String sessionId, String stepCode) {
+            this.sessionId = sessionId == null ? "" : sessionId.trim();
+            this.stepCode = stepCode == null ? "" : stepCode.trim();
+        }
+    }
+
+    private enum MedicationProgress {
+        PRESCRIPTION,
+        PHARMACY,
+        GUIDANCE;
+
+        boolean read(CompanionSession session) {
+            switch (this) {
+                case PRESCRIPTION:
+                    return session.isPrescriptionCollected();
+                case PHARMACY:
+                    return session.isPharmacyCompleted();
+                case GUIDANCE:
+                default:
+                    return session.isMedicationGuidanceCompleted();
             }
-        });
+        }
+
+        String successMessage(boolean completed) {
+            switch (this) {
+                case PRESCRIPTION:
+                    return completed
+                            ? "처방전 수령을 완료로 표시했습니다."
+                            : "처방전 수령 전으로 되돌렸습니다.";
+                case PHARMACY:
+                    return completed
+                            ? "약 수령을 완료로 표시했습니다."
+                            : "약 수령 전으로 되돌렸습니다.";
+                case GUIDANCE:
+                default:
+                    return completed
+                            ? "복약 안내를 완료로 표시했습니다."
+                            : "복약 안내 전으로 되돌렸습니다.";
+            }
+        }
     }
 
     public void submitReport(

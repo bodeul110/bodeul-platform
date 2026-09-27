@@ -397,14 +397,32 @@ public class FirebaseManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void saveMedicationNote(String managerUserId, String medicationNote, RepositoryCallback<ManagerDashboard> callback) {
+    public void saveMedicationNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String medicationNote,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
         // 복약 메모를 같은 세션 문서에 저장해 리포트 작성 전에 누적한다.
-        updateSessionField(managerUserId, "medicationNote", medicationNote, callback);
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("medicationNote", medicationNote);
+        updateMedicationSessionFields(
+                managerUserId, expectedSessionId, expectedStepCode, updates, callback);
     }
 
     @Override
-    public void savePharmacySummary(String managerUserId, String pharmacySummary, RepositoryCallback<ManagerDashboard> callback) {
-        updateSessionField(managerUserId, "pharmacySummary", pharmacySummary, callback);
+    public void savePharmacySummary(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String pharmacySummary,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("pharmacySummary", pharmacySummary);
+        updateMedicationSessionFields(
+                managerUserId, expectedSessionId, expectedStepCode, updates, callback);
     }
 
     @Override
@@ -419,30 +437,43 @@ public class FirebaseManagerRepository implements ManagerRepository {
     @Override
     public void updatePrescriptionCollected(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean prescriptionCollected,
             RepositoryCallback<ManagerDashboard> callback
     ) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("prescriptionCollected", prescriptionCollected);
-        updateSessionFields(managerUserId, updates, callback);
+        updateMedicationSessionFields(
+                managerUserId, expectedSessionId, expectedStepCode, updates, callback);
     }
 
     @Override
-    public void updatePharmacyCompleted(String managerUserId, boolean pharmacyCompleted, RepositoryCallback<ManagerDashboard> callback) {
+    public void updatePharmacyCompleted(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            boolean pharmacyCompleted,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("pharmacyCompleted", pharmacyCompleted);
-        updateSessionFields(managerUserId, updates, callback);
+        updateMedicationSessionFields(
+                managerUserId, expectedSessionId, expectedStepCode, updates, callback);
     }
 
     @Override
     public void updateMedicationGuidanceCompleted(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean medicationGuidanceCompleted,
             RepositoryCallback<ManagerDashboard> callback
     ) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("medicationGuidanceCompleted", medicationGuidanceCompleted);
-        updateSessionFields(managerUserId, updates, callback);
+        updateMedicationSessionFields(
+                managerUserId, expectedSessionId, expectedStepCode, updates, callback);
     }
 
     @Override
@@ -1089,6 +1120,64 @@ public class FirebaseManagerRepository implements ManagerRepository {
         Map<String, Object> updates = new HashMap<>();
         updates.put(key, value);
         updateSessionFields(managerUserId, updates, callback);
+    }
+
+    private void updateMedicationSessionFields(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            Map<String, Object> updates,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        getManagerDashboard(managerUserId, new RepositoryCallback<ManagerDashboard>() {
+            @Override
+            public void onSuccess(ManagerDashboard dashboard) {
+                CompanionSession session = dashboard == null ? null : dashboard.getSession();
+                if (!ManagerRepository.matchesMedicationExpectation(
+                        session, expectedSessionId, expectedStepCode)) {
+                    callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                    return;
+                }
+
+                int expectedStepOrder = session.getCurrentStepOrder();
+                String expectedStatus = session.getStatus().name();
+                DocumentReference sessionReference = firestore.collection("companionSessions")
+                        .document(expectedSessionId);
+                Map<String, Object> updatesWithTimestamp = new HashMap<>(updates);
+                updatesWithTimestamp.put("updatedAt", FieldValue.serverTimestamp());
+
+                firestore.runTransaction(transaction -> {
+                            DocumentSnapshot latest = transaction.get(sessionReference);
+                            Long latestStepOrder = latest.getLong("currentStepOrder");
+                            boolean stillCurrent = latest.exists()
+                                    && latestStepOrder != null
+                                    && latestStepOrder.intValue() == expectedStepOrder
+                                    && normalizeAdvanceValue(latest.getString("managerUserId"))
+                                    .equals(normalizeAdvanceValue(managerUserId))
+                                    && normalizeAdvanceValue(latest.getString("currentStatus"))
+                                    .equals(normalizeAdvanceValue(expectedStatus));
+                            if (!stillCurrent) {
+                                return false;
+                            }
+                            transaction.update(sessionReference, updatesWithTimestamp);
+                            return true;
+                        })
+                        .addOnSuccessListener(updated -> {
+                            if (!Boolean.TRUE.equals(updated)) {
+                                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                                return;
+                            }
+                            getManagerDashboard(managerUserId, callback);
+                        })
+                        .addOnFailureListener(exception ->
+                                callback.onError("복약 확인 정보를 저장하지 못했습니다."));
+            }
+
+            @Override
+            public void onError(String message) {
+                callback.onError(message);
+            }
+        });
     }
 
     private void updateSessionFields(

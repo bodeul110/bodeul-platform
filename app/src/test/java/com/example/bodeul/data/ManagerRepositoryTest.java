@@ -42,4 +42,35 @@ public class ManagerRepositoryTest {
                 "session-1",
                 "HOSPITAL_ROUTE"));
     }
+
+    @Test
+    public void matchesMedicationExpectation_requiresMedicationStepAndFreshSession() {
+        CompanionSession session = new CompanionSession(
+                "session-1",
+                "appointment-1",
+                "manager-1",
+                11,
+                SessionStatus.PAYMENT,
+                "",
+                "",
+                "",
+                "",
+                "",
+                false);
+        session.applyServerGuideProgress(
+                "MEDICATION_CONFIRMATION", true, true, "");
+
+        assertTrue(ManagerRepository.matchesMedicationExpectation(
+                session,
+                " session-1 ",
+                "MEDICATION_CONFIRMATION"));
+        assertFalse(ManagerRepository.matchesMedicationExpectation(
+                session,
+                "session-2",
+                "MEDICATION_CONFIRMATION"));
+        assertFalse(ManagerRepository.matchesMedicationExpectation(
+                session,
+                "session-1",
+                "PRESCRIPTION_DOCUMENTS"));
+    }
 }

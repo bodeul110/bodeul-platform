@@ -86,6 +86,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private ManagerGuideVitalsBinder managerGuideVitalsBinder;
     private ManagerGuidePrescriptionBinder managerGuidePrescriptionBinder;
     private ManagerGuideConsultationBinder managerGuideConsultationBinder;
+    private ManagerGuideMedicationBinder managerGuideMedicationBinder;
 
     private int pendingLocationPermissionAction = LOCATION_ACTION_NONE;
     private boolean liveLocationActivationInFlight;
@@ -302,6 +303,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 isGuidePreviewMode(),
                 savedInstanceState,
                 viewModel::saveConsultationDraft);
+        managerGuideMedicationBinder = new ManagerGuideMedicationBinder(
+                findViewById(android.R.id.content));
 
         findViewById(R.id.buttonBackGuide).setOnClickListener(
                 view -> attemptExit(this::finish));
@@ -314,6 +317,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonBackGuidePrescription).setOnClickListener(
                 view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuideConsultation).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideMedication).setOnClickListener(
                 view -> attemptExit(this::finish));
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -380,6 +385,31 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonTogglePrescriptionCollected).setOnClickListener(view -> viewModel.togglePrescriptionCollected());
         findViewById(R.id.buttonTogglePharmacyCompleted).setOnClickListener(view -> viewModel.togglePharmacyCompleted());
         findViewById(R.id.buttonToggleMedicationGuidanceCompleted).setOnClickListener(view -> viewModel.toggleMedicationGuidanceCompleted());
+        findViewById(R.id.buttonGuideMedicationSavePharmacyNote).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.savePharmacySummary(managerGuideMedicationBinder.pharmacyNote());
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationSaveGuidanceNote).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.saveMedicationNote(managerGuideMedicationBinder.guidanceNote());
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationTogglePrescription).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.togglePrescriptionCollected();
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationTogglePharmacy).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.togglePharmacyCompleted();
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationToggleGuidance).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.toggleMedicationGuidanceCompleted();
+            }
+        });
         buttonSubmitReport.setOnClickListener(view -> {
             if (currentPrimaryAction == ManagerGuidePrimaryAction.SUBMIT_REPORT) {
                 submitCurrentReport();
@@ -491,6 +521,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             managerGuideVitalsBinder.hideForState();
             managerGuidePrescriptionBinder.hideForState();
             managerGuideConsultationBinder.hideForState();
+            managerGuideMedicationBinder.hideForState();
             currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
             currentStepCode = "";
             clearCurrentLocationMarkerOutsideMeetingStep();
@@ -544,6 +575,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                             state.dashboard,
                             mutationInFlight,
                             viewModel.getConsultationDraft(sessionId));
+                    managerGuideMedicationBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
                     applyReportDraft();
                 } finally {
                     bindingPreConsultationConfirmation = false;
@@ -568,6 +601,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 managerGuideVitalsBinder.hideForState();
                 managerGuidePrescriptionBinder.hideForState();
                 managerGuideConsultationBinder.hideForState();
+                managerGuideMedicationBinder.hideForState();
                 currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
                 currentStepCode = "";
                 clearCurrentLocationMarkerOutsideMeetingStep();
@@ -630,6 +664,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         managerGuideVitalsBinder.setInputsEnabled(false);
         managerGuidePrescriptionBinder.setActionsEnabled(false);
         managerGuideConsultationBinder.setInputsEnabled(false);
+        managerGuideMedicationBinder.setInputsEnabled(false);
         findViewById(R.id.buttonGuidePreConsultationComplete).setEnabled(false);
         buttonAdvanceGuide.setEnabled(false);
         buttonSubmitReport.setEnabled(false);
@@ -645,6 +680,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
         if (currentPrimaryAction == ManagerGuidePrimaryAction.ADVANCE) {
             if ("CONSULTATION_SUPPORT".equals(currentStepCode)
                     && managerGuideConsultationBinder.showUnsavedInputError()) {
+                return;
+            }
+            if ("MEDICATION_CONFIRMATION".equals(currentStepCode)
+                    && managerGuideMedicationBinder.hasUnsavedInput()) {
+                Toast.makeText(
+                        this,
+                        R.string.guide_medication_unsaved_advance,
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
             if ("VITALS_CHECK".equals(currentStepCode)) {
@@ -668,20 +711,31 @@ public class ManagerGuideActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isMedicationMutationAvailable() {
+        return "MEDICATION_CONFIRMATION".equals(currentStepCode) && !mutationInFlight;
+    }
+
     private void attemptExit(Runnable exitAction) {
         boolean consultationMayStillBeActive = "CONSULTATION_SUPPORT".equals(currentStepCode)
                 || TextUtils.isEmpty(currentStepCode);
         boolean hasUnsavedConsultation = consultationMayStillBeActive
                 && managerGuideConsultationBinder != null
                 && managerGuideConsultationBinder.hasUnsavedInput();
-        if (!hasUnsavedConsultation) {
+        boolean medicationMayStillBeActive = "MEDICATION_CONFIRMATION".equals(currentStepCode)
+                || TextUtils.isEmpty(currentStepCode);
+        boolean hasUnsavedMedication = medicationMayStillBeActive
+                && managerGuideMedicationBinder != null
+                && managerGuideMedicationBinder.hasUnsavedInput();
+        if (!hasUnsavedConsultation && !hasUnsavedMedication) {
             exitAction.run();
             return;
         }
         if (mutationInFlight) {
             Toast.makeText(
                     this,
-                    R.string.guide_consultation_save_in_progress,
+                    hasUnsavedMedication
+                            ? R.string.guide_medication_save_in_progress
+                            : R.string.guide_consultation_save_in_progress,
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -691,12 +745,19 @@ public class ManagerGuideActivity extends AppCompatActivity {
         exitConfirmationShowing = true;
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.guide_consultation_exit_title)
-                .setMessage(R.string.guide_consultation_exit_body)
+                .setMessage(hasUnsavedMedication
+                        ? R.string.guide_medication_exit_body
+                        : R.string.guide_consultation_exit_body)
                 .setNegativeButton(R.string.guide_consultation_exit_stay, null)
                 .setPositiveButton(
                         R.string.guide_consultation_exit_discard,
                         (ignored, which) -> {
-                            discardConsultationDraft();
+                            if (hasUnsavedConsultation) {
+                                discardConsultationDraft();
+                            }
+                            if (hasUnsavedMedication) {
+                                managerGuideMedicationBinder.discardUnsavedInput();
+                            }
                             exitAction.run();
                         })
                 .create();
