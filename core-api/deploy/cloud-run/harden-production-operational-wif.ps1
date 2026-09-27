@@ -59,7 +59,7 @@ function New-ProviderDefinition {
     )
 
     $workflowRef = "$Repository/.github/workflows/$WorkflowFile@refs/heads/master"
-    $subject = "repo:${Repository}:environment:${EnvironmentName}"
+    $subject = "repo:bodeul110@${RepositoryOwnerId}/bodeul-platform@${RepositoryId}:environment:${EnvironmentName}"
     return [pscustomobject]@{
         ProviderId          = $ProviderId
         EnvironmentName     = $EnvironmentName
@@ -68,6 +68,7 @@ function New-ProviderDefinition {
         AttributeCondition  = "assertion.repository == '$Repository' && assertion.repository_id == '$RepositoryId' && assertion.repository_owner_id == '$RepositoryOwnerId' && assertion.ref == 'refs/heads/master' && assertion.environment == '$EnvironmentName' && assertion.workflow_ref == '$workflowRef' && assertion.event_name == 'workflow_dispatch'"
         ExactPrincipal      = "principal://iam.googleapis.com/projects/$ProjectNumber/locations/global/workloadIdentityPools/$PoolId/subject/$subject"
         LegacyPrincipal     = "principalSet://iam.googleapis.com/projects/$ProjectNumber/locations/global/workloadIdentityPools/$PoolId/attribute.environment/$EnvironmentName"
+        LegacyExactPrincipal = "principal://iam.googleapis.com/projects/$ProjectNumber/locations/global/workloadIdentityPools/$PoolId/subject/repo:${Repository}:environment:${EnvironmentName}"
     }
 }
 
@@ -187,6 +188,7 @@ function Assert-KnownImpersonationPolicy {
         }
         foreach ($member in @($binding.members)) {
             if ($member -ne $Definition.ExactPrincipal -and
+                $member -ne $Definition.LegacyExactPrincipal -and
                 $member -ne $Definition.LegacyPrincipal) {
                 throw "$($Definition.ProviderId) 서비스 계정에 예상하지 않은 impersonation 주체가 있습니다. 자동 변경을 중단합니다."
             }
@@ -342,15 +344,17 @@ foreach ($definition in $ProviderDefinitions) {
             "--quiet"
         ) | Out-Null
     }
-    if ($members -contains $definition.LegacyPrincipal) {
+    foreach ($legacyPrincipal in @($definition.LegacyPrincipal, $definition.LegacyExactPrincipal)) {
+      if ($members -contains $legacyPrincipal) {
         Invoke-Gcloud -Arguments @(
             "iam", "service-accounts", "remove-iam-policy-binding", $definition.ServiceAccountEmail,
             "--project=$ProjectId",
-            "--member=$($definition.LegacyPrincipal)",
+            "--member=$legacyPrincipal",
             "--role=roles/iam.workloadIdentityUser",
             "--condition=None",
             "--quiet"
         ) | Out-Null
+      }
     }
 
     $verifiedProvider = ConvertFrom-GcloudJson -Arguments @(

@@ -1,6 +1,8 @@
 name: Android Preflight
 
 on:
+  push:
+    branches: [dev]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -209,6 +211,10 @@ jobs:
         if: steps.scope.outputs.android == 'true'
         run: ./gradlew :app:verifyReleaseAppCheckClasspath --console=plain
 
+      - name: 인프라 감사 도구 단위 테스트
+        if: steps.scope.outputs.firebase_tools == 'true'
+        run: node --test tools/gcp/test/*.test.mjs
+
       - name: .firebaserc 복원
         if: steps.scope.outputs.firebase_tools == 'true' && env.FIREBASERC_JSON != ''
         shell: bash
@@ -224,6 +230,11 @@ jobs:
           expected_project_id="bodeul-dev"
           expected_provider="projects/533563500316/locations/global/workloadIdentityPools/github-actions/providers/bodeul-firebase-preflight"
           expected_service_account="bodeul-firebase-preflight@bodeul-dev.iam.gserviceaccount.com"
+
+          if [ "$GITHUB_REF" != "refs/heads/dev" ]; then
+            echo "개발 Firebase 운영 점검은 dev 브랜치에서만 실행합니다." >&2
+            exit 1
+          fi
 
           if [ "$FIREBASE_PROJECT_ID" != "$expected_project_id" ]; then
             echo "Firebase 프로젝트 설정이 예상 값과 다릅니다." >&2
@@ -256,8 +267,8 @@ jobs:
           GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.firebase-auth.outputs.access_token }}
         run: |
           ARGS=()
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            # PR CI는 외부 Firebase 운영 상태 대신 앱 빌드와 테스트 안정성만 확인한다.
+          if [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]; then
+            # PR과 dev push는 외부 운영 상태 대신 앱 빌드와 테스트 안정성만 확인한다.
             ARGS+=(--skip-workflow)
           fi
           if [ -n "$BODEUL_BACKUP_FILE" ]; then

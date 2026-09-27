@@ -185,6 +185,41 @@ test("project-local 역할은 조건 없는 정확한 집합만 허용한다", (
   assert.equal(hasExactProjectLocalRoles({bindings: []}, member, []), true);
 });
 
+test("운영 서비스 계정은 이름만 같은 subject가 아니라 불변 ID subject만 허용한다", async () => {
+  const accounts = {
+    "bodeul-infra-auditor": ["production-infrastructure-audit", "iam.audit-impersonation"],
+    "bodeul-core-deployer": ["core-api-production", "iam.deploy-service-account-policy"],
+    "bodeul-db-backup": ["core-api-migration-production", "iam.backup-service-account-policy"],
+    "bodeul-retention-operator": ["firebase-retention-production", "iam.retention-service-account-policy"],
+  };
+  for (const [prefix, expected] of [
+    ["repo:bodeul110@275679915/bodeul-platform@1209358990", STATUS.PASS],
+    ["repo:bodeul110/bodeul-platform", STATUS.DRIFT],
+    ["repo:bodeul110@275679915/bodeul-platform@9999999999", STATUS.DRIFT],
+  ]) {
+    const report = await auditProductionInfrastructure({
+      env: validEnvironment,
+      tokenResolver: async () => "test-only",
+      fetchImpl: async (url) => {
+        const parsed = new URL(url);
+        const pathname = decodeURIComponent(parsed.pathname);
+        const account = Object.keys(accounts).find((name) =>
+          pathname.endsWith(`/serviceAccounts/${name}@bodeul-prod-110.iam.gserviceaccount.com:getIamPolicy`));
+        if (parsed.hostname !== "iam.googleapis.com" || !account) {
+          return new Response("", {status: 403});
+        }
+        return Response.json({bindings: [{
+          role: "roles/iam.workloadIdentityUser",
+          members: [`principal://iam.googleapis.com/projects/649312328770/locations/global/workloadIdentityPools/github-actions/subject/${prefix}:environment:${accounts[account][0]}`],
+        }]});
+      },
+    });
+    for (const [, id] of Object.values(accounts)) {
+      assert.equal(report.baseline.checks.find((entry) => entry.id === id)?.status, expected, id);
+    }
+  }
+});
+
 test("Cloud Run 이미지는 production 저장소의 불변 식별자만 허용한다", () => {
   const prefix = "asia-northeast1-docker.pkg.dev/bodeul-prod-110/bodeul-core-api/bodeul-core-api";
   assert.equal(isExpectedCloudRunImage(`${prefix}:${"a".repeat(40)}`), true);

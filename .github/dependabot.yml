@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -16,6 +17,7 @@ updates:
 
   - package-ecosystem: gradle
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -30,6 +32,7 @@ updates:
 
   - package-ecosystem: gradle
     directory: /core-api
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -50,6 +53,7 @@ updates:
 
   - package-ecosystem: docker
     directory: /core-api
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
@@ -68,6 +72,7 @@ updates:
 
   - package-ecosystem: npm
     directory: /functions
+    target-branch: dev
     schedule:
       interval: weekly
       day: monday
