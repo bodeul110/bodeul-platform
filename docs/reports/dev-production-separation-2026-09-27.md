@@ -27,6 +27,10 @@
 | 관리자 웹 개발 배포 | `a1801e9`의 Vercel Preview가 `READY`, Functions 리전 `hnd1`. [dev 고정 주소](https://bodeul-admin-web-git-dev-bodeul110.vercel.app) 연결 확인. Production으로 승격하지 않음 |
 | 개발 Realtime | 기존 `006_companion_completion_realtime_authorization.sql`의 동행 종료 권한 제한 적용. 개발 Firebase 허용 목록과 V18 이상 스키마를 확인한 뒤 함수만 변경. 업무 데이터 쓰기 없음 |
 | 개발 Realtime 검증 | 허용 Firebase는 `bodeul-dev` 한 개. 종료 조건과 보호자 직접 접근 제외를 read-back 확인. 잘못된 JWT·운영 프로젝트·다른 issuer 거부. helper는 authenticated만 실행 가능하고 업무 schema·허용 목록 직접 읽기는 계속 차단 |
+| 운영 배포 사전 점검 | `core-api-production`의 등록 변수 13개를 페이지 제한 없이 재조회. GCP 리전·프로젝트·배포/실행 계정·WIF·DB Secret version은 준비됨. Kakao Secret version은 아직 미등록이며 운영 Cloud Run 서비스도 미생성 |
+| Kakao 키 공유 결정 | 사용자 승인에 따라 기존 개발 REST 키를 운영의 전용 Secret에도 등록하기로 결정. 복사 시도는 원본 읽기 권한 부족으로 중단됐으며 아직 비밀값 등록이나 권한 변경은 하지 않음 |
+| 최초 공개 호출 절차 | 공식 조직의 도메인 제한은 유지하고 서비스 단위 Invoker IAM 검사 해제 방식을 문서화. `run.managed.requireInvokerIam`의 유효 정책은 강제 상태가 아님을 조회. 실제 서비스 설정 변경은 아직 실행하지 않음 |
+| 운영 감사 도구 보완 | 배포 workflow의 세션 플래그와 서비스 단위 공개 설정을 감사 계약에 반영. 환경변수 누락/중복/추가 및 타 프로젝트 Secret 참조 거부 포함 단위 테스트 31건 통과. 원격 운영 점검 완료와는 구분 |
 
 ## 운영 적용 근거
 
@@ -50,7 +54,7 @@ Realtime 검사에는 SQL 세션의 claims를 사용했다. 실제 서명된 Fir
 ## 남은 범위
 
 - 운영 관리자 DB 로그인과 Production `ADMIN_DATABASE_URL`을 준비한다. 현재 관리자 DB role은 `NOLOGIN`, 해당 Vercel 환경변수는 미등록이다.
-- 운영 Core API의 Kakao REST 비밀값 등 필수 설정을 준비하고 수동 배포 workflow로 배포한다. 현재 운영 Kakao Secret Manager 항목에는 사용 가능한 version이 없다. 개발 키를 임의 복사하지 않았다.
+- 운영 Core API는 승인된 기존 Kakao REST 키를 운영 전용 Secret에 등록한 뒤 수동 workflow로 배포한다. 현재 운영 Secret에는 version이 없고 원본 읽기 권한이 없어 복사는 미완료다. 새 카카오 앱이나 별도 키 발급을 필수 조건으로 두지 않는다. 공유 쿼터와 키 폐기 영향은 [키 관리 결정](../architecture/kakao-local-core-api.md#개발운영-키-관리)을 따른다.
 - 웹 변경의 `dev → master` 출시와 실제 관리자 인증·DB 업무 연결, Android Release 설정 및 환경 간 정상 토큰 거부를 검증한다. 웹 Preview의 일반 HTTP 접근은 Vercel 로그인으로 전환되므로, 이를 앱 API의 200 성공으로 계산하지 않았다.
 
 개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정까지 반영했다. 운영 Core API 배포와 관리자 웹의 운영 DB 업무 연결은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
