@@ -1,206 +1,83 @@
 # 협업 규칙
 
-보들 프로젝트는 여러 작업자가 동시에 들어와도 충돌을 줄일 수 있게 아래 규칙을 기본값으로 사용한다.
+기준일: 2026-09-27
 
-## 기본 원칙
+## 브랜치와 배포
 
-- 공용 기준 브랜치는 `master`다.
-- 기능 작업은 가능하면 `feature/작업이름` 브랜치에서 진행한다.
-- 같은 시간대에 같은 영역을 동시에 수정하지 않는다.
-- 작업 시작 전 `../status/implementation-status.md` 최신 항목과 현재 원격 변경분을 먼저 확인한다.
-- 작업 종료 전에는 자신의 변경 범위와 남은 범위를 문서에 남긴다.
+| 범위 | 기준 |
+| --- | --- |
+| 기능 개발 | 최신 `origin/dev`에서 작업 브랜치를 만들고 `dev`로 PR |
+| 기능 병합 | 변경 범위의 테스트와 필수 CI를 통과한 뒤 squash merge |
+| 운영 승격 | 검증된 `dev` → `master` release PR을 merge commit으로 병합 |
+| 긴급 수정 역반영 | `master` → `dev` 동기화 PR을 merge commit으로 병합 |
+| 관리자 웹 | `dev`는 Vercel Preview, `master`는 Production |
+| Core API | 개발은 `dev` push/수동 배포, 운영은 `master`의 보호된 수동 workflow |
+| DB migration | 앱 배포와 분리한 수동 workflow. 개발 검증·운영 백업 증적 필요 |
 
-## 작업 시작 전
+두 저장소의 기본 브랜치는 `master`지만 일상 개발 기준선은 `dev`다. 기존에 쌓아 둔 PR은 선행 PR과 diff 범위를 확인한 후 대상 브랜치를 바꾼다. 이름만 바꿔 의존 관계를 끊지 않는다. 상세 기준은 [환경 전환 계획](dev-production-branch-transition-plan.md)을 따른다.
 
-작업을 시작하기 전에 아래 순서를 지킨다.
-
-1. 현재 로컬 상태를 확인한다.
-2. 최근 누가 무엇을 작업했는지 확인한다.
-3. 로컬 브랜치와 원격 `master` 중 어느 쪽이 최신인지 확인한다.
-4. [../status/implementation-status.md](../status/implementation-status.md)를 열어 가장 마지막 작업 항목과 남은 범위를 확인한다.
-5. 자신의 담당 영역을 짧게 공유한다.
-6. 같은 파일을 이미 다른 사람이 잡고 있으면 시간대를 조정하거나 범위를 나눈다.
-
-### 작업 시작 전 상세 확인 명령
-
-아래 명령을 순서대로 확인하면 된다.
+## 시작 전 확인
 
 ```powershell
 git status --short
 git branch --show-current
 git fetch origin
-git log --format="%h %an %ad %s" --date=short -10
-git log origin/master --format="%h %an %ad %s" --date=short -10
-git rev-list --left-right --count HEAD...origin/master
-git diff --stat HEAD..origin/master
+git log origin/dev --format="%h %an %ad %s" --date=short -10
+git rev-list --left-right --count HEAD...origin/dev
+git diff --stat HEAD..origin/dev
 ```
 
-확인 기준은 아래처럼 잡는다.
+- 왼쪽은 로컬에만, 오른쪽은 원격에만 있는 커밋 수다. 양쪽 모두 있으면 바로 pull하지 말고 분기 이력과 변경 파일을 확인한다.
+- [현재 구현 상태](../status/implementation-status.md) 1~5장, 관련 Issue·PR과 담당 영역을 확인한다. 뒤의 누적 이력은 당시 결과다.
+- 기존 사용자 변경과 다른 작업자의 파일을 삭제하거나 되돌리지 않는다. dirty worktree는 그대로 보존하고 별도 worktree를 쓰거나 변경 소유자와 조율한다.
+- 담당 파일·범위가 겹치면 작업을 나눈다. 진행 중인 공유 브랜치를 임의 rebase/force push하지 않는다.
 
-- `git status --short`
-  - 출력이 없으면 워크트리가 깨끗한 상태다.
-  - 출력이 있으면 먼저 내 로컬 변경인지 확인한다.
-- `git log --format="%h %an %ad %s" --date=short -10`
-  - 최근 누가 어떤 커밋을 넣었는지 본다.
-  - 작업자 이름과 커밋 메시지로 최근 담당 범위를 추정한다.
-- `git log origin/master --format="%h %an %ad %s" --date=short -10`
-  - 원격 기준 최신 작업자를 본다.
-- `git rev-list --left-right --count HEAD...origin/master`
-  - 왼쪽 숫자: 내 로컬에만 있는 커밋 수
-  - 오른쪽 숫자: 원격에만 있는 커밋 수
-  - 예시
-    - `0 0`: 로컬과 원격이 같다.
-    - `0 3`: 원격이 3커밋 앞서 있다. 먼저 당겨와야 한다.
-    - `2 0`: 내 로컬만 2커밋 앞서 있다. 푸시 전 상태일 수 있다.
-    - `2 3`: 서로 갈라졌다. 바로 작업하지 말고 먼저 정리한다.
-- `git diff --stat HEAD..origin/master`
-  - 원격에서 어떤 파일이 바뀌었는지 빠르게 본다.
-  - 내가 건드리려는 파일이 여기에 있으면 먼저 담당자와 겹치는지 확인한다.
-
-### 누가 작업했는지 확인하는 기준
-
-작업 전에는 아래를 같이 본다.
-
-1. 최근 커밋 작성자
-2. 최근 `../status/implementation-status.md` 작성 항목
-3. 팀 채널이나 메신저에 남은 현재 작업 선언
-
-가능하면 아래 정보를 짧게 공유한다.
-
-- 지금 누가 작업 중인지
-- 어떤 파일이나 화면을 잡고 있는지
-- 언제까지 잡을 예정인지
-
-## 로컬과 원격 중 어느 쪽이 최신인지 확인하는 방법
-
-기본 판단은 아래 순서로 한다.
+깨끗한 로컬 `dev`를 동기화할 때만 다음을 사용한다.
 
 ```powershell
-git fetch origin
-git rev-list --left-right --count HEAD...origin/master
-git diff --stat HEAD..origin/master
-git diff --stat origin/master..HEAD
+git switch dev
+git pull --ff-only origin dev
+git switch -c feature/작업이름
 ```
 
-- 원격이 앞서 있으면 `HEAD..origin/master` diff를 본다.
-- 내가 앞서 있으면 `origin/master..HEAD` diff를 본다.
-- 양쪽 다 커밋이 있으면 서로 다른 변경이 섞여 있으니 바로 수정하지 말고 먼저 정리한다.
+다른 worktree에서 `dev`를 사용 중이면 현재 worktree의 깨끗한 상태를 확인하고 `origin/dev`에서 새 작업 브랜치를 만든다. Codex 작업 브랜치는 `codex/작업이름`을 사용한다. 자동 stash/pop이나 소유자를 모르는 파일 정리로 동기화를 우회하지 않는다.
 
-## 최신 기준선 당겨오는 방법
+## 작업 경계
 
-워크트리가 깨끗하면 아래 순서로 받는다.
+- 메인 저장소는 Android, Spring Core API, Flyway, Firebase Rules·Functions와 공용 계약을 소유한다.
+- 관리자 UI·Next.js 서버·Vercel 환경은 별도 `bodeul-admin-web` 저장소에서 변경한다.
+- 공용 DB 계약을 바꾸면 두 서버의 영향, 롤링 배포 호환성과 rollback을 기록한다.
+- 공용 문자열, Repository/Service, workflow, 운영 스크립트와 기준 문서의 동시 수정을 피한다.
+- 백업·복원·seed·cleanup·retention은 먼저 dry-run으로 확인하고 실제 쓰기는 명시 승인 범위에서만 수행한다.
+- 개발·운영 비밀값을 섞거나 DB 접속 정보를 PR·로그·문서에 붙이지 않는다.
 
-```powershell
-git fetch origin
-git pull --rebase origin master
-```
+## PR과 리뷰
 
-워크트리가 깨끗하지 않으면 바로 `pull --rebase` 하지 않는다.
+- 제목에는 실제 변경 내용을 적고 도구 이름을 표시하지 않는다.
+- 본문은 `배경`, `변경 내용`, `확인`, 필요한 경우 `참고할 점`만 짧게 작성한다.
+- 설계·보안·인프라는 선택한 방식, 대안, 현재 규모에서의 이유와 리스크를 덧붙인다.
+- 리뷰는 결론과 재현·코드 근거를 바로 적는다. 실행하지 않은 실기기·DB·운영 검증을 통과했다고 쓰지 않는다.
+- 의존성 변경은 승인 범위를 확인하고, 봇 PR도 최신 기준선의 diff·lockfile·필수 CI를 검토한다.
+- 리뷰 중 새 커밋이 올라오면 최신 SHA를 다시 확인한다. 팀원 PR의 검토와 실제 병합 권한은 요청 범위를 따른다.
+- 취약점과 실제 비밀값은 공개 댓글에 올리지 않는다.
 
-먼저 아래 셋 중 하나를 고른다.
+## 검증과 문서
 
-1. 아직 커밋할 만한 작업이면 먼저 커밋
-2. 잠깐 치워둘 작업이면 `git stash push -u`
-3. 내 변경이 아니거나 불필요한 임시 파일이면 정리 후 진행
+| 변경 | 기본 검증 |
+| --- | --- |
+| Android | `.\gradlew.bat assembleDebug --console=plain`, 영향 범위의 `testDebugUnitTest` |
+| Core API | `.\core-api\gradlew.bat -p core-api check --console=plain` |
+| Functions | `npm --prefix functions test` |
+| Firebase 도구·Rules | 관련 toolkit/preflight와 Rules 에뮬레이터 테스트 |
+| 관리자 웹 | 별도 저장소의 test·lint·Next build·빌드 런타임 점검·Vite rollback build |
+| 문서 | UTF-8·링크·경로·현재 코드/환경 정합성, `git diff --check` |
 
-예시:
+구조 변경은 [설계 판단 기록 규칙](../architecture/decision-log.md)을 따른다. 기준 문서는 해당 주제에, 날짜별 실행 증거는 `docs/reports/`에 둔다. 현재 상태 1~5장은 최신으로 유지하고 누적 이력은 과거 상태를 덮어쓰지 않는다.
 
-```powershell
-git status --short
-git stash push -u -m "작업 전 기준선 동기화"
-git pull --rebase origin master
-git stash pop
-```
+## 종료 전 확인
 
-주의:
-
-- `git pull --rebase origin master` 전에 내 변경이 무엇인지 모르는 상태로 stash하지 않는다.
-- 공용 파일 충돌이 예상되면 stash/pop보다 담당자 확인이 먼저다.
-- 같은 파일에서 충돌이 나면 억지로 넘기지 말고 누가 최신 의도인지 먼저 확인한다.
-
-## 충돌 위험이 큰 파일
-
-아래 파일과 경로는 동시에 수정하지 않는 것을 원칙으로 한다.
-
-- `app/src/main/java/com/example/bodeul/ui/admin/AdminActivity.java`
-- `app/src/main/java/com/example/bodeul/data/firebase/FirebaseAdminRepository.java`
-- `app/src/main/java/com/example/bodeul/data/MockBodeulRepository.java`
-- `functions/index.js`
-- `app/src/main/res/values/strings.xml`
-- `../status/implementation-status.md`
-- `tools/firebase/**`
-
-이 구간을 수정할 때는 작업 전에 `누가 언제까지 잡는지`를 먼저 정한다.
-
-## 담당 범위 권장안
-
-가능하면 아래처럼 기능 축으로 나눠서 작업한다.
-
-- 환자/보호자/예약
-- 매니저 화면
-- 관리자 화면
-- Firebase 운영 도구/CI/문서
-
-한 사람이 두 영역 이상을 동시에 잡아도 되지만, 겹치는 파일이 생기면 우선 담당자를 하나로 정한다.
-
-## 문서 갱신 규칙
-
-- [../status/implementation-status.md](../status/implementation-status.md)는 작업이 끝난 사람이 마지막에만 갱신한다.
-- 같은 날 여러 작업이 있으면 최신 항목 아래에 순서대로 새 섹션을 추가한다.
-- 작업 중간 메모는 채팅이나 별도 공유 채널에 남기고, `../status/implementation-status.md`에는 완료 기준만 기록한다.
-- 구조나 기준이 바뀌면 관련 문서도 함께 맞춘다.
-  - [../planning/screen-restructure-target.md](../planning/screen-restructure-target.md)
-  - [firebase/setup.md](firebase/setup.md)
-  - [firebase/tools.md](firebase/tools.md)
-
-## Firebase 작업 규칙
-
-- 기준선 초기화, 샘플 데이터 주입, 백업/복원, CI 시크릿 변경은 동시에 두 사람이 하지 않는다.
-- `tools/firebase`와 GitHub Actions 설정은 한 번에 한 명만 수정한다.
-- Firestore 개발 데이터 정리는 [firebase/reset-baseline.md](firebase/reset-baseline.md) 절차를 따른다.
-
-## 작업 중 규칙
-
-- 큰 공용 파일을 수정 중이면 바로 공유한다.
-- 오래 작업할수록 중간에 한 번씩 `git fetch` 또는 `git pull --rebase`로 기준선을 다시 확인한다.
-- 공용 문자열, 공용 레이아웃, 운영 스크립트는 작은 변경이라도 겹치기 쉬우므로 먼저 알린다.
-
-## 작업 종료 전
-
-작업을 마치기 전에 아래를 확인한다.
-
-1. 필요한 검증을 수행한다.
-2. 변경 범위에 맞게 문서를 갱신한다.
-3. `git status`로 불필요한 임시 파일이 없는지 확인한다.
-4. 커밋 메시지는 작업 범위를 바로 알 수 있게 적는다.
-5. push 전 `git fetch origin`으로 원격 기준이 다시 바뀌지 않았는지 확인한다.
-
-### push 전 최소 확인 명령
-
-```powershell
-git status --short
-git fetch origin
-git rev-list --left-right --count HEAD...origin/master
-git log --oneline --decorate -5
-```
-
-- `git status --short`가 비어 있어야 한다.
-- `git rev-list --left-right --count HEAD...origin/master` 결과가 `내 로컬만 앞선 상태`인지 확인한다.
-- 원격이 앞서 있으면 먼저 `git pull --rebase origin master`로 다시 맞춘다.
-
-## 권장 검증
-
-- Android 코드 변경: `.\gradlew.bat assembleDebug`
-- 테스트 변경 또는 저장소/도메인 변경: `.\gradlew.bat testDebugUnitTest`
-- Firebase 운영 도구 변경: 관련 `tools/firebase` 스크립트 재실행
-- CI/워크플로 변경: GitHub Actions 실행 결과 확인
-
-## 빠른 체크리스트
-
-- 시작 전에 최근 작업자와 최신 `master` 상태를 확인했는가
-- 로컬과 원격 중 어느 쪽이 최신인지 확인했는가
-- 같은 파일을 다른 사람이 수정 중인지 확인했는가
-- `../status/implementation-status.md` 최신 항목을 읽었는가
-- Firebase 운영 작업 담당이 겹치지 않는가
-- pull 전 내 로컬 변경을 안전하게 정리했는가
-- 종료 전에 문서와 검증 결과를 남겼는가
+1. 변경 범위와 검증 결과, 남은 항목을 기록한다.
+2. `git diff --check`와 `git status --short`로 자신의 파일과 비공개 산출물을 구분한다.
+3. `git fetch origin`으로 PR 기준선과 최신 head를 확인한다.
+4. 필수 체크·검토 결과를 확인한 뒤 승인된 범위만 병합한다.
+5. 코드 병합, Preview 배포, 운영 배포와 실제 업무 검증을 각각 구분해 알린다.

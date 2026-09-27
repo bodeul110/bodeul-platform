@@ -4,6 +4,8 @@
 
 ## 최신 점검
 
+- [전체 문서 정합성 갱신 (2026-09-27)](document-refresh-2026-09-27.md)
+- [개발·운영 환경 분리 실행·검증 (2026-09-27)](dev-production-separation-2026-09-27.md)
 - [Notion MVP·내부테스트 2 대조 (2026-09-27)](notion-mvp-feedback-triage-2026-09-27.md)
 - [전체 문서 정합성 갱신 (2026-09-21)](document-refresh-2026-09-21.md)
 - [관리자 웹 개발·운영 환경 표시 (2026-09-21)](admin-web-environment-display-2026-09-21.md)
