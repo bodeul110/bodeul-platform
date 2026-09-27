@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   STATUS,
   auditAppCheck,
+  auditCloudRun,
   auditProductionInfrastructure,
   buildReport,
   classifyAppCheckStage,
@@ -185,12 +186,192 @@ test("project-local 역할은 조건 없는 정확한 집합만 허용한다", (
   assert.equal(hasExactProjectLocalRoles({bindings: []}, member, []), true);
 });
 
+test("운영 서비스 계정은 이름만 같은 subject가 아니라 불변 ID subject만 허용한다", async () => {
+  const accounts = {
+    "bodeul-infra-auditor": ["production-infrastructure-audit", "iam.audit-impersonation"],
+    "bodeul-core-deployer": ["core-api-production", "iam.deploy-service-account-policy"],
+    "bodeul-db-backup": ["core-api-migration-production", "iam.backup-service-account-policy"],
+    "bodeul-retention-operator": ["firebase-retention-production", "iam.retention-service-account-policy"],
+  };
+  for (const [prefix, expected] of [
+    ["repo:bodeul110@275679915/bodeul-platform@1209358990", STATUS.PASS],
+    ["repo:bodeul110/bodeul-platform", STATUS.DRIFT],
+    ["repo:bodeul110@275679915/bodeul-platform@9999999999", STATUS.DRIFT],
+  ]) {
+    const report = await auditProductionInfrastructure({
+      env: validEnvironment,
+      tokenResolver: async () => "test-only",
+      fetchImpl: async (url) => {
+        const parsed = new URL(url);
+        const pathname = decodeURIComponent(parsed.pathname);
+        const account = Object.keys(accounts).find((name) =>
+          pathname.endsWith(`/serviceAccounts/${name}@bodeul-prod-110.iam.gserviceaccount.com:getIamPolicy`));
+        if (parsed.hostname !== "iam.googleapis.com" || !account) {
+          return new Response("", {status: 403});
+        }
+        return Response.json({bindings: [{
+          role: "roles/iam.workloadIdentityUser",
+          members: [`principal://iam.googleapis.com/projects/649312328770/locations/global/workloadIdentityPools/github-actions/subject/${prefix}:environment:${accounts[account][0]}`],
+        }]});
+      },
+    });
+    for (const [, id] of Object.values(accounts)) {
+      assert.equal(report.baseline.checks.find((entry) => entry.id === id)?.status, expected, id);
+    }
+  }
+});
+
 test("Cloud Run 이미지는 production 저장소의 불변 식별자만 허용한다", () => {
   const prefix = "asia-northeast1-docker.pkg.dev/bodeul-prod-110/bodeul-core-api/bodeul-core-api";
   assert.equal(isExpectedCloudRunImage(`${prefix}:${"a".repeat(40)}`), true);
   assert.equal(isExpectedCloudRunImage(`${prefix}@sha256:${"b".repeat(64)}`), true);
   assert.equal(isExpectedCloudRunImage(`${prefix}:production`), false);
   assert.equal(isExpectedCloudRunImage(`docker.io/example/bodeul-core-api:${"a".repeat(40)}`), false);
+});
+
+function productionCloudRunService() {
+  const env = Object.entries({
+    SPRING_PROFILES_ACTIVE: "production",
+    CORE_DB_POOL_MAX: "2",
+    FIREBASE_PROJECT_ID: "bodeul-prod-110",
+    FIREBASE_PROJECT_NUMBER: "649312328770",
+    BODEUL_APP_CHECK_MODE: "observe",
+    BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT: "false",
+    BODEUL_SESSION_COMPLETION_ENFORCEMENT: "false",
+    BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED: "false",
+  }).map(([name, value]) => ({name, value}));
+  for (const [name, suffix] of Object.entries({
+    CORE_DB_JDBC_URL: "db-jdbc-url",
+    CORE_DB_USERNAME: "db-username",
+    CORE_DB_PASSWORD: "db-password",
+    KAKAO_LOCAL_REST_API_KEY: "kakao-local-rest-api-key",
+  })) {
+    env.push({name, valueSource: {secretKeyRef: {
+      secret: `bodeul-core-api-production-${suffix}`, version: "1",
+    }}});
+  }
+  return {
+    invokerIamDisabled: true,
+    reconciling: false,
+    terminalCondition: {state: "CONDITION_SUCCEEDED"},
+    latestReadyRevision: "revision-1", latestCreatedRevision: "revision-1",
+    observedGeneration: "1", generation: "1",
+    ingress: "INGRESS_TRAFFIC_ALL",
+    labels: {environment: "production", component: "core-api", "kakao-egress": "dynamic"},
+    traffic: [{type: "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST", percent: 100}],
+    template: {
+      serviceAccount: validEnvironment.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT,
+      scaling: {minInstanceCount: 0, maxInstanceCount: 2},
+      maxInstanceRequestConcurrency: 8, timeout: "60s",
+      executionEnvironment: "EXECUTION_ENVIRONMENT_GEN2",
+      containers: [{
+        image: `asia-northeast1-docker.pkg.dev/bodeul-prod-110/bodeul-core-api/bodeul-core-api:${"a".repeat(40)}`,
+        env, ports: [{containerPort: 8080}],
+        resources: {limits: {cpu: "1", memory: "1Gi"}, startupCpuBoost: true},
+      }],
+    },
+  };
+}
+
+async function checkCloudRun(service, bindings = []) {
+  const checks = [];
+  const releaseChecks = [];
+  await auditCloudRun({get: async (url) => {
+    if (url.includes(":getIamPolicy")) return {bindings};
+    if (url.startsWith("https://secretmanager.googleapis.com/")) return {state: "ENABLED"};
+    return service;
+  }}, checks, releaseChecks, {...validEnvironment, CLOUD_RUN_EXPECTED_STATE: "present"});
+  return [...checks, ...releaseChecks];
+}
+
+test("운영 workflow의 세션 플래그와 실제 런타임 감사 계약이 일치한다", async () => {
+  const valid = await checkCloudRun(productionCloudRunService());
+  assert.ok(valid.every((entry) => entry.status === STATUS.PASS));
+  for (const name of [
+    "BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT",
+    "BODEUL_SESSION_COMPLETION_ENFORCEMENT",
+    "BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED",
+  ]) {
+    const service = productionCloudRunService();
+    service.template.containers[0].env.find((entry) => entry.name === name).value = "invalid";
+    const result = await checkCloudRun(service);
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, STATUS.DRIFT);
+  }
+  const legacy = productionCloudRunService();
+  legacy.template.containers[0].env.find((entry) => entry.name === "BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED").value = "true";
+  assert.equal((await checkCloudRun(legacy))[0].status, STATUS.DRIFT);
+});
+
+test("Cloud Run이 false 기본값을 생략해도 완료된 revision은 통과한다", async () => {
+  const service = productionCloudRunService();
+  delete service.reconciling;
+  const result = await checkCloudRun(service);
+  assert.ok(result.every((entry) => entry.status === STATUS.PASS));
+});
+
+test("Cloud Run의 미완료 및 불명확한 revision은 통과하지 않는다", async () => {
+  const changes = [
+    {reconciling: true},
+    {reconciling: "false"},
+    {reconciling: null},
+    {reconciling: undefined, terminalCondition: {state: "CONDITION_FAILED"}},
+    {reconciling: undefined, latestReadyRevision: "revision-0"},
+    {reconciling: undefined, latestReadyRevision: undefined, latestCreatedRevision: undefined},
+    {reconciling: undefined, observedGeneration: "0"},
+    {reconciling: undefined, observedGeneration: undefined, generation: undefined},
+  ];
+  for (const change of changes) {
+    const result = await checkCloudRun({...productionCloudRunService(), ...change});
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, STATUS.DRIFT);
+  }
+});
+
+test("운영 런타임의 환경변수 누락과 중복 및 알 수 없는 설정을 거부한다", async () => {
+  const missing = productionCloudRunService();
+  missing.template.containers[0].env.pop();
+  const duplicate = productionCloudRunService();
+  duplicate.template.containers[0].env.push({...duplicate.template.containers[0].env[0]});
+  const unknown = productionCloudRunService();
+  unknown.template.containers[0].env.push({name: "UNKNOWN_SETTING", value: "true"});
+  for (const service of [missing, duplicate, unknown]) {
+    const result = await checkCloudRun(service);
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, STATUS.DRIFT);
+  }
+});
+
+test("운영 Secret은 같은 이름이라도 다른 프로젝트를 참조할 수 없다", async () => {
+  const secretName = "bodeul-core-api-production-db-password";
+  const cases = [
+    [secretName, STATUS.PASS],
+    [`projects/bodeul-prod-110/secrets/${secretName}`, STATUS.PASS],
+    [`projects/649312328770/secrets/${secretName}`, STATUS.PASS],
+    [`projects/bodeul-dev/secrets/${secretName}`, STATUS.DRIFT],
+    [`projects/533563500316/secrets/${secretName}`, STATUS.DRIFT],
+  ];
+  for (const [secret, expected] of cases) {
+    const service = productionCloudRunService();
+    const binding = service.template.containers[0].env.find((entry) => entry.name === "CORE_DB_PASSWORD");
+    binding.valueSource.secretKeyRef.secret = secret;
+    const result = await checkCloudRun(service);
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, expected);
+  }
+});
+
+test("공개 호출 방식은 정확한 서비스 설정과 최소 IAM policy만 허용한다", async () => {
+  const publicBinding = {role: "roles/run.invoker", members: ["allUsers"]};
+  const cases = [
+    [true, [], STATUS.PASS],
+    [false, [publicBinding], STATUS.PASS],
+    [undefined, [publicBinding], STATUS.PASS],
+    [false, [], STATUS.EXPECTED_BLOCKER],
+    ["true", [], STATUS.EXPECTED_BLOCKER],
+    [true, [publicBinding], STATUS.EXPECTED_BLOCKER],
+    [true, [{role: "roles/run.admin", members: ["allUsers"]}], STATUS.EXPECTED_BLOCKER],
+  ];
+  for (const [invokerIamDisabled, bindings, expected] of cases) {
+    const result = await checkCloudRun({...productionCloudRunService(), invokerIamDisabled}, bindings);
+    assert.equal(result.find((entry) => entry.id === "release.cloud-run-invoker").status, expected);
+  }
 });
 
 test("App Check provider와 서비스 상태를 운영 단계로 분류한다", () => {

@@ -1,6 +1,6 @@
 # 관리자 웹 역할과 서버 경계
 
-기준일: 2026-09-21. 관리자 웹 배포·환경 표시와 로그인 경계 갱신.
+기준일: 2026-09-27. 운영 전용 DB 연결과 최초 관리자 MFA 로그인까지 반영.
 
 초기에는 빠른 구현을 우선했기 때문에 모든 선택 근거가 사전에 정리되지는 않았다.
 현재는 구현된 구조를 기준으로 선택 이유, 대안, 단점, 전환 조건을 정리하고 있다.
@@ -11,7 +11,7 @@
 
 ## 검증 범위
 
-2026-09-21 웹 [PR #64](https://github.com/bodeul110/bodeul-admin-web/pull/64)를 병합하고 실제 Preview 로그인 화면의 `개발 환경`, Production 로그인 화면의 `운영 환경` 표시를 확인했다. 배포 표시는 DB·Firebase 연결이나 실제 관리자 로그인 성공을 뜻하지 않는다. 운영 계정 등록은 Firebase Auth까지만 수행했으며 DB 재개·관리자 역할 부여·운영 업무 검증은 포함하지 않았다.
+9월 27일 운영 DB V23·관리자 전용 LOGIN과 Vercel Production 연결을 확인했다. 웹 [PR #76](https://github.com/bodeul110/bodeul-admin-web/pull/76)·[#77](https://github.com/bodeul110/bodeul-admin-web/pull/77)은 로그인 전 Firestore 사용자 조회를 제거하고 서버의 PostgreSQL 인가로 통일했다. 최초 개인 ADMIN·SUPER_ADMIN 등록과 TOTP 인증 후 대시보드 접속을 확인했다. 주요 업무 전체, MFA 강제·복구와 App Check 강제의 검증은 별개다. [실행 증거](../reports/dev-production-separation-2026-09-27.md)를 따른다.
 
 아래는 2026-07-17~18 Preview 실연동 검증 기록이며 이번에 재실행한 결과가 아니다. 당시 이후 관리자 세부 역할·업무 함수 계약이 추가됐으므로 현재 운영 검증을 대신하지 않는다.
 
@@ -57,11 +57,11 @@
 
 ## 남은 범위
 
-- 분리된 production 기반의 실제 DB 접속·최소 권한·관리자 업무 검증. 프로젝트 생성과 웹 배포는 이미 완료
+- 운영 DB 접속·최초 관리자 로그인 이후의 역할별 업무·감사·교차 환경 token 거부 검증
 - 최종 서비스 도메인과 Firebase Auth authorized domain 대조
 - reCAPTCHA Enterprise 기반 App Check와 enforcement 기준 검증
 - 현재 차단한 브라우저 ADMIN의 Firestore/Storage 직접 권한을 유지하고 신규 업무도 서버 세부 역할·감사 경유로만 확장
-- production 역할 bootstrap, MFA 확인과 긴급 권한 회수 리허설
+- 추가 개인 운영자 등록, MFA 강제·비상 복구와 긴급 권한 회수 리허설
 
 Vite 빌드는 별도 저장소에 rollback 자산으로 남아 있다. 메인 저장소의 중복 `admin-web/`은 제거했으므로 웹 변경과 배포는 별도 저장소에서만 진행한다.
 
