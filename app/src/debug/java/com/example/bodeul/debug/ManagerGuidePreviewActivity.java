@@ -12,6 +12,9 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.example.bodeul.R;
 import com.example.bodeul.data.AuthRepository;
@@ -23,6 +26,7 @@ import com.example.bodeul.ui.manager.ManagerGuideActivity;
 
 /** 운영 서버 저장소와 realtime을 사용하지 않는 debug 가이드 미리보기다. */
 public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
+    static final String PREVIEW_BANNER_TAG = "manager-guide-preview-banner";
     static final String EXTRA_STEP_CODE =
             "com.example.bodeul.debug.extra.MANAGER_GUIDE_STEP_CODE";
     private static final String EXTRA_SEED_PAYMENT_EVIDENCE =
@@ -139,6 +143,7 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
             return;
         }
         TextView banner = new TextView(this);
+        banner.setTag(PREVIEW_BANNER_TAG);
         banner.setGravity(Gravity.CENTER);
         banner.setPadding(dp(12), dp(8), dp(12), dp(8));
         banner.setText(R.string.debug_manager_guide_preview_banner);
@@ -152,6 +157,15 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
                 new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT));
+        // 실제 화면 앞에 추가하는 debug 안내도 상태표시줄과 겹치지 않게 한다.
+        ViewCompat.setOnApplyWindowInsetsListener(banner, (view, windowInsets) -> {
+            Insets safe = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(dp(12) + safe.left, dp(8) + safe.top,
+                    dp(12) + safe.right, dp(8));
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(banner);
     }
 
     private void disableServerBackedDestinations() {

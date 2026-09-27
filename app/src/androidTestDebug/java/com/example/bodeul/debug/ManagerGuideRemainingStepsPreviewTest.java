@@ -10,23 +10,35 @@ import static androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE;
 import static androidx.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
+import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.os.Parcelable;
+import android.util.SparseArray;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.example.bodeul.R;
+import com.example.bodeul.ui.manager.ManagerGuideViewModel;
 import com.google.android.material.textfield.TextInputEditText;
 
 import org.junit.Test;
@@ -38,6 +50,78 @@ import java.util.concurrent.TimeUnit;
 /** 서버 권한 없이 Figma 기반 Step 7·9·12·13 전용 화면과 기존 계약 연결을 검증한다. */
 @RunWith(AndroidJUnit4.class)
 public class ManagerGuideRemainingStepsPreviewTest {
+
+    @Test
+    public void summarySaving_blocksToolbarAndSystemBackEvenForUnchangedNote() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUMMARY"))) {
+            scenario.onActivity(activity -> {
+                TextView banner = activity.findViewById(android.R.id.content)
+                        .findViewWithTag(ManagerGuidePreviewActivity.PREVIEW_BANNER_TAG);
+                assertNotNull(banner);
+                WindowInsetsCompat windowInsets = ViewCompat.getRootWindowInsets(banner);
+                assertNotNull(windowInsets);
+                Insets safe = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars()
+                        | WindowInsetsCompat.Type.displayCutout());
+                int[] location = new int[2];
+                banner.getLocationOnScreen(location);
+                assertTrue("미리보기 안내가 상태표시줄과 겹칩니다.",
+                        location[1] + banner.getCompoundPaddingTop() >= safe.top);
+                ManagerGuideViewModel viewModel = new ViewModelProvider(activity)
+                        .get(ManagerGuideViewModel.class);
+                // 네트워크 대신 저장 상태 알림만 보내 이탈 UI 경계를 분리 검증한다.
+                ((MutableLiveData<Boolean>) viewModel.getMutationInFlight()).setValue(true);
+                activity.findViewById(R.id.buttonBackGuideConsultationSummary).performClick();
+                assertFalse(activity.isFinishing());
+                activity.getOnBackPressedDispatcher().onBackPressed();
+                assertFalse(activity.isFinishing());
+                assertFalse(activity.findViewById(R.id.buttonAdvanceGuide).isEnabled());
+                ((MutableLiveData<Boolean>) viewModel.getMutationInFlight()).setValue(false);
+            });
+            onView(withId(R.id.guideConsultationSummaryToolbar)).check(matches(isDisplayed()));
+        }
+    }
+
+    @Test
+    public void summaryDraft_survivesReloadAndRotation_butRequiresSaveOrExplicitDiscard()
+            throws InterruptedException {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        CountDownLatch destroyed = new CountDownLatch(1);
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUMMARY"))) {
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .perform(scrollTo(), replaceText("저장 전 진료 요약"));
+            closeSoftKeyboard();
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            scenario.recreate();
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .check(matches(withText("저장 전 진료 요약")));
+            scenario.onActivity(activity -> {
+                SparseArray<Parcelable> state = new SparseArray<>();
+                activity.findViewById(R.id.managerGuideConsultationSummaryContent)
+                        .saveHierarchyState(state);
+                assertNull(state.get(R.id.inputGuideSummaryNote));
+                activity.getLifecycle().addObserver((LifecycleEventObserver) (source, event) -> {
+                    if (event == Lifecycle.Event.ON_DESTROY && activity.isFinishing()) {
+                        destroyed.countDown();
+                    }
+                });
+            });
+            onView(withId(R.id.buttonAdvanceGuide)).perform(click());
+            onView(withId(R.id.guideConsultationSummaryToolbar)).check(matches(isDisplayed()));
+            closeSoftKeyboard();
+            onView(withId(R.id.buttonBackGuideConsultationSummary)).perform(click());
+            onView(withText(R.string.guide_consultation_exit_stay)).perform(click());
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .check(matches(withText("저장 전 진료 요약")));
+            onView(withId(R.id.buttonBackGuideConsultationSummary)).perform(click());
+            onView(withText(R.string.guide_consultation_exit_discard)).perform(click());
+            assertTrue("버리기 확인 뒤 화면이 종료되지 않았습니다.",
+                    destroyed.await(5, TimeUnit.SECONDS));
+        }
+    }
 
     @Test
     public void sharedMemoFields_useFigmaPrimaryTextColor() {
@@ -90,8 +174,11 @@ public class ManagerGuideRemainingStepsPreviewTest {
                 ManagerGuidePreviewActivity.createIntent(context, "PHARMACY_ROUTE"))) {
             onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
             onView(withId(R.id.managerGuidePharmacyRouteContent)).check(matches(isDisplayed()));
-            onView(withId(R.id.cardGuideMap)).perform(scrollTo()).check(matches(isDisplayed()));
-            onView(allOf(withId(R.id.buttonGuideMapAction), isDisplayed()))
+            // 카드 전체가 뷰포트보다 클 수 있으므로 지도와 실제 버튼을 각각 스크롤한다.
+            onView(withContentDescription(R.string.debug_figma_preview_local_map))
+                    .perform(scrollTo()).check(matches(isDisplayed()));
+            onView(allOf(withId(R.id.buttonGuideMapAction), withEffectiveVisibility(VISIBLE)))
+                    .perform(scrollTo())
                     .check(matches(withText(R.string.guide_map_action_pharmacy_button)));
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());

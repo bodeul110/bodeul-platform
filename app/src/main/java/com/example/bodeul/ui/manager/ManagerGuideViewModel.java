@@ -115,6 +115,9 @@ public class ManagerGuideViewModel extends ViewModel {
     private ManagerGuideConsultationDraft consultationDraft;
     private String consultationDraftSessionId = "";
     @Nullable
+    private ManagerGuideSummaryDraft summaryDraft;
+    private String summaryDraftSessionId = "";
+    @Nullable
     private PendingArtifactReplacement pendingArtifactReplacement;
 
     private static final class PendingArtifactReplacement {
@@ -279,6 +282,7 @@ public class ManagerGuideViewModel extends ViewModel {
 
     private void bindDashboard(@Nullable ManagerDashboard dashboard) {
         if (dashboard == null) {
+            clearSummaryDraft(summaryDraftSessionId);
             _uiState.setValue(UiState.panel(StatePanelType.EMPTY, null));
             return;
         }
@@ -287,6 +291,7 @@ public class ManagerGuideViewModel extends ViewModel {
         }
         retainVitalsDraftFor(dashboard);
         retainConsultationDraftFor(dashboard);
+        retainSummaryDraftFor(dashboard);
         retainPaymentDraftFor(dashboard);
         _uiState.setValue(UiState.screen(dashboard, coordinator.createScreenModel(
                 dashboard,
@@ -516,6 +521,52 @@ public class ManagerGuideViewModel extends ViewModel {
                 });
     }
 
+    public void saveConsultationSummaryNote(String note) {
+        UiState state = _uiState.getValue();
+        CompanionSession session = state == null || state.dashboard == null
+                ? null : state.dashboard.getSession();
+        if (currentUser == null || session == null) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_NO_ACTIVE_SESSION);
+            return;
+        }
+        String expectedSessionId = session.getId();
+        String expectedStepCode = session.getCurrentStepCode();
+        if (!ManagerRepository.matchesConsultationSummaryExpectation(
+                session, expectedSessionId, expectedStepCode)) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
+        if (!beginMutation()) return;
+        String value = note == null ? "" : note.trim();
+        managerRepository.saveConsultationSummaryNote(
+                currentUser.getId(), expectedSessionId, expectedStepCode, value,
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        finishMutation();
+                        UiState latest = _uiState.getValue();
+                        CompanionSession current = latest == null || latest.dashboard == null
+                                ? null : latest.dashboard.getSession();
+                        // 실시간 갱신으로 화면이 바뀌었다면 늦게 도착한 저장 응답을 그리지 않는다.
+                        if (!ManagerRepository.matchesConsultationSummaryExpectation(
+                                current, expectedSessionId, expectedStepCode)) {
+                            loadDashboard();
+                            return;
+                        }
+                        _toastMessage.setValue(value.isEmpty()
+                                ? "현장 메모를 비웠습니다." : "현장 메모를 저장했습니다.");
+                        bindDashboard(result);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        finishMutation();
+                        _toastMessage.setValue(errorMessage);
+                        refreshDashboardAfterMutationFailure();
+                    }
+                });
+    }
+
     public void savePaymentEvidenceNote(String note) {
         UiState state = _uiState.getValue();
         ManagerDashboard dashboard = state == null ? null : state.dashboard;
@@ -729,6 +780,32 @@ public class ManagerGuideViewModel extends ViewModel {
         if (!consultationDraftSessionId.equals(activeSessionId)
                 || !"CONSULTATION_SUPPORT".equals(activeStepCode)) {
             clearConsultationDraft(consultationDraftSessionId);
+        }
+    }
+
+    @Nullable
+    ManagerGuideSummaryDraft getSummaryDraft(String sessionId) {
+        return sessionId != null && sessionId.equals(summaryDraftSessionId)
+                ? summaryDraft : null;
+    }
+
+    void saveSummaryDraft(String sessionId, ManagerGuideSummaryDraft draft) {
+        if (sessionId == null || sessionId.isEmpty() || draft == null) return;
+        summaryDraftSessionId = sessionId;
+        summaryDraft = draft;
+    }
+
+    void clearSummaryDraft(String sessionId) {
+        if (sessionId != null && sessionId.equals(summaryDraftSessionId)) {
+            summaryDraftSessionId = "";
+            summaryDraft = null;
+        }
+    }
+
+    private void retainSummaryDraftFor(ManagerDashboard dashboard) {
+        if (summaryDraft != null && !ManagerRepository.matchesConsultationSummaryExpectation(
+                dashboard.getSession(), summaryDraftSessionId, "CONSULTATION_SUMMARY")) {
+            clearSummaryDraft(summaryDraftSessionId);
         }
     }
 

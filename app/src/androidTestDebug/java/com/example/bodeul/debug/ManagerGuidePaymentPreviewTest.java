@@ -43,9 +43,7 @@ public class ManagerGuidePaymentPreviewTest {
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
-            onView(withId(R.id.guideDefaultToolbar)).check(matches(isDisplayed()));
-            onView(withId(R.id.textGuideTitle))
-                    .check(matches(withText("Step 09. 약국 이동")));
+            onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
             onView(withId(R.id.managerGuidePaymentContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -75,8 +73,7 @@ public class ManagerGuidePaymentPreviewTest {
 
             onView(withId(R.id.buttonGuidePaymentSaveNote)).perform(scrollTo(), click());
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.textGuideTitle))
-                    .check(matches(withText("Step 09. 약국 이동")));
+            onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
         }
     }
 

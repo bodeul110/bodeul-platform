@@ -355,7 +355,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         managerGuideMedicationBinder = new ManagerGuideMedicationBinder(
                 findViewById(android.R.id.content));
         managerGuideConsultationSummaryBinder = new ManagerGuideConsultationSummaryBinder(
-                findViewById(android.R.id.content));
+                findViewById(android.R.id.content), viewModel::saveSummaryDraft);
         managerGuidePharmacyRouteBinder = new ManagerGuidePharmacyRouteBinder(
                 findViewById(android.R.id.content));
         managerGuideCareCompletionBinder = new ManagerGuideCareCompletionBinder(
@@ -436,7 +436,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
         });
         findViewById(R.id.buttonGuideSummarySaveNote).setOnClickListener(view -> {
             if ("CONSULTATION_SUMMARY".equals(currentStepCode) && !mutationInFlight) {
-                viewModel.saveFieldPhotoNote(managerGuideConsultationSummaryBinder.note());
+                viewModel.saveConsultationSummaryNote(
+                        managerGuideConsultationSummaryBinder.note());
             }
         });
         buttonSelectGuideSessionArtifact.setOnClickListener(view -> selectCurrentStepArtifact());
@@ -676,7 +677,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                     managerGuideMedicationBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight);
                     managerGuideConsultationSummaryBinder.bind(
-                            state.screenModel, state.dashboard, mutationInFlight);
+                            state.screenModel, state.dashboard, mutationInFlight,
+                            viewModel.getSummaryDraft(sessionId));
                     managerGuidePharmacyRouteBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight);
                     managerGuideCareCompletionBinder.bind(
@@ -793,6 +795,10 @@ public class ManagerGuideActivity extends AppCompatActivity {
             return;
         }
         if (currentPrimaryAction == ManagerGuidePrimaryAction.ADVANCE) {
+            if ("CONSULTATION_SUMMARY".equals(currentStepCode)
+                    && managerGuideConsultationSummaryBinder.showUnsavedInputError()) {
+                return;
+            }
             if ("CONSULTATION_SUPPORT".equals(currentStepCode)
                     && managerGuideConsultationBinder.showUnsavedInputError()) {
                 return;
@@ -839,6 +845,16 @@ public class ManagerGuideActivity extends AppCompatActivity {
     }
 
     private void attemptExit(Runnable exitAction) {
+        boolean summaryMayStillBeActive = "CONSULTATION_SUMMARY".equals(currentStepCode)
+                || TextUtils.isEmpty(currentStepCode);
+        if (summaryMayStillBeActive && mutationInFlight) {
+            Toast.makeText(this, R.string.guide_consultation_save_in_progress,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        boolean hasUnsavedSummary = summaryMayStillBeActive
+                && managerGuideConsultationSummaryBinder != null
+                && managerGuideConsultationSummaryBinder.hasUnsavedInput();
         boolean consultationMayStillBeActive = "CONSULTATION_SUPPORT".equals(currentStepCode)
                 || TextUtils.isEmpty(currentStepCode);
         boolean hasUnsavedConsultation = consultationMayStillBeActive
@@ -854,7 +870,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
         boolean hasUnsavedPayment = paymentMayStillBeActive
                 && managerGuidePaymentBinder != null
                 && managerGuidePaymentBinder.hasUnsavedInput();
-        if (!hasUnsavedConsultation && !hasUnsavedMedication && !hasUnsavedPayment) {
+        if (!hasUnsavedConsultation && !hasUnsavedMedication && !hasUnsavedPayment
+                && !hasUnsavedSummary) {
             exitAction.run();
             return;
         }
@@ -886,6 +903,13 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 .setPositiveButton(
                         R.string.guide_consultation_exit_discard,
                         (ignored, which) -> {
+                            if (hasUnsavedSummary) {
+                                managerGuideConsultationSummaryBinder.discardUnsavedInput();
+                                String sessionId = currentDashboard == null
+                                        || currentDashboard.getSession() == null
+                                        ? "" : currentDashboard.getSession().getId();
+                                viewModel.clearSummaryDraft(sessionId);
+                            }
                             if (hasUnsavedConsultation) {
                                 discardConsultationDraft();
                             }

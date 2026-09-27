@@ -167,9 +167,8 @@ public class ManagerGuideConsultationPreviewTest {
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
             scenario.onActivity(activity -> assertEquals(0, guideScrollY(activity)));
-            onView(withId(R.id.guideDefaultToolbar)).check(matches(isDisplayed()));
-            onView(withId(R.id.textGuideTitle))
-                    .check(matches(withText("Step 07. 진료 요약")));
+            onView(withId(R.id.guideConsultationSummaryToolbar))
+                    .check(matches(isDisplayed()));
             onView(withId(R.id.managerGuideConsultationContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }

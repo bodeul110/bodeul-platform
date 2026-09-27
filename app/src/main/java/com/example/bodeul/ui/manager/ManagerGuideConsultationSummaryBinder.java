@@ -1,6 +1,8 @@
 package com.example.bodeul.ui.manager;
 
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -15,6 +17,10 @@ import com.google.android.material.textfield.TextInputEditText;
 
 /** Figma Step 7의 리포트 위계를 기존 진료 메모 저장 계약에 연결한다. */
 final class ManagerGuideConsultationSummaryBinder {
+    interface DraftListener {
+        void onChanged(String sessionId, ManagerGuideSummaryDraft draft);
+    }
+
     private final View content;
     private final View toolbar;
     private final View defaultToolbar;
@@ -36,11 +42,14 @@ final class ManagerGuideConsultationSummaryBinder {
     private final TextInputEditText note;
     private final MaterialButton saveNote;
     private final MaterialButton advance;
+    private final DraftListener draftListener;
 
     private String boundSessionId = "";
     private String boundNote = "";
+    private boolean bindingDraft;
 
-    ManagerGuideConsultationSummaryBinder(View root) {
+    ManagerGuideConsultationSummaryBinder(View root, DraftListener draftListener) {
+        this.draftListener = draftListener;
         content = root.findViewById(R.id.managerGuideConsultationSummaryContent);
         toolbar = root.findViewById(R.id.guideConsultationSummaryToolbar);
         defaultToolbar = root.findViewById(R.id.guideDefaultToolbar);
@@ -62,12 +71,24 @@ final class ManagerGuideConsultationSummaryBinder {
         note = root.findViewById(R.id.inputGuideSummaryNote);
         saveNote = root.findViewById(R.id.buttonGuideSummarySaveNote);
         advance = root.findViewById(R.id.buttonAdvanceGuide);
+        note.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(
+                    CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(
+                    CharSequence s, int start, int before, int count) { }
+            @Override public void afterTextChanged(Editable s) {
+                if (!bindingDraft && !boundSessionId.isEmpty()) {
+                    draftListener.onChanged(boundSessionId, currentDraft());
+                }
+            }
+        });
     }
 
     void bind(
             ManagerGuideScreenModel model,
             ManagerDashboard dashboard,
-            boolean mutationInFlight
+            boolean mutationInFlight,
+            ManagerGuideSummaryDraft savedDraft
     ) {
         boolean summaryStep = "CONSULTATION_SUMMARY".equals(model.getCurrentStepCode());
         content.setVisibility(summaryStep ? View.VISIBLE : View.GONE);
@@ -75,6 +96,7 @@ final class ManagerGuideConsultationSummaryBinder {
         if (!summaryStep) {
             boundSessionId = "";
             boundNote = "";
+            bindDraft(ManagerGuideSummaryDraft.fromServer(""));
             return;
         }
 
@@ -86,13 +108,20 @@ final class ManagerGuideConsultationSummaryBinder {
         CompanionSession session = dashboard == null ? null : dashboard.getSession();
         String sessionId = session == null ? "" : normalized(session.getId());
         String serverNote = normalized(model.getFieldPhotoNote());
-        String currentNote = rawValueOf(note);
         boolean newSession = !TextUtils.equals(boundSessionId, sessionId);
-        if (newSession || TextUtils.equals(currentNote, boundNote)) {
-            setTextIfDifferent(note, serverNote);
-        }
+        ManagerGuideSummaryDraft draft = newSession
+                ? (savedDraft == null ? ManagerGuideSummaryDraft.fromServer(serverNote)
+                        : savedDraft.reconcileServer(serverNote))
+                : currentDraft().reconcileServer(serverNote);
+        bindDraft(draft);
         boundSessionId = sessionId;
         boundNote = serverNote;
+        if (!draft.hasUnsavedChanges()) {
+            note.setError(null);
+        }
+        if (!sessionId.isEmpty()) {
+            draftListener.onChanged(sessionId, currentDraft());
+        }
         setInputsEnabled(model.isInputsEnabled() && !mutationInFlight);
         advance.setIconResource(R.drawable.ic_figma_guide_arrow_vector);
         advance.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_END);
@@ -104,7 +133,6 @@ final class ManagerGuideConsultationSummaryBinder {
         defaultToolbar.setVisibility(View.VISIBLE);
         setScrollTopPadding(24);
         boundSessionId = "";
-        boundNote = "";
     }
 
     void setInputsEnabled(boolean enabled) {
@@ -114,6 +142,38 @@ final class ManagerGuideConsultationSummaryBinder {
 
     String note() {
         return rawValueOf(note).trim();
+    }
+
+    boolean hasUnsavedInput() {
+        return currentDraft().hasUnsavedChanges();
+    }
+
+    boolean showUnsavedInputError() {
+        if (!hasUnsavedInput()) {
+            return false;
+        }
+        note.setError(note.getContext().getString(
+                R.string.guide_consultation_save_before_complete));
+        note.requestFocus();
+        return true;
+    }
+
+    void discardUnsavedInput() {
+        bindDraft(ManagerGuideSummaryDraft.fromServer(boundNote));
+        note.setError(null);
+    }
+
+    private ManagerGuideSummaryDraft currentDraft() {
+        return ManagerGuideSummaryDraft.fromInput(rawValueOf(note), boundNote);
+    }
+
+    private void bindDraft(ManagerGuideSummaryDraft draft) {
+        bindingDraft = true;
+        try {
+            setTextIfDifferent(note, draft.note);
+        } finally {
+            bindingDraft = false;
+        }
     }
 
     private void bindDashboard(ManagerDashboard dashboard) {

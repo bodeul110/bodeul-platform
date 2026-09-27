@@ -175,6 +175,23 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public synchronized void saveConsultationSummaryNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        ManagerDashboard current = managerStore.getManagerDashboard(managerUserId);
+        if (current == null || !ManagerRepository.matchesConsultationSummaryExpectation(
+                current.getSession(), expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
+        saveFieldPhotoNote(managerUserId, note, callback);
+    }
+
+    @Override
     public void saveVitalsNote(
             String managerUserId,
             String expectedSessionId,

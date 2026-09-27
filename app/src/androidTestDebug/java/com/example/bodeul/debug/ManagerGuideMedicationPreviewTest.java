@@ -74,9 +74,7 @@ public class ManagerGuideMedicationPreviewTest {
             onView(withId(R.id.buttonGuideMedicationSavePharmacyNote))
                     .perform(scrollTo(), click());
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guideDefaultToolbar)).check(matches(isDisplayed()));
-            onView(withId(R.id.textGuideTitle))
-                    .check(matches(withText("Step 12. 동행 종료")));
+            onView(withId(R.id.guideCareCompletionToolbar)).check(matches(isDisplayed()));
             onView(withId(R.id.managerGuideMedicationContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }

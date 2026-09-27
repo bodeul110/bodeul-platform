@@ -140,6 +140,26 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
+    /** 진료 요약 메모도 세션과 단계가 일치하는 쓰기 경계에서만 저장한다. */
+    default void saveConsultationSummaryNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        callback.onError("진료 요약 저장에는 Core API 연결이 필요합니다.");
+    }
+
+    static boolean matchesConsultationSummaryExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "CONSULTATION_SUMMARY".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
     /** 기초 측정값은 화면에서 확인한 세션과 단계가 그대로일 때만 저장한다. */
     default void saveVitalsNote(
             String managerUserId,
