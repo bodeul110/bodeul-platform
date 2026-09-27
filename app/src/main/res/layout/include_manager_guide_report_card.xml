@@ -102,7 +102,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="3" />
+                android:minLines="3"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -117,7 +118,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="3" />
+                android:minLines="3"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
@@ -139,7 +141,8 @@
                 android:id="@+id/inputReportMedicationName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -162,21 +165,24 @@
                 android:id="@+id/radioMedicationComparisonMatched"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/guide_report_medication_comparison_matched" />
+                android:text="@string/guide_report_medication_comparison_matched"
+                android:textColor="@color/figma_mvp_text_primary" />
 
             <com.google.android.material.radiobutton.MaterialRadioButton
                 android:id="@+id/radioMedicationComparisonChanged"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="@string/guide_report_medication_comparison_changed" />
+                android:text="@string/guide_report_medication_comparison_changed"
+                android:textColor="@color/figma_mvp_text_primary" />
 
             <com.google.android.material.radiobutton.MaterialRadioButton
                 android:id="@+id/radioMedicationComparisonRecheck"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="@string/guide_report_medication_comparison_recheck" />
+                android:text="@string/guide_report_medication_comparison_recheck"
+                android:textColor="@color/figma_mvp_text_primary" />
         </RadioGroup>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -191,7 +197,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="2" />
+                android:minLines="2"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -206,7 +213,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="2" />
+                android:minLines="2"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -220,7 +228,8 @@
                 android:id="@+id/inputReportMedicationScheduleNote"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
@@ -242,7 +251,8 @@
                 android:id="@+id/inputNextVisit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>

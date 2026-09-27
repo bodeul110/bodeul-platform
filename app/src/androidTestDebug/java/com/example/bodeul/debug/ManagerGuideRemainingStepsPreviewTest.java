@@ -17,7 +17,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleEventObserver;
 import androidx.test.core.app.ActivityScenario;
@@ -38,6 +40,19 @@ import java.util.concurrent.TimeUnit;
 public class ManagerGuideRemainingStepsPreviewTest {
 
     @Test
+    public void sharedMemoFields_useFigmaPrimaryTextColor() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "HOSPITAL_ROUTE"))) {
+            scenario.onActivity(activity -> {
+                assertPrimaryTextColor(activity.findViewById(R.id.inputGuideLocationSummary));
+                assertPrimaryTextColor(activity.findViewById(R.id.inputGuardianUpdate));
+            });
+        }
+    }
+
+    @Test
     public void consultationSummary_savesExistingFieldNote_andAdvances() {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
@@ -52,6 +67,8 @@ public class ManagerGuideRemainingStepsPreviewTest {
 
             onView(withId(R.id.inputGuideSummaryNote))
                     .perform(scrollTo(), replaceText("검사 결과와 다음 방문 일정을 확인했습니다."));
+            scenario.onActivity(activity -> assertPrimaryTextColor(
+                    activity.findViewById(R.id.inputGuideSummaryNote)));
             closeSoftKeyboard();
             onView(withId(R.id.buttonGuideSummarySaveNote)).perform(scrollTo(), click());
 
@@ -105,6 +122,11 @@ public class ManagerGuideRemainingStepsPreviewTest {
             onView(withId(R.id.managerGuideJournalContent)).check(matches(isDisplayed()));
             onView(withId(R.id.cardGuideReportActions))
                     .check(matches(withEffectiveVisibility(VISIBLE)));
+            scenario.onActivity(activity -> {
+                assertPrimaryTextColor(activity.findViewById(R.id.inputReportSummary));
+                assertPrimaryTextColor(
+                        activity.findViewById(R.id.radioMedicationComparisonMatched));
+            });
 
             String overLimit = repeatedKoreanCharacter(320);
             onView(withId(R.id.inputReportSummary))
@@ -122,6 +144,12 @@ public class ManagerGuideRemainingStepsPreviewTest {
             builder.append('가');
         }
         return builder.toString();
+    }
+
+    private void assertPrimaryTextColor(TextView view) {
+        assertEquals(
+                ContextCompat.getColor(view.getContext(), R.color.figma_mvp_text_primary),
+                view.getCurrentTextColor());
     }
 
     @Test

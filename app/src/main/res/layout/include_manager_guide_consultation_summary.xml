@@ -179,7 +179,8 @@
                     android:layout_height="wrap_content"
                     android:inputType="textMultiLine"
                     android:minLines="4"
-                    android:saveEnabled="false" />
+                    android:saveEnabled="false"
+                    android:textColor="@color/figma_mvp_text_primary" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton

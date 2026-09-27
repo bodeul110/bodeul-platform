@@ -33,7 +33,7 @@ public class GuardianReportFigmaPreviewTest {
             onView(withId(R.id.guardianFinalReportGroup)).check(matches(isDisplayed()));
             onView(withText(R.string.guardian_final_report_completion_title))
                     .check(matches(isDisplayed()));
-            onView(withText("서울내과병원")).check(matches(isDisplayed()));
+            onView(withText("서울대학교병원")).check(matches(isDisplayed()));
             onView(withText("신경과")).check(matches(isDisplayed()));
             onView(withText(R.string.guardian_final_report_treatment_title))
                     .perform(scrollTo())

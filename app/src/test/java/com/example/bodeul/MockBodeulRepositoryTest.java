@@ -74,6 +74,22 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class MockBodeulRepositoryTest {
     @Test
+    public void seededAppointment_usesMatchingSeoulNationalUniversityHospitalLocation() {
+        MockBodeulRepository repository = new MockBodeulRepository();
+
+        AppointmentRequestDetail detail = repository.getAppointmentRequestDetail("request-1");
+
+        assertNotNull(detail);
+        assertNotNull(detail.getSession());
+        assertEquals("서울대학교병원", detail.getAppointmentRequest().getHospitalName());
+        assertEquals(37.579617, detail.getSession().getSharedLatitude(), 0.000001);
+        assertEquals(126.999016, detail.getSession().getSharedLongitude(), 0.000001);
+        assertTrue(detail.getSession().getSharedLocationHistory().stream().allMatch(location ->
+                Math.abs(location.getLatitude() - 37.5796) < 0.001
+                        && Math.abs(location.getLongitude() - 126.9990) < 0.001));
+    }
+
+    @Test
     public void managerRepository_advanceCurrentStep_movesToNextMockGuideStep() {
         MockBodeulRepository repository = new MockBodeulRepository();
         MockManagerRepository managerRepository = new MockManagerRepository(repository);
