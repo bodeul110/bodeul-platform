@@ -12,7 +12,8 @@ import androidx.lifecycle.ViewModel;
 import com.example.bodeul.data.AuthRepository;
 import com.example.bodeul.data.ManagerRepository;
 import com.example.bodeul.data.RepositoryCallback;
-import com.example.bodeul.data.realtime.SupabaseCompanionRealtimeSubscriber;
+import com.example.bodeul.data.realtime.CompanionRealtimeSubscriber;
+import com.example.bodeul.domain.model.CompanionSession;
 import com.example.bodeul.domain.model.ManagerDashboard;
 import com.example.bodeul.domain.model.MedicationComparisonDecision;
 import com.example.bodeul.domain.model.SessionStatus;
@@ -98,7 +99,7 @@ public class ManagerGuideViewModel extends ViewModel {
     private final AuthRepository authRepository;
     private final ManagerRepository managerRepository;
     private final ManagerGuideCoordinator coordinator;
-    private final SupabaseCompanionRealtimeSubscriber realtimeSubscriber;
+    private final CompanionRealtimeSubscriber realtimeSubscriber;
     private final SavedStateHandle savedStateHandle;
     private final boolean legacyManagerLocationEnabled;
 
@@ -107,12 +108,15 @@ public class ManagerGuideViewModel extends ViewModel {
     private PendingLocationUpdate pendingLiveLocationUpdate;
     private String subscribedSessionId = "";
     private boolean mutationInFlight;
+    @Nullable
+    private ManagerGuideConsultationDraft consultationDraft;
+    private String consultationDraftSessionId = "";
 
     public ManagerGuideViewModel(
             AuthRepository authRepository,
             ManagerRepository managerRepository,
             ManagerGuideCoordinator coordinator,
-            SupabaseCompanionRealtimeSubscriber realtimeSubscriber,
+            CompanionRealtimeSubscriber realtimeSubscriber,
             SavedStateHandle savedStateHandle,
             boolean legacyManagerLocationEnabled
     ) {
@@ -182,6 +186,7 @@ public class ManagerGuideViewModel extends ViewModel {
             stopRealtimeSubscription();
         }
         retainVitalsDraftFor(dashboard);
+        retainConsultationDraftFor(dashboard);
         _uiState.setValue(UiState.screen(dashboard, coordinator.createScreenModel(
                 dashboard,
                 managerRepository.isFirebaseBacked()
@@ -306,6 +311,49 @@ public class ManagerGuideViewModel extends ViewModel {
         });
     }
 
+    public void saveConsultationGuardianUpdate(String message) {
+        UiState state = _uiState.getValue();
+        ManagerDashboard dashboard = state == null ? null : state.dashboard;
+        CompanionSession session = dashboard == null ? null : dashboard.getSession();
+        if (currentUser == null || session == null) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_NO_ACTIVE_SESSION);
+            return;
+        }
+        String expectedSessionId = session.getId();
+        String expectedStepCode = session.getCurrentStepCode();
+        if (!ManagerRepository.matchesConsultationExpectation(
+                session, expectedSessionId, expectedStepCode)) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
+        if (!beginMutation()) return;
+        String value = message == null ? "" : message.trim();
+        managerRepository.saveConsultationGuardianUpdate(
+                currentUser.getId(),
+                expectedSessionId,
+                expectedStepCode,
+                value,
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        finishMutation();
+                        _toastMessage.setValue(TextUtils.isEmpty(value)
+                                ? "보호자 공유 내용을 비웠습니다."
+                                : "보호자 공유 내용을 저장했습니다.");
+                        bindDashboard(result);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        finishMutation();
+                        _toastMessage.setValue(errorMessage);
+                        if (ManagerRepository.MESSAGE_STALE_GUIDE_STEP.equals(errorMessage)) {
+                            loadDashboard();
+                        }
+                    }
+                });
+    }
+
     public void saveFieldPhotoNote(String note) {
         if (currentUser == null) return;
         managerRepository.saveFieldPhotoNote(currentUser.getId(), note, new RepositoryCallback<ManagerDashboard>() {
@@ -322,6 +370,49 @@ public class ManagerGuideViewModel extends ViewModel {
                 _toastMessage.setValue(message);
             }
         });
+    }
+
+    public void saveConsultationFieldNote(String note) {
+        UiState state = _uiState.getValue();
+        ManagerDashboard dashboard = state == null ? null : state.dashboard;
+        CompanionSession session = dashboard == null ? null : dashboard.getSession();
+        if (currentUser == null || session == null) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_NO_ACTIVE_SESSION);
+            return;
+        }
+        String expectedSessionId = session.getId();
+        String expectedStepCode = session.getCurrentStepCode();
+        if (!ManagerRepository.matchesConsultationExpectation(
+                session, expectedSessionId, expectedStepCode)) {
+            _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
+        if (!beginMutation()) return;
+        String value = note == null ? "" : note.trim();
+        managerRepository.saveConsultationFieldNote(
+                currentUser.getId(),
+                expectedSessionId,
+                expectedStepCode,
+                value,
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        finishMutation();
+                        _toastMessage.setValue(TextUtils.isEmpty(value)
+                                ? "현장 메모를 비웠습니다."
+                                : "현장 메모를 저장했습니다.");
+                        bindDashboard(result);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        finishMutation();
+                        _toastMessage.setValue(errorMessage);
+                        if (ManagerRepository.MESSAGE_STALE_GUIDE_STEP.equals(errorMessage)) {
+                            loadDashboard();
+                        }
+                    }
+                });
     }
 
     /** 기초 측정 메모 저장 성공을 확인한 뒤 같은 세션의 다음 단계로 이동한다. */
@@ -459,6 +550,42 @@ public class ManagerGuideViewModel extends ViewModel {
         if (!savedSessionId.equals(activeSessionId)
                 || !"VITALS_CHECK".equals(activeStepCode)) {
             clearVitalsDraft(savedStateHandle, savedSessionId);
+        }
+    }
+
+    @Nullable
+    ManagerGuideConsultationDraft getConsultationDraft(String sessionId) {
+        if (sessionId == null || sessionId.isEmpty()
+                || !sessionId.equals(consultationDraftSessionId)) {
+            return null;
+        }
+        return consultationDraft;
+    }
+
+    void saveConsultationDraft(String sessionId, ManagerGuideConsultationDraft draft) {
+        if (sessionId == null || sessionId.isEmpty() || draft == null) {
+            return;
+        }
+        consultationDraftSessionId = sessionId;
+        consultationDraft = draft;
+    }
+
+    void clearConsultationDraft(String sessionId) {
+        if (sessionId != null && sessionId.equals(consultationDraftSessionId)) {
+            consultationDraftSessionId = "";
+            consultationDraft = null;
+        }
+    }
+
+    private void retainConsultationDraftFor(ManagerDashboard dashboard) {
+        if (consultationDraft == null || dashboard.getSession() == null) {
+            return;
+        }
+        String activeSessionId = dashboard.getSession().getId();
+        String activeStepCode = dashboard.getSession().getCurrentStepCode();
+        if (!consultationDraftSessionId.equals(activeSessionId)
+                || !"CONSULTATION_SUPPORT".equals(activeStepCode)) {
+            clearConsultationDraft(consultationDraftSessionId);
         }
     }
 
@@ -1051,7 +1178,7 @@ public class ManagerGuideViewModel extends ViewModel {
         private final AuthRepository authRepository;
         private final ManagerRepository managerRepository;
         private final ManagerGuideCoordinator coordinator;
-        private final SupabaseCompanionRealtimeSubscriber realtimeSubscriber;
+        private final CompanionRealtimeSubscriber realtimeSubscriber;
         private final boolean legacyManagerLocationEnabled;
 
         public Factory(
@@ -1059,7 +1186,7 @@ public class ManagerGuideViewModel extends ViewModel {
                 AuthRepository authRepository,
                 ManagerRepository managerRepository,
                 ManagerGuideCoordinator coordinator,
-                SupabaseCompanionRealtimeSubscriber realtimeSubscriber,
+                CompanionRealtimeSubscriber realtimeSubscriber,
                 boolean legacyManagerLocationEnabled
         ) {
             super(owner, null);

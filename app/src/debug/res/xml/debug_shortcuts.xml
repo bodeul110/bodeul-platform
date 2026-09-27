@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="25">
+    <shortcut
+        android:shortcutId="manager_guide_preview"
+        android:enabled="true"
+        android:icon="@drawable/ic_client_nav_guide"
+        android:shortcutLongLabel="@string/debug_manager_guide_preview_long_label"
+        android:shortcutShortLabel="@string/debug_manager_guide_preview_short_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.example.bodeul.debug.ManagerGuidePreviewSelectorActivity"
+            android:targetPackage="com.example.bodeul" />
+    </shortcut>
+</shortcuts>

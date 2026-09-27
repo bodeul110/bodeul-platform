@@ -145,6 +145,82 @@
             android:background="@color/figma_mvp_divider" />
     </FrameLayout>
 
+    <FrameLayout
+        android:id="@+id/guidePrescriptionToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:background="@color/figma_mvp_background"
+        android:paddingStart="8dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/buttonBackGuidePrescription"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/guide_back"
+            android:padding="16dp"
+            android:src="@drawable/ic_figma_guide_back_vector"
+            app:tint="@color/figma_mvp_primary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:fontFamily="@font/pretendard_bold"
+            android:text="@string/guide_prescription_toolbar_title"
+            android:textColor="@color/figma_mvp_primary"
+            android:textSize="20sp" />
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|center_vertical"
+            android:contentDescription="@null"
+            android:padding="10dp"
+            android:src="@drawable/ic_figma_reception_bell_vector" />
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/guideConsultationToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="@color/figma_mvp_background"
+        android:paddingStart="8dp"
+        android:paddingEnd="20dp"
+        android:visibility="gone">
+
+        <ImageButton
+            android:id="@+id/buttonBackGuideConsultation"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/guide_back"
+            android:padding="16dp"
+            android:src="@drawable/ic_figma_guide_back_vector" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:fontFamily="@font/pretendard_bold"
+            android:text="@string/guide_consultation_toolbar_title"
+            android:textColor="@color/figma_mvp_primary"
+            android:textSize="18sp" />
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|center_vertical"
+            android:contentDescription="@null"
+            android:padding="10dp"
+            android:src="@drawable/ic_figma_reception_bell_vector" />
+    </FrameLayout>
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -234,6 +310,16 @@
             <include
                 android:id="@+id/managerGuideVitalsContent"
                 layout="@layout/include_manager_guide_vitals"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/managerGuideConsultationContent"
+                layout="@layout/include_manager_guide_consultation"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/managerGuidePrescriptionContent"
+                layout="@layout/include_manager_guide_prescription"
                 android:visibility="gone" />
 
             <include

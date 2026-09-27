@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="11dp"
+    android:height="11dp"
+    android:viewportWidth="10.5"
+    android:viewportHeight="10.5">
+    <path
+        android:fillColor="@color/figma_mvp_primary"
+        android:pathData="M1.167,9.333H1.998L7.7,3.631L6.869,2.8L1.167,8.502V9.333M0,10.5V8.021L7.7,0.335C7.817,0.228 7.945,0.146 8.086,0.088C8.227,0.029 8.376,0 8.531,0C8.687,0 8.838,0.029 8.983,0.088C9.129,0.146 9.256,0.233 9.363,0.35L10.165,1.167C10.281,1.274 10.366,1.4 10.42,1.546C10.473,1.692 10.5,1.838 10.5,1.983C10.5,2.139 10.473,2.287 10.42,2.428C10.366,2.569 10.281,2.698 10.165,2.815L2.479,10.5H0M9.333,1.983L8.517,1.167L9.333,1.983M7.277,3.223L6.869,2.8L7.7,3.631L7.277,3.223" />
+</vector>

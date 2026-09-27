@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/guideConsultationContent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/textGuideConsultationStep"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_figma_pre_consultation_step_badge"
+            android:fontFamily="@font/pretendard_bold"
+            android:paddingStart="12dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="4dp"
+            android:textColor="@color/figma_mvp_primary"
+            android:textSize="11sp" />
+
+        <ProgressBar
+            android:id="@+id/progressGuideConsultation"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="2dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:max="13"
+            android:progress="6"
+            android:progressDrawable="@drawable/progress_figma_consultation" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/pretendard_bold"
+        android:text="@string/guide_consultation_title"
+        android:textColor="@color/figma_mvp_text_primary"
+        android:textSize="24sp" />
+
+    <LinearLayout
+        android:id="@+id/layoutGuideConsultationRecordingPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_figma_pre_consultation_step_badge"
+            android:fontFamily="@font/pretendard_bold"
+            android:paddingStart="10dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="4dp"
+            android:text="@string/guide_consultation_record_preview_badge"
+            android:textColor="@color/figma_mvp_primary"
+            android:textSize="11sp" />
+
+        <FrameLayout
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_figma_consultation_recording_ring">
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/buttonGuideConsultationRecordPreview"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_figma_consultation_record_button"
+                android:contentDescription="@string/guide_consultation_record_start"
+                android:elevation="8dp"
+                android:padding="28dp"
+                android:src="@drawable/ic_figma_consultation_microphone" />
+        </FrameLayout>
+
+        <Chronometer
+            android:id="@+id/chronometerGuideConsultation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="monospace"
+            android:format="%s"
+            android:textColor="@color/figma_mvp_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textGuideConsultationRecordStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:accessibilityLiveRegion="polite"
+            android:fontFamily="@font/pretendard_medium"
+            android:gravity="center"
+            android:text="@string/guide_consultation_record_ready"
+            android:textColor="@color/figma_mvp_text_secondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="11dp"
+            android:layout_height="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_figma_consultation_clipboard" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="@font/pretendard_bold"
+            android:text="@string/guide_consultation_records_title"
+            android:textColor="@color/figma_mvp_text_secondary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_figma_consultation_answer"
+            android:fontFamily="@font/pretendard_semibold"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:text="@string/guide_consultation_records_count"
+            android:textColor="@color/figma_mvp_text_secondary"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="1dp"
+        app:strokeColor="@color/figma_mvp_card_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="21dp">
+
+            <TextView
+                android:id="@+id/textGuideConsultationGuardianLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/pretendard_semibold"
+                android:labelFor="@id/inputGuideConsultationGuardian"
+                android:text="@string/guide_consultation_guardian_question"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="15sp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputGuideConsultationGuardian"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_figma_consultation_answer"
+                android:fontFamily="@font/pretendard_medium"
+                android:gravity="top|start"
+                android:hint="@string/guide_consultation_guardian_hint"
+                android:inputType="textMultiLine"
+                android:maxLength="1000"
+                android:minHeight="96dp"
+                android:minLines="3"
+                android:padding="16dp"
+                android:saveEnabled="false"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textColorHint="@color/figma_mvp_text_hint"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuideConsultationSaveGuardian"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:text="@string/guide_consultation_guardian_save"
+                android:textAllCaps="false"
+                android:textColor="@color/figma_mvp_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/figma_mvp_subtle_divider"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_figma_consultation_pencil"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@null" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="1dp"
+        app:strokeColor="@color/figma_mvp_card_outline"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="21dp">
+
+            <TextView
+                android:id="@+id/textGuideConsultationFieldNoteLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/pretendard_semibold"
+                android:labelFor="@id/inputGuideConsultationFieldNote"
+                android:text="@string/guide_consultation_field_question"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="15sp" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputGuideConsultationFieldNote"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_figma_consultation_answer"
+                android:fontFamily="@font/pretendard_medium"
+                android:gravity="top|start"
+                android:hint="@string/guide_consultation_field_hint"
+                android:inputType="textMultiLine"
+                android:maxLength="2000"
+                android:minHeight="96dp"
+                android:minLines="3"
+                android:padding="16dp"
+                android:saveEnabled="false"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textColorHint="@color/figma_mvp_text_hint"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuideConsultationSaveFieldNote"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:text="@string/guide_consultation_field_save"
+                android:textAllCaps="false"
+                android:textColor="@color/figma_mvp_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/figma_mvp_subtle_divider"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_figma_consultation_pencil"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp"
+                app:iconTint="@null" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="24dp"
+        android:fontFamily="@font/pretendard_medium"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        android:text="@string/guide_consultation_latest_only"
+        android:textColor="@color/figma_mvp_text_tertiary"
+        android:textSize="11sp" />
+</LinearLayout>

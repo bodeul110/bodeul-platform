@@ -26,7 +26,7 @@ import okhttp3.WebSocketListener;
 /**
  * Supabase private Broadcast는 변경 신호만 전달하고 실제 상태는 Core API에서 다시 읽게 한다.
  */
-public final class SupabaseCompanionRealtimeSubscriber {
+public final class SupabaseCompanionRealtimeSubscriber implements CompanionRealtimeSubscriber {
     private static final long HEARTBEAT_INTERVAL_MILLIS = 25_000L;
     private static final long TOKEN_RECONNECT_INTERVAL_MILLIS = 45L * 60L * 1_000L;
     private static final long EVENT_DEBOUNCE_MILLIS = 300L;
@@ -58,6 +58,7 @@ public final class SupabaseCompanionRealtimeSubscriber {
         firebaseConfigured = FirebaseSupport.isConfigured(appContext);
     }
 
+    @Override
     public void subscribe(String companionSessionId, Runnable changedCallback) {
         stop();
         topic = "companion-session:" + normalize(companionSessionId);
@@ -71,6 +72,7 @@ public final class SupabaseCompanionRealtimeSubscriber {
         }
     }
 
+    @Override
     public void stop() {
         stopped = true;
         mainHandler.removeCallbacksAndMessages(this);

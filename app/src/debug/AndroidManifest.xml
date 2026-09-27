@@ -15,6 +15,20 @@
             android:name="com.example.bodeul.debug.AutomationEntryActivity"
             android:exported="true"
             android:theme="@style/Theme.Bodeul" />
+        <activity
+            android:name="com.example.bodeul.debug.ManagerGuidePreviewSelectorActivity"
+            android:exported="true"
+            android:label="@string/debug_manager_guide_preview_short_label"
+            android:theme="@style/Theme.Bodeul" />
+        <activity
+            android:name="com.example.bodeul.debug.ManagerGuidePreviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bodeul" />
+        <activity android:name="com.example.bodeul.ui.auth.SplashActivity">
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/debug_shortcuts" />
+        </activity>
     </application>
 
 </manifest>

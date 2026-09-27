@@ -33,6 +33,7 @@
 - Firebase, 인증, 위치, 예약, 리포트처럼 외부 상태와 연결되는 코드는 Repository/Service 계층에 둔다.
 - UI 문구는 하드코딩을 피하고 가능한 리소스 문자열로 관리한다.
 - `google-services.json`이 없는 CI/Dependabot 환경에서도 컴파일이 깨지지 않도록 fallback을 고려한다.
+- Firebase 설정은 `app/src/debug/`와 `app/src/release/`에서 분리하고 Release가 공통 개발용 API·Realtime 설정을 상속하지 않게 한다. 환경 혼합 회귀 검사는 `node tools/android/check-environment-boundary.mjs`로 실행한다.
 - 사용자가 볼 수 없는 내부 로그도 한국어 맥락을 유지하되, 민감정보는 남기지 않는다.
 
 ## Firebase와 운영 스크립트
@@ -54,7 +55,9 @@
 
 ## GitHub 운영
 
-- `master`는 PR과 `preflight` 체크를 거쳐 반영한다.
+- `dev`와 `master`는 PR과 `preflight` 체크를 거쳐 반영한다. 새 기능은 `dev`를 대상으로 한다.
+- `dev → master` 출시 PR과 `master → dev` 동기화 PR은 공통 이력을 보존하도록 merge commit을 사용하고, 일반 기능 PR은 squash merge한다.
+- 개발 Core API 배포와 개발 DB migration은 `dev`, 운영 배포와 운영 DB migration은 `master`에서 실행한다. DB migration은 자동 배포와 분리된 수동 실행으로 유지한다.
 - merge 방식은 squash merge를 기본으로 한다.
 - Dependabot PR은 의존성 변경이므로 사용자 승인 없이 병합하지 않는다.
 - GitHub Project `BoDeul 작업 백로그`와 Issue/Milestone을 실제 작업 추적의 기준으로 사용한다.

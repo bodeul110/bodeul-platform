@@ -50,6 +50,32 @@ public interface ManagerRepository {
 
     void saveGuardianUpdate(String managerUserId, String guardianUpdate, RepositoryCallback<ManagerDashboard> callback);
 
+    /** 진료 보조 화면에서 확인한 세션과 단계가 그대로일 때만 보호자 공유 내용을 저장한다. */
+    default void saveConsultationGuardianUpdate(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String guardianUpdate,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        getManagerDashboard(managerUserId, new RepositoryCallback<ManagerDashboard>() {
+            @Override
+            public void onSuccess(ManagerDashboard dashboard) {
+                if (dashboard == null || !matchesConsultationExpectation(
+                        dashboard.getSession(), expectedSessionId, expectedStepCode)) {
+                    callback.onError(MESSAGE_STALE_GUIDE_STEP);
+                    return;
+                }
+                saveGuardianUpdate(managerUserId, guardianUpdate, callback);
+            }
+
+            @Override
+            public void onError(String message) {
+                callback.onError(message);
+            }
+        });
+    }
+
     void sendCompanionChatMessage(
             String managerUserId,
             String message,
@@ -78,6 +104,41 @@ public interface ManagerRepository {
     void saveLocationSummary(String managerUserId, String locationSummary, RepositoryCallback<ManagerDashboard> callback);
 
     void saveFieldPhotoNote(String managerUserId, String fieldPhotoNote, RepositoryCallback<ManagerDashboard> callback);
+
+    /** 진료 보조 화면에서 확인한 세션과 단계가 그대로일 때만 현장 메모를 저장한다. */
+    default void saveConsultationFieldNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String fieldPhotoNote,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        getManagerDashboard(managerUserId, new RepositoryCallback<ManagerDashboard>() {
+            @Override
+            public void onSuccess(ManagerDashboard dashboard) {
+                if (dashboard == null || !matchesConsultationExpectation(
+                        dashboard.getSession(), expectedSessionId, expectedStepCode)) {
+                    callback.onError(MESSAGE_STALE_GUIDE_STEP);
+                    return;
+                }
+                saveFieldPhotoNote(managerUserId, fieldPhotoNote, callback);
+            }
+
+            @Override
+            public void onError(String message) {
+                callback.onError(message);
+            }
+        });
+    }
+
+    static boolean matchesConsultationExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "CONSULTATION_SUPPORT".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
 
     /** 기초 측정값은 화면에서 확인한 세션과 단계가 그대로일 때만 저장한다. */
     default void saveVitalsNote(

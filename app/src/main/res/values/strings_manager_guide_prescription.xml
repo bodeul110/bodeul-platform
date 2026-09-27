@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guide_prescription_toolbar_title">보들</string>
+    <string name="guide_prescription_step_format">STEP %1$02d</string>
+    <string name="guide_prescription_step_unknown">처방 자료</string>
+    <string name="guide_prescription_guide_title">약국에서 받은 처방전과 복약 안내 자료를 등록해 주세요.</string>
+    <string name="guide_prescription_guide_label">현장 자료 안내</string>
+    <string name="guide_prescription_card_title">처방전 이미지</string>
+    <string name="guide_prescription_select_empty">처방 이미지 선택하기</string>
+    <string name="guide_prescription_select_replace">처방 이미지 다시 선택하기</string>
+    <string name="guide_prescription_select_helper">JPEG, PNG · 최대 3개 · 파일당 10MiB</string>
+    <string name="guide_prescription_status_empty">첨부는 선택입니다. 자료가 없으면 바로 다음 단계로 이동할 수 있습니다.</string>
+    <string name="guide_prescription_status_count">처방 이미지 %1$d개가 등록되었습니다.</string>
+    <string name="guide_prescription_clear">등록 이미지 삭제</string>
+    <string name="guide_prescription_field_note_open">현장 메모 열기</string>
+    <string name="guide_prescription_field_note_close">현장 메모 닫기</string>
+    <string name="guide_prescription_upload_description">처방 이미지 선택</string>
+</resources>

@@ -1,6 +1,6 @@
 # 프로젝트와 인프라 명칭
 
-기준일: 2026-09-22
+명칭 변경 기준일: 2026-09-22. 현재 상태 대조: 2026-09-27
 
 ## 판단 기준
 
@@ -22,9 +22,9 @@
 | Google Cloud/Firebase 운영 | `bodeul-prod` | project ID `bodeul-prod-110` | 두 관리 API에서 변경·조회 확인 |
 | 공용 Cloud Billing | `bodeul-billing` | 기존 공용 결제 계정, 연결·결제수단 유지 | 변경 완료, 두 프로젝트 결제 활성 확인 |
 | Supabase 개발 DB | `bodeul-db-dev` | project ref `parpdzttloacinyvhwmx` | 변경 완료 |
-| Supabase 운영 DB | `bodeul-db-prod` | project ref `aoijbzgozbopsxzrasbb` | 변경 완료, 일시정지 유지 |
+| Supabase 운영 DB | `bodeul-db-prod` | project ref `aoijbzgozbopsxzrasbb` | 이름 변경 후 9월 27일 Healthy·Pro·V23 확인 |
 | 개발 Core API | `bodeul-core-api-preview` | Cloud Run, `bodeul-dev` / `asia-northeast1` | 기존 서비스 ID 유지 |
-| 운영 Core API | `bodeul-core-api` | `bodeul-prod-110`의 배포 예정 서비스 ID | 기존 배포 계약 유지, 서비스 미생성 |
+| 운영 Core API | `bodeul-core-api` | `bodeul-prod-110` / `asia-northeast1` | 9월 27일 배포·기본 smoke 확인 |
 | 관리자 웹·서버 | `bodeul-admin-web` | Vercel 프로젝트, Preview와 Production 환경 분리 | 유지 |
 | Vercel 팀 | `BoDeul` | 기존 팀 ID와 `bodeul110` slug 유지 | 표시 이름 변경·팀 목록 재조회 확인 |
 
@@ -56,7 +56,9 @@
 
 운영 인증 설정 변경에는 공식 관리자에게 `bodeul-prod-110` 프로젝트 범위의 WIF 관리·서비스 계정 관리 역할을 최대 2시간 조건으로 부여했다. 실제 변경 대상은 운영 provider 4개와 배포·운영 서비스 계정 4개의 저장소 인증 조건뿐이다. 새 조건을 다시 조회한 직후 임시 역할 2개를 회수했으며 잔여 임시 바인딩은 0개로 확인했다. 개인 개발 계정의 상시 권한, 데이터 조회·비밀값 조회·키 생성 권한은 추가하지 않았다.
 
-## 확인 범위
+## 이름 변경 당시 확인 범위
+
+아래는 9월 22일 명칭 변경 작업의 기록이다. 이후 운영 DB 재개·서버 배포와 브랜치 분리는 [9월 27일 환경 분리 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다.
 
 - Supabase 소유자 세션에서 개발·운영 프로젝트의 표시 이름을 저장했다. project ref·리전·운영 일시정지 상태는 유지한다.
 - Google Cloud와 Firebase의 운영 표시 이름을 각각 갱신했다. project ID·number와 공식 조직 소속은 그대로다.

@@ -7,9 +7,11 @@ import com.example.bodeul.domain.model.MedicationComparisonDecision;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class ManagerGuideViewModelSavedStateTest {
 
@@ -90,5 +92,57 @@ public class ManagerGuideViewModelSavedStateTest {
         ManagerGuideViewModel.clearVitalsDraft(state, "session-b");
 
         assertNotNull(ManagerGuideViewModel.restoreVitalsDraft(state, "session-a"));
+    }
+
+    @Test
+    public void consultationDraftTracksDirtyFieldsAgainstServerBaseline() {
+        ManagerGuideConsultationDraft draft = ManagerGuideConsultationDraft.fromInputs(
+                "로컬 보호자 공유",
+                "서버 현장 메모",
+                "서버 보호자 공유",
+                "서버 현장 메모");
+
+        assertTrue(draft.isGuardianDirty());
+        assertFalse(draft.isFieldNoteDirty());
+        assertTrue(draft.hasUnsavedChanges());
+    }
+
+    @Test
+    public void consultationDraftReconcileUpdatesCleanFieldAndKeepsDirtyField() {
+        ManagerGuideConsultationDraft draft = ManagerGuideConsultationDraft.fromInputs(
+                "로컬 보호자 공유",
+                "이전 현장 메모",
+                "이전 보호자 공유",
+                "이전 현장 메모");
+
+        ManagerGuideConsultationDraft reconciled = draft.reconcileServer(
+                "원격 보호자 공유",
+                "원격 현장 메모");
+
+        assertEquals("로컬 보호자 공유", reconciled.guardianUpdate);
+        assertEquals("원격 보호자 공유", reconciled.guardianBaseline);
+        assertTrue(reconciled.isGuardianDirty());
+        assertEquals("원격 현장 메모", reconciled.fieldNote);
+        assertEquals("원격 현장 메모", reconciled.fieldNoteBaseline);
+        assertFalse(reconciled.isFieldNoteDirty());
+    }
+
+    @Test
+    public void consultationDraftBecomesCleanWhenServerMatchesLocalValues() {
+        ManagerGuideConsultationDraft draft = ManagerGuideConsultationDraft.fromInputs(
+                "새 보호자 공유",
+                "새 현장 메모",
+                "이전 보호자 공유",
+                "이전 현장 메모");
+
+        ManagerGuideConsultationDraft reconciled = draft.reconcileServer(
+                "새 보호자 공유",
+                "새 현장 메모");
+
+        assertEquals("새 보호자 공유", reconciled.guardianUpdate);
+        assertEquals("새 현장 메모", reconciled.fieldNote);
+        assertFalse(reconciled.isGuardianDirty());
+        assertFalse(reconciled.isFieldNoteDirty());
+        assertFalse(reconciled.hasUnsavedChanges());
     }
 }

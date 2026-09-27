@@ -112,6 +112,23 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public void saveConsultationGuardianUpdate(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String guardianUpdate,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        updateConsultationText(
+                managerUserId,
+                expectedSessionId,
+                expectedStepCode,
+                "guardianUpdate",
+                guardianUpdate,
+                callback);
+    }
+
+    @Override
     public void sendCompanionChatMessage(
             String managerUserId,
             String message,
@@ -252,6 +269,23 @@ public final class CoreApiManagerRepository implements ManagerRepository {
             RepositoryCallback<ManagerDashboard> callback
     ) {
         updateSessionText(managerUserId, "fieldPhotoNote", fieldPhotoNote, callback);
+    }
+
+    @Override
+    public void saveConsultationFieldNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String fieldPhotoNote,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        updateConsultationText(
+                managerUserId,
+                expectedSessionId,
+                expectedStepCode,
+                "fieldPhotoNote",
+                fieldPhotoNote,
+                callback);
     }
 
     @Override
@@ -544,6 +578,30 @@ public final class CoreApiManagerRepository implements ManagerRepository {
                 field,
                 value,
                 refreshCallback(managerUserId, callback)));
+    }
+
+    private void updateConsultationText(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String field,
+            String value,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesConsultationExpectation(
+                    session, expectedSessionId, expectedStepCode)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.updateText(
+                    session.getId(),
+                    field,
+                    value,
+                    expectedStepCode,
+                    refreshCallback(managerUserId, callback));
+        });
     }
 
     private void updateSessionBoolean(

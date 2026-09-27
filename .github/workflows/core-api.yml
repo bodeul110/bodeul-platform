@@ -15,6 +15,7 @@ on:
   push:
     branches:
       - master
+      - dev
     paths:
       - "core-api/**"
       - "firebase.json"
@@ -26,6 +27,7 @@ on:
       - ".github/workflows/core-api-production-deploy.yml"
       - ".github/workflows/core-api-migration.yml"
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read

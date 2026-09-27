@@ -1,8 +1,8 @@
 # 현재 구현 상태
 
-코드·문서·GitHub 확인일: 2026-09-26
+코드·문서·GitHub 확인일: 2026-09-27
 
-9월 26일 로그인된 Codex 브라우저에서 Notion 정책·토론·내부 피드백·주요 명세를 읽고 GitHub·코드와 대조했다. 확인한 최신 기획 답변은 9월 9일이며 `내부테스트 2`는 제목만 있다. 커넥터 인증 복구, 실기기·배포·DB 재검증을 수행한 것은 아니다. 환경 가용성과 과거 테스트 결과는 각각 적힌 날짜의 증거다.
+최신 Notion MVP·내부 테스트, 현재 코드·PR과 같은 날의 개발·운영 환경 분리 검증 기록을 대조했다. 문서 갱신 과정에서 운영 데이터 쓰기나 실기기 검증을 다시 수행한 것은 아니다.
 
 이 문서의 1~5장은 현재 기준이다. 6장 이후는 날짜별 누적 이력이며 당시 결과를 보존한다. **코드 병합, 특정 환경에서의 검증, 실제 운영 개방은 서로 다르다.**
 
@@ -14,15 +14,15 @@
 | 환자·보호자 화면 | 공통 하단 탭, 홈, 병원 검색, 날짜 선택, 건강정보, 예약 완료·상태 | #414~#417·#426 병합. 화면별 실기기·API 왕복 범위는 각 구현 기록을 따름 |
 | 예약 | 환자 본인 생성·수정·취소, 공개 예약 코드, 보호자 범위별 조회 | Core API·PostgreSQL 단일 쓰기. 보호자 예약 생성은 #419 후속이며 동의만으로 쓰기를 허용하지 않음 |
 | 매칭 | 관리자 서버의 제한 DB 함수로 매니저 배정 | 매니저 self-accept·선착순 공고는 MVP 제외 |
-| 매니저 화면 | 홈·자격 인증, 가이드 상봉·접수/대기·문진 준비 | #386·#404·#427·#428 병합. 고정 Activity 13개가 아니라 세션 snapshot의 stepCode 사용 |
-| 내부 테스트 개선 | 자기 위치 지도 확인, 종료 직전 최신 메모 모아보기 | #430·#431 병합. #410의 9월 22일 기록에서 실제 현재 위치 표식·복귀 확인. #424 오류 화면과 #423 최종 화면 왕복은 별도이며 서버 위치 공유·AI 요약이 아님 |
+| 매니저 화면 | 홈·자격 인증, 가이드 상봉·접수/대기·문진 준비, C06 진료 보조·C10 처방 자료 화면 | #386·#404·#427·#428·#442·#443 병합. #441의 1~13단계 미리보기는 debug 전용. 화면·타이머를 실제 녹음·공급자 연동 성공으로 보지 않음 |
+| 내부 테스트 개선 | 자기 위치 지도 확인, 종료 전 메모 모아보기 | #430·#431 병합. #424는 #410의 9월 22일 DEV 성공 경로 증적과 남은 실패 상태를 구분. #423은 종료·리포트 이동 확인이 남음. 서버 위치 공유·AI 요약이 아님 |
 | 동행·리포트 | 현장 종료 CARE_ENDED, 일지·리포트 후 COMPLETED, 실패·재시도 분리 | V18 계약. 메모 모아보기는 300자 최종 일지를 대체하지 않음 |
 | 채팅·읽음 | 직접 메시지·읽음·첨부, FCM·Supabase private Broadcast | PostgreSQL 원본. 종료 뒤 신규 입력·매니저 열람 차단, 보호자 동의 범위별 접근 |
 | 위치 | legacy 매니저 위치 API·수집 차단 설정 | 기본 OFF, release·production 고정 OFF. 환자 GPS 1분 공유는 목표이며 자기 위치 확인과 별개 |
 | 파일 | Core API 세션 첨부·증빙 중계, Storage 원본, PostgreSQL 메타데이터 | 업로드·과거 fixture 성공과 운영 보존·파기 검증을 구분 |
 | 무통장입금 | V22 원장·감사, V23 관리자 조회, Android 입금자명, 관리자 수동 전이 | 메인 #394·#397·#405~#407, 웹 #51·#52. 기획 목표 2시간 40,000원과 현재 기본 69,000원은 불일치. 합성 API/DB 검증을 실제 수취·환불 승인으로 보지 않음 |
 | 매니저 서류 | JPEG/PNG/WebP 1개·10 MiB 자격 증빙, 관리자 심사 | 메인 #383·웹 #44 병합. Firestore 심사 상태·Storage 원본 유지, legacy 정리는 #313 |
-| 관리자 보안 | PostgreSQL ADMIN·세부 3역할, 감사, MFA·세션 경계 | 실제 운영 계정의 역할·MFA·업무 검증은 별도 |
+| 관리자 보안 | PostgreSQL ADMIN·세부 3역할, 감사, MFA·세션 경계 | 최초 운영 개인 SUPER_ADMIN의 TOTP 로그인·대시보드 확인. 전역 MFA 강제·복구·업무별 검증은 별도 |
 | 관리자 환경 표시 | 로그인·MFA·세션 화면과 상단의 개발/운영 표시 | 웹 #64·#65. 실제 Preview·Production 표시 확인은 [9월 21일 기록](../reports/admin-web-environment-display-2026-09-21.md) |
 | 삭제 준비 | PostgreSQL·일부 Firestore 영향도 읽기 전용 집계 | 실제 삭제·Storage 전체·백업·법정 보존 분리는 #348 후속 |
 
@@ -33,28 +33,33 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 - Android는 Java/XML, Activity·Coordinator·Binder·Repository 경계를 유지한다. Codex/CLI로 개발하며 Android Studio는 필수가 아니다.
 - ServiceLocator는 실제 인증 설정이 있으면 Core API와 Firebase 잔존 기능을 조합한다. Firebase 미설정 데모는 Mock이며 API 실패를 Firestore 쓰기로 우회하지 않는다.
 - 사용자·매니저는 Spring Core API, 관리자는 별도 Next.js 서버로 같은 환경의 PostgreSQL을 사용한다. 서버 사이 proxy는 없다.
-- DDL은 메인 core-api의 Flyway V1~V23만 소유한다. [migration 소스 목록](../architecture/database-migration-catalog.md)과 실제 적용 버전은 별도다.
-- 두 저장소 기본 브랜치는 master다. Core Preview·production 배포와 migration은 수동 workflow 경계다. 제안된 dev/main 전략이 적용됐다고 적지 않는다.
+- DDL은 메인 core-api의 Flyway V1~V23만 소유한다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
+- 두 저장소는 `dev` 개발·`master` 운영을 구분한다. 기능 PR은 dev로 squash, 운영 승격은 merge commit이다. Core Preview는 dev push/수동, production 배포·migration은 보호된 수동 workflow를 유지한다.
 
 ## 3. 남은 범위
 
 | 작업 | 현재 판단 |
 | --- | --- |
-| Preview API #429 | 9월 24일 health 200·UP, Ready·결제 활성, 9월 22일 예약·세션 성공 로그 확인. 가용성 차단 해소. 화면별 검증과 구분 |
-| 보호자 예약 #419 | 열린 PR #440에 예약 전 생성 승인 판정·22개 테스트 준비. 수정 요청 리뷰가 남아 있으며 master 활성화나 저장·API·Android 연결은 아님. 기존 보호자 쓰기 차단 유지 |
-| 내부 STT #420 | Naver Cloud 연동·녹음 저장 목표. 열린 #443의 debug 타이머 초안은 실제 녹음·파일 저장·STT 호출이 아님. 실제 환자 음성·AI 요약·OCR와 분리 |
-| 가이드 진입 #422 | 9월 19일 팀원 코드·테스트 조사에서는 새 세션의 Step 2 건너뛰기를 재현하지 못함. 신규·상봉 완료 세션 실기기 비교는 미확인. 열린 #441의 debug 미리보기와 구분 |
+| Preview API #429 | 9월 24일 종료. 9월 27일 인프라 작업에서 health 200·무인증 401 재확인. 모든 앱 화면의 E2E 성공을 뜻하지 않음 |
+| 보호자 예약 #419 | 열린 PR #440에 예약 전 생성 승인 판정·본문 결합과 정책 테스트 32건 준비. 리뷰 지적 수정 후 재검토 대상이며 DB·API·Android 연결은 미완료. 보호자 쓰기 차단 유지 |
+| 내부 STT #420 | Naver Cloud 연동·녹음 저장 목표. #443 화면은 병합됐지만 실제 녹음·저장·공급자 검증은 미완료. 추가 논의 메모를 기존 내부 개발 철회나 운영 승인으로 해석하지 않음 |
+| 가이드 진입·번호 #422 | 신규·기존 세션, legacy 7단계·13단계 snapshot과 재진입 상태를 구분해 시작 단계·중복 번호 확인 |
+| 메모·리포트 #423 | 종료 전 최신 메모 조합은 반영. 마지막 CTA가 채팅으로 연결된다는 새 보고는 역할·단계·빌드 확인 필요. 종료 후 매니저 접근 회수 유지 |
+| 글자 가독성 #447·하단 메뉴 #448 | 내부테스트 2에서 보고된 메모·복약 영역 가독성과 예약 후 메뉴 잘림. 현재 master 재현은 미확인 |
+| 열린 화면 PR #444·#445·#446·#450 | 앞의 3개는 코드 검토 승인, #450은 진료 요약 저장·미저장 이탈 보호 수정 요청. 통합 head 빌드·단위 테스트 298건·기기 테스트 APK 컴파일 통과, 실기기 미실행. 모두 미병합 |
 | 가이드 영상 #391 | V21 메타데이터·fallback 계약은 있음. 승인 영상·재생 UI·권리·비식별 검증은 별도 |
 | 위치·파기 #222 | 환자 GPS, 동의·철회·중지·파기 종단 검증과 production fixture |
 | 자격 서류 #313 | legacy 파일 정리·접근 검증. 신규 최소수집 코드와 구분 |
 | App Check #190·#192 | release Play Integrity, 인증된 Web VALID, enforce/rollback |
 | 탈퇴 #348·법률 #347 | 실제 삭제, 법정 보존·백업 재적용, 대리권 등 추가 자문 |
 | 결제 #27 | 40,000원 목표에 맞춘 견적·원장·기한 안내 정합성, 브라우저 MFA·App Check와 실제 수취·환불 운영 게이트 |
-| 운영 #134·#223 | production DB·migration·역할별 업무, 배포·rollback과 Go/No-Go. 이번에는 실제 환경을 재검증하지 않음 |
+| 운영 #134·#223 | 환경 분리·V23·배포·최초 관리자 로그인 완료. 정상 운영 토큰·Realtime·역할별 업무·rollback·Go/No-Go는 남음 |
 
 카드·간편결제 PG, OCR, AI 자동 리포트, 시스템 이벤트형 채팅, SOS·자동119·사고 전용 상태는 현재 MVP의 필수 미완료 목록에 다시 넣지 않는다. 새 요구가 생기면 별도 변경으로 다룬다.
 
-운영 로그인 계정은 Firebase Auth 등록까지만 진행했다. 비밀번호 설정·DB 역할·MFA·실제 업무 성공은 확인하지 않았다. production DB는 9월 21일 일시정지 확인 후 재개하지 않았으며 [관리자 웹 환경 기준](../operations/admin-web-environments.md)을 따른다.
+제품 범위는 최신 Notion MVP를 따르고 내부 테스트는 참고·고려 자료로 쓴다. 후기는 UI만 포함하며 실제 후기 저장·정산 제공 완료로 설명하지 않는다. 지도 추가 논의 메모만으로 기존 장소 검색·자기 위치 보기를 제거하거나 모든 예약 병원을 특정 병원으로 바꾸지 않는다.
+
+운영 DB는 Pro 조직에서 재개·V23·격리 복원을 완료했다. 운영 관리자 웹은 전용 DB 연결과 최초 개인 SUPER_ADMIN 등록 뒤 TOTP 로그인·대시보드 진입을 사용자가 확인했다. App Check·MFA 전역 강제, 결제 운영 쓰기, 역할별 실제 업무는 별도 게이트다. [관리자 웹 환경 기준](../operations/admin-web-environments.md)을 따른다.
 
 ## 4. 검증 기준
 
@@ -69,9 +74,11 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 
 ## 5. 최근 세부 기록 위치
 
+- [Notion MVP·내부테스트 2 대조 기록](../reports/notion-mvp-feedback-triage-2026-09-27.md)
+- [전체 문서 최신화 기록](../reports/document-refresh-2026-09-27.md)
+- [개발·운영 환경 분리 검증](../reports/dev-production-separation-2026-09-27.md)
 - [Notion 브라우저 대조·문서와 이슈 갱신](../reports/notion-browser-alignment-2026-09-26.md)
 - [Notion 접근 확인·이슈 정리와 예약 생성 판정 준비](../reports/issue-sync-2026-09-24.md)
-- [전체 문서 최신화 기록](../reports/document-refresh-2026-09-21.md)
 - [Notion 제품 기준 정합성](../planning/notion-product-alignment.md)
 - [Figma MVP 화면·Android 매핑](../design/figma-mvp-implementation-map-2026-08-29.md)
 - [관리자 웹 환경 표시 검증](../reports/admin-web-environment-display-2026-09-21.md)

@@ -20,9 +20,8 @@ on:
         default: ""
         type: string
       confirm_database_project_ref:
-        description: production 적용 시 Environment의 Supabase project ref를 다시 입력하세요.
-        required: false
-        default: ""
+        description: 대상 Environment의 Supabase project ref를 다시 입력하세요.
+        required: true
         type: string
       backup_reference:
         description: production 적용 시 복원 가능한 백업 증적 URL 또는 ID를 입력하세요.
@@ -102,6 +101,7 @@ jobs:
           MIGRATION_CONFIRM_DATABASE_PROJECT_REF: ${{ inputs.confirm_database_project_ref }}
           MIGRATION_BACKUP_REFERENCE: ${{ inputs.backup_reference }}
           PRODUCTION_SUPABASE_PROJECT_REF: ${{ vars.PRODUCTION_SUPABASE_PROJECT_REF }}
+          PREVIEW_SUPABASE_PROJECT_REF: ${{ vars.PREVIEW_SUPABASE_PROJECT_REF }}
           COMPANION_SESSION_SEED_SHA256: ${{ inputs.companion_session_seed_sha256 }}
           RETENTION_FIXTURE_ACTION: ${{ inputs.retention_fixture_action }}
           RETENTION_FIXTURE_CONFIRM_PROJECT: ${{ inputs.confirm_retention_fixture_project }}
@@ -145,11 +145,19 @@ jobs:
               echo "백업 증적에는 URL 또는 안전한 식별자만 입력할 수 있습니다." >&2
               exit 1
             fi
+          elif [ "$MIGRATION_TARGET" = "preview" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/dev" ] || [ "$PREVIEW_SUPABASE_PROJECT_REF" != "parpdzttloacinyvhwmx" ] || [ "$MIGRATION_CONFIRM_DATABASE_PROJECT_REF" != "$PREVIEW_SUPABASE_PROJECT_REF" ]; then
+              echo "개발 migration은 dev 브랜치와 개발 Supabase 프로젝트가 일치해야 합니다." >&2
+              exit 1
+            fi
+          else
+            echo "허용하지 않은 migration 대상입니다." >&2
+            exit 1
           fi
 
           if [ "${{ inputs.apply_companion_session_seed }}" = "true" ]; then
-            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/master" ]; then
-              echo "동행 세션 백필은 master의 preview migration에서만 실행할 수 있습니다." >&2
+            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/dev" ]; then
+              echo "동행 세션 백필은 dev의 preview migration에서만 실행할 수 있습니다." >&2
               exit 1
             fi
             if [[ ! "$COMPANION_SESSION_SEED_SHA256" =~ ^[0-9a-fA-F]{64}$ ]]; then
@@ -159,8 +167,8 @@ jobs:
           fi
 
           if [ "$RETENTION_FIXTURE_ACTION" != "none" ]; then
-            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/master" ]; then
-              echo "자동 파기 fixture는 master의 preview DB에서만 실행할 수 있습니다." >&2
+            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/dev" ]; then
+              echo "자동 파기 fixture는 dev의 preview DB에서만 실행할 수 있습니다." >&2
               exit 1
             fi
             if [ "$RETENTION_FIXTURE_CONFIRM_PROJECT" != "bodeul-dev" ]; then
@@ -174,8 +182,8 @@ jobs:
           fi
 
           if [ "$GUIDE_DEVICE_FIXTURE_ACTION" != "none" ]; then
-            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/master" ]; then
-              echo "가이드 실기기 fixture는 master의 preview DB에서만 실행할 수 있습니다." >&2
+            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/dev" ]; then
+              echo "가이드 실기기 fixture는 dev의 preview DB에서만 실행할 수 있습니다." >&2
               exit 1
             fi
             if [ "$GUIDE_DEVICE_FIXTURE_CONFIRM_PROJECT" != "bodeul-dev" ]; then
@@ -239,10 +247,9 @@ jobs:
       - name: Core API 검증
         run: ./gradlew check --console=plain
 
-      - name: Production DB 연결 대상 검증
-        if: inputs.target == 'production'
+      - name: 환경별 DB 연결 대상 검증
         env:
-          EXPECTED_SUPABASE_PROJECT_REF: ${{ vars.PRODUCTION_SUPABASE_PROJECT_REF }}
+          EXPECTED_SUPABASE_PROJECT_REF: ${{ inputs.target == 'production' && vars.PRODUCTION_SUPABASE_PROJECT_REF || vars.PREVIEW_SUPABASE_PROJECT_REF }}
           MIGRATION_DB_JDBC_URL: ${{ secrets.MIGRATION_DB_JDBC_URL }}
           MIGRATION_DB_USERNAME: ${{ secrets.MIGRATION_DB_USERNAME }}
         run: ./gradlew verifyDatabaseConnectionTarget --console=plain
