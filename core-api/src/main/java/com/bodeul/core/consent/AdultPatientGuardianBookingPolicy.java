@@ -13,49 +13,63 @@ public final class AdultPatientGuardianBookingPolicy {
     private AdultPatientGuardianBookingPolicy() {
     }
 
-    public static Grant grantByPatient(
+    public static ApprovalState grantByPatient(
+            ApprovalState current,
+            long expectedVersion,
             UUID actorUserId,
             AppUserRole actorRole,
             boolean adultPatientConfirmed,
-            UUID patientUserId,
-            UUID guardianUserId,
             AppUserRole guardianRole,
-            UUID clientRequestId,
             String requestFingerprint,
             Instant grantedAt,
             Instant expiresAt,
             String policyVersion) {
-        requirePatientActor(actorUserId, actorRole, patientUserId);
+        requireCurrentVersion(current, expectedVersion);
+        requirePatientActor(actorUserId, actorRole, current.patientUserId());
         if (!adultPatientConfirmed) {
             throw new IllegalArgumentException("성인 환자 본인 확인이 필요합니다.");
         }
         if (guardianRole != AppUserRole.GUARDIAN) {
             throw new IllegalArgumentException("보호자 역할 계정만 예약 생성 대상으로 지정할 수 있습니다.");
         }
-        return new Grant(
-                UUID.randomUUID(), patientUserId, guardianUserId, clientRequestId, requestFingerprint,
-                policyVersion, actorUserId, grantedAt, expiresAt, null, null, 0);
+        Objects.requireNonNull(grantedAt, "승인 시각이 필요합니다.");
+        current.grant().ifPresent(previous -> {
+            Instant changedAt = previous.revokedAt() == null ? previous.grantedAt() : previous.revokedAt();
+            if (grantedAt.isBefore(changedAt)) {
+                throw new IllegalArgumentException("재승인 시각은 이전 승인·철회 시각보다 빠를 수 없습니다.");
+            }
+        });
+        long nextVersion = Math.addExact(current.version(), 1);
+        Grant next = new Grant(
+                UUID.randomUUID(), current.patientUserId(), current.guardianUserId(), current.clientRequestId(),
+                requestFingerprint, policyVersion, actorUserId, grantedAt, expiresAt, null, null, nextVersion);
+        return current.withGrant(next);
     }
 
-    public static Grant revokeByPatient(
-            Grant grant, UUID actorUserId, AppUserRole actorRole, Instant revokedAt) {
-        Objects.requireNonNull(grant, "철회할 예약 생성 승인이 필요합니다.");
-        requirePatientActor(actorUserId, actorRole, grant.patientUserId());
+    public static ApprovalState revokeByPatient(
+            ApprovalState current, long expectedVersion,
+            UUID actorUserId, AppUserRole actorRole, Instant revokedAt) {
+        requireCurrentVersion(current, expectedVersion);
+        requirePatientActor(actorUserId, actorRole, current.patientUserId());
+        Grant grant = current.grant().orElseThrow(
+                () -> new IllegalArgumentException("철회할 예약 생성 승인이 필요합니다."));
         Objects.requireNonNull(revokedAt, "철회 시각이 필요합니다.");
         if (revokedAt.isBefore(grant.grantedAt())) {
             throw new IllegalArgumentException("철회 시각은 승인 시각보다 빠를 수 없습니다.");
         }
         if (grant.revokedAt() != null) {
-            return grant;
+            return current;
         }
-        return new Grant(
+        return current.withGrant(new Grant(
                 grant.id(), grant.patientUserId(), grant.guardianUserId(), grant.clientRequestId(),
                 grant.requestFingerprint(),
                 grant.policyVersion(), grant.grantedByUserId(), grant.grantedAt(), grant.expiresAt(),
-                actorUserId, revokedAt, Math.addExact(grant.version(), 1));
+                actorUserId, revokedAt, Math.addExact(current.version(), 1)));
     }
 
+    /** current는 후보 이력에서 재구성하지 않고 생성 트랜잭션이 조회한 최신 상태여야 한다. */
     public static Decision evaluateCreation(
+            ApprovalState current,
             Optional<Grant> candidate,
             UUID requesterUserId,
             AppUserRole requesterRole,
@@ -64,6 +78,7 @@ public final class AdultPatientGuardianBookingPolicy {
             String currentRequestFingerprint,
             String currentPolicyVersion,
             Instant requestedAt) {
+        Objects.requireNonNull(current, "요청의 최신 승인 상태가 필요합니다.");
         Objects.requireNonNull(candidate, "예약 생성 승인 조회 결과가 필요합니다.");
         Objects.requireNonNull(requesterUserId, "요청자 식별자가 필요합니다.");
         Objects.requireNonNull(requesterRole, "요청자 역할이 필요합니다.");
@@ -73,21 +88,25 @@ public final class AdultPatientGuardianBookingPolicy {
         String policyVersion = normalizePolicyVersion(currentPolicyVersion);
         Objects.requireNonNull(requestedAt, "판정 시각이 필요합니다.");
 
-        if (candidate.isEmpty()) {
+        if (candidate.isEmpty() || current.grant().isEmpty()) {
             return Decision.denied(DecisionReason.GRANT_MISSING);
         }
         Grant grant = candidate.orElseThrow();
         if (requesterRole != AppUserRole.GUARDIAN) {
             return Decision.denied(DecisionReason.REQUESTER_NOT_GUARDIAN);
         }
-        if (!grant.patientUserId().equals(patientUserId)) {
+        if (!current.patientUserId().equals(patientUserId) || !grant.patientUserId().equals(patientUserId)) {
             return Decision.denied(DecisionReason.PATIENT_MISMATCH);
         }
-        if (!grant.guardianUserId().equals(requesterUserId)) {
+        if (!current.guardianUserId().equals(requesterUserId) || !grant.guardianUserId().equals(requesterUserId)) {
             return Decision.denied(DecisionReason.GUARDIAN_MISMATCH);
         }
-        if (!grant.clientRequestId().equals(clientRequestId)) {
+        if (!current.clientRequestId().equals(clientRequestId) || !grant.clientRequestId().equals(clientRequestId)) {
             return Decision.denied(DecisionReason.REQUEST_MISMATCH);
+        }
+        // 이력에 남은 과거 승인이나 같은 버전의 경합 후보를 현재 승인으로 재사용하지 않는다.
+        if (grant.version() != current.version() || !current.grant().orElseThrow().equals(grant)) {
+            return Decision.denied(DecisionReason.GRANT_SUPERSEDED);
         }
         // 승인 때 확인한 본문과 최초 INSERT 직전 본문을 비교한다. 요청 ID만으로는 부족하다.
         if (!grant.requestFingerprint().equals(requestFingerprint)) {
@@ -118,6 +137,13 @@ public final class AdultPatientGuardianBookingPolicy {
         }
     }
 
+    private static void requireCurrentVersion(ApprovalState current, long expectedVersion) {
+        Objects.requireNonNull(current, "요청의 최신 승인 상태가 필요합니다.");
+        if (current.version() != expectedVersion) {
+            throw new IllegalArgumentException("승인 상태가 변경되었습니다. 최신 상태를 다시 확인해야 합니다.");
+        }
+    }
+
     private static String normalizePolicyVersion(String policyVersion) {
         if (policyVersion == null || policyVersion.isBlank()) {
             throw new IllegalArgumentException("예약 생성 승인 정책 버전이 필요합니다.");
@@ -135,7 +161,45 @@ public final class AdultPatientGuardianBookingPolicy {
     public enum DecisionReason {
         ALLOWED, GRANT_MISSING, REQUESTER_NOT_GUARDIAN, PATIENT_MISMATCH,
         GUARDIAN_MISMATCH, REQUEST_MISMATCH, REQUEST_CONTENT_MISMATCH, POLICY_VERSION_MISMATCH,
-        NOT_YET_ACTIVE, EXPIRED, REVOKED
+        NOT_YET_ACTIVE, EXPIRED, REVOKED, GRANT_SUPERSEDED
+    }
+
+    /** 요청별 단일 상태다. 저장 시 요청 키 유일성과 expectedVersion 기반 원자적 교체가 필요하다. */
+    public record ApprovalState(
+            UUID patientUserId,
+            UUID guardianUserId,
+            UUID clientRequestId,
+            long version,
+            Optional<Grant> grant) {
+        public ApprovalState {
+            Objects.requireNonNull(patientUserId, "환자 식별자가 필요합니다.");
+            Objects.requireNonNull(guardianUserId, "보호자 식별자가 필요합니다.");
+            Objects.requireNonNull(clientRequestId, "예약 생성 요청 식별자가 필요합니다.");
+            Objects.requireNonNull(grant, "현재 승인 조회 결과가 필요합니다.");
+            if (patientUserId.equals(guardianUserId)) {
+                throw new IllegalArgumentException("환자 본인을 보호자로 지정할 수 없습니다.");
+            }
+            if (version < 0 || (grant.isEmpty() && version != 0)) {
+                throw new IllegalArgumentException("승인 이력이 없는 초기 상태만 버전 0으로 둘 수 있습니다.");
+            }
+            if (grant.isPresent()) {
+                Grant current = grant.orElseThrow();
+                if (!patientUserId.equals(current.patientUserId())
+                        || !guardianUserId.equals(current.guardianUserId())
+                        || !clientRequestId.equals(current.clientRequestId())
+                        || version != current.version()) {
+                    throw new IllegalArgumentException("현재 승인과 요청 키·버전이 일치해야 합니다.");
+                }
+            }
+        }
+
+        public static ApprovalState pending(UUID patientUserId, UUID guardianUserId, UUID clientRequestId) {
+            return new ApprovalState(patientUserId, guardianUserId, clientRequestId, 0, Optional.empty());
+        }
+
+        private ApprovalState withGrant(Grant next) {
+            return new ApprovalState(patientUserId, guardianUserId, clientRequestId, next.version(), Optional.of(next));
+        }
     }
 
     public record Decision(boolean allowed, DecisionReason reason) {
@@ -191,8 +255,8 @@ public final class AdultPatientGuardianBookingPolicy {
             if (revokedAt != null && revokedAt.isBefore(grantedAt)) {
                 throw new IllegalArgumentException("철회 시각은 승인 시각보다 빠를 수 없습니다.");
             }
-            if (version < 0) {
-                throw new IllegalArgumentException("승인 버전은 0 이상이어야 합니다.");
+            if (version < 1) {
+                throw new IllegalArgumentException("승인 버전은 1 이상이어야 합니다.");
             }
         }
     }
