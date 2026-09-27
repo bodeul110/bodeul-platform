@@ -38,3 +38,9 @@ Figma의 지도 이미지, 약국 목록, 환자 사진과 진료 결과는 실�
 - Debug instrumentation은 Step 7 메모 저장·전환, Step 9 Kakao 약국 액션 필터·경로 완료 확인, Step 12 메모 모아보기·Step 13 전환, Step 13 300자 제한·기존 리포트 제출을 검증한다.
 - 운영 저장소/클라우드 권한 없이 `ManagerGuidePreviewActivity`와 로컬 preview repository만 사용한다.
 - 실제 Kakao 앱 열기, 서버 리포트 생성 완료, 재시도 응답은 외부 통합 범위이므로 UI 테스트에서 실행하지 않는다.
+
+## 리뷰 후 보완
+
+- Step 7 저장은 단일 mutation gate와 기대 세션·`CONSULTATION_SUMMARY` 검사 경로를 사용한다. 저장 중 중복 요청·단계 이동·이탈을 막고 늦은 응답이 이전 화면을 복원하지 않게 한다.
+- 초안은 ViewModel 메모리에서만 재조회·회전 동안 보존한다. 다음 단계는 저장 후 진행하고 뒤로가기·하단 메뉴 이탈은 버리기 확인을 거친다. 프로세스 종료 후 미저장 메모 복원은 지원하지 않는다.
+- [실기기 30건과 통합 검증 기록](../reports/pr-450-integration-verification-2026-09-27.md)에 구현 범위와 외부 서비스 미검증 범위를 구분했다.
