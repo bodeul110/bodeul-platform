@@ -33,6 +33,7 @@
 - Firebase, 인증, 위치, 예약, 리포트처럼 외부 상태와 연결되는 코드는 Repository/Service 계층에 둔다.
 - UI 문구는 하드코딩을 피하고 가능한 리소스 문자열로 관리한다.
 - `google-services.json`이 없는 CI/Dependabot 환경에서도 컴파일이 깨지지 않도록 fallback을 고려한다.
+- Firebase 설정은 `app/src/debug/`와 `app/src/release/`에서 분리하고 Release가 공통 개발용 API·Realtime 설정을 상속하지 않게 한다. 환경 혼합 회귀 검사는 `node tools/android/check-environment-boundary.mjs`로 실행한다.
 - 사용자가 볼 수 없는 내부 로그도 한국어 맥락을 유지하되, 민감정보는 남기지 않는다.
 
 ## Firebase와 운영 스크립트
