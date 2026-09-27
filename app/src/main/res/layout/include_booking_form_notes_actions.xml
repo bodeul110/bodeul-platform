@@ -2,47 +2,41 @@
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:text="@string/booking_note_section"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutBookingSpecialNotes"
-            style="@style/BodeulFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/booking_special_notes_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputBookingSpecialNotes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textMultiLine|textCapSentences"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
-
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSubmitBooking"
-        style="@style/BodeulHomeButton"
-        android:layout_marginTop="18dp"
-        android:text="@string/booking_submit_button" />
+        android:layout_width="match_parent"
+        android:layout_height="68dp"
+        android:layout_marginTop="28dp"
+        android:fontFamily="@font/pretendard_semibold"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/booking_submit_button"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="17sp"
+        app:backgroundTint="@color/figma_mvp_primary"
+        app:cornerRadius="34dp"
+        app:icon="@drawable/ic_figma_guide_arrow_vector"
+        app:iconGravity="textEnd"
+        app:iconPadding="12dp"
+        app:iconTint="@color/white" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/pretendard_regular"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        android:text="@string/booking_main_submit_helper"
+        android:textColor="@color/figma_mvp_text_tertiary"
+        android:textSize="12sp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonCancelBookingEdit"
         style="@style/BodeulOutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="@string/booking_cancel_edit_button"
         android:visibility="gone" />
@@ -54,5 +48,5 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="14dp"
         android:visibility="gone"
-        app:indicatorColor="@color/bodeul_primary" />
+        app:indicatorColor="@color/figma_mvp_primary" />
 </merge>

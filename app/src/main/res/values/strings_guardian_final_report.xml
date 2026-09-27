@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guardian_final_report_brand" translatable="false">Bodeul</string>
+    <string name="guardian_final_report_header_title">일정 관리</string>
+    <string name="guardian_final_report_back_description">이전 화면으로 이동</string>
+    <string name="guardian_final_report_menu_description">리포트 메뉴 열기</string>
+    <string name="guardian_final_report_refresh_action">새로고침</string>
+    <string name="guardian_final_report_badge">동행 리포트</string>
+    <string name="guardian_final_report_completion_title">동행을\n안전하게 마쳤습니다</string>
+    <string name="guardian_final_report_verified">안전하게 동행 완료</string>
+    <string name="guardian_final_report_decorative_image">화면 연출 이미지</string>
+    <string name="guardian_final_report_visit_summary">방문 정보</string>
+    <string name="guardian_final_report_hospital_label">방문 병원</string>
+    <string name="guardian_final_report_department_label">진료과</string>
+    <string name="guardian_final_report_patient_condition_label">요청 시 환자 상태</string>
+    <string name="guardian_final_report_treatment_title">진료 및 처방 내용</string>
+    <string name="guardian_final_report_clinical_section">진료 내용</string>
+    <string name="guardian_final_report_next_visit_section">다음 예약 안내</string>
+    <string name="guardian_final_report_medication_section">약국 조제 안내</string>
+    <string name="guardian_final_report_manager_role">동행 매니저</string>
+    <string name="guardian_final_report_manager_message">매니저 전달 사항</string>
+    <string name="guardian_final_report_manager_live_update">최근 현장 업데이트</string>
+</resources>

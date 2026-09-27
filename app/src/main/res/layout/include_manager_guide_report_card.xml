@@ -90,6 +90,7 @@
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutReportSummary"
             style="@style/BodeulFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

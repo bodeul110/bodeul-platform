@@ -3,6 +3,8 @@ package com.example.bodeul.ui.booking;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.text.TextUtils;
+import android.view.View;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
@@ -22,11 +24,17 @@ import java.util.TimeZone;
  * 방문 날짜와 시간 선택 로직을 화면 밖으로 분리한다.
  */
 public final class BookingAppointmentSelector {
+    public interface OnAppointmentChangedListener {
+        void onAppointmentChanged(String appointmentAt);
+    }
+
     private static final String SEOUL_TIME_ZONE = "Asia/Seoul";
 
     private final AppCompatActivity activity;
     private final TextInputLayout layoutAppointmentAt;
     private final TextInputEditText inputAppointmentAt;
+    private final View appointmentSummaryAction;
+    private final TextView textAppointmentError;
     private final MaterialButton buttonQuickToday;
     private final MaterialButton buttonQuickTomorrow;
     private final MaterialButton buttonQuickDayAfterTomorrow;
@@ -35,11 +43,15 @@ public final class BookingAppointmentSelector {
     private final MaterialButton buttonQuickLateAfternoon;
     private final ActivityResultLauncher<Intent> appointmentSelectorLauncher;
     private final Runnable beforeOpenListener;
+    @Nullable
+    private OnAppointmentChangedListener appointmentChangedListener;
 
     public BookingAppointmentSelector(
             AppCompatActivity activity,
             TextInputLayout layoutAppointmentAt,
             TextInputEditText inputAppointmentAt,
+            View appointmentSummaryAction,
+            TextView textAppointmentError,
             MaterialButton buttonQuickToday,
             MaterialButton buttonQuickTomorrow,
             MaterialButton buttonQuickDayAfterTomorrow,
@@ -52,6 +64,8 @@ public final class BookingAppointmentSelector {
         this.activity = activity;
         this.layoutAppointmentAt = layoutAppointmentAt;
         this.inputAppointmentAt = inputAppointmentAt;
+        this.appointmentSummaryAction = appointmentSummaryAction;
+        this.textAppointmentError = textAppointmentError;
         this.buttonQuickToday = buttonQuickToday;
         this.buttonQuickTomorrow = buttonQuickTomorrow;
         this.buttonQuickDayAfterTomorrow = buttonQuickDayAfterTomorrow;
@@ -74,17 +88,29 @@ public final class BookingAppointmentSelector {
     public void setAppointmentAt(String appointmentAt) {
         inputAppointmentAt.setText(appointmentAt);
         layoutAppointmentAt.setError(null);
+        textAppointmentError.setVisibility(View.GONE);
         refreshQuickAppointmentButtons();
+        dispatchAppointmentChanged();
     }
 
     public void clear() {
         inputAppointmentAt.setText(null);
         layoutAppointmentAt.setError(null);
+        textAppointmentError.setVisibility(View.GONE);
         refreshQuickAppointmentButtons();
+        dispatchAppointmentChanged();
+    }
+
+    public void setOnAppointmentChangedListener(
+            @Nullable OnAppointmentChangedListener appointmentChangedListener
+    ) {
+        this.appointmentChangedListener = appointmentChangedListener;
+        dispatchAppointmentChanged();
     }
 
     public void setEnabled(boolean enabled) {
         inputAppointmentAt.setEnabled(enabled);
+        appointmentSummaryAction.setEnabled(enabled);
         buttonQuickToday.setEnabled(enabled);
         buttonQuickTomorrow.setEnabled(enabled);
         buttonQuickDayAfterTomorrow.setEnabled(enabled);
@@ -97,18 +123,22 @@ public final class BookingAppointmentSelector {
         String appointmentAt = getAppointmentAt();
         if (TextUtils.isEmpty(appointmentAt)) {
             layoutAppointmentAt.setError(activity.getString(R.string.error_required_field));
+            showAppointmentError(R.string.booking_main_visit_datetime_error);
             return false;
         }
         if (BookingAppointmentDateTime.parse(appointmentAt) == null) {
             layoutAppointmentAt.setError(activity.getString(R.string.error_booking_appointment_format));
+            showAppointmentError(R.string.error_booking_appointment_format);
             return false;
         }
         layoutAppointmentAt.setError(null);
+        textAppointmentError.setVisibility(View.GONE);
         return true;
     }
 
     private void configureAppointmentPicker() {
         inputAppointmentAt.setOnClickListener(view -> openAppointmentSelector());
+        appointmentSummaryAction.setOnClickListener(view -> openAppointmentSelector());
         layoutAppointmentAt.setEndIconMode(TextInputLayout.END_ICON_CUSTOM);
         layoutAppointmentAt.setEndIconDrawable(android.R.drawable.ic_menu_my_calendar);
         layoutAppointmentAt.setEndIconOnClickListener(view -> openAppointmentSelector());
@@ -143,7 +173,9 @@ public final class BookingAppointmentSelector {
         baseCalendar.set(Calendar.DAY_OF_MONTH, targetCalendar.get(Calendar.DAY_OF_MONTH));
         inputAppointmentAt.setText(formatAppointmentAt(baseCalendar.getTimeInMillis()));
         layoutAppointmentAt.setError(null);
+        textAppointmentError.setVisibility(View.GONE);
         refreshQuickAppointmentButtons();
+        dispatchAppointmentChanged();
     }
 
     private void applyQuickAppointmentTime(int hourOfDay, int minute) {
@@ -154,7 +186,9 @@ public final class BookingAppointmentSelector {
         baseCalendar.set(Calendar.MILLISECOND, 0);
         inputAppointmentAt.setText(formatAppointmentAt(baseCalendar.getTimeInMillis()));
         layoutAppointmentAt.setError(null);
+        textAppointmentError.setVisibility(View.GONE);
         refreshQuickAppointmentButtons();
+        dispatchAppointmentChanged();
     }
 
     private void refreshQuickAppointmentButtons() {
@@ -215,21 +249,21 @@ public final class BookingAppointmentSelector {
     private void bindQuickButtonStyle(MaterialButton button, boolean selected) {
         if (selected) {
             button.setBackgroundTintList(ColorStateList.valueOf(
-                    ContextCompat.getColor(activity, R.color.bodeul_primary)
+                    ContextCompat.getColor(activity, R.color.figma_mvp_primary)
             ));
             button.setStrokeColor(ColorStateList.valueOf(
-                    ContextCompat.getColor(activity, R.color.bodeul_primary)
+                    ContextCompat.getColor(activity, R.color.figma_mvp_primary)
             ));
             button.setTextColor(ContextCompat.getColor(activity, R.color.white));
             return;
         }
         button.setBackgroundTintList(ColorStateList.valueOf(
-                ContextCompat.getColor(activity, R.color.white)
+                ContextCompat.getColor(activity, R.color.figma_mvp_surface)
         ));
         button.setStrokeColor(ColorStateList.valueOf(
-                ContextCompat.getColor(activity, R.color.bodeul_outline)
+                ContextCompat.getColor(activity, R.color.figma_mvp_divider)
         ));
-        button.setTextColor(ContextCompat.getColor(activity, R.color.bodeul_primary));
+        button.setTextColor(ContextCompat.getColor(activity, R.color.figma_mvp_primary));
     }
 
     private Calendar resolveBaseAppointmentCalendar() {
@@ -253,5 +287,16 @@ public final class BookingAppointmentSelector {
 
     private String formatAppointmentAt(long appointmentAtMillis) {
         return BookingAppointmentDateTime.format(appointmentAtMillis);
+    }
+
+    private void dispatchAppointmentChanged() {
+        if (appointmentChangedListener != null) {
+            appointmentChangedListener.onAppointmentChanged(getAppointmentAt());
+        }
+    }
+
+    private void showAppointmentError(int messageResId) {
+        textAppointmentError.setText(messageResId);
+        textAppointmentError.setVisibility(View.VISIBLE);
     }
 }

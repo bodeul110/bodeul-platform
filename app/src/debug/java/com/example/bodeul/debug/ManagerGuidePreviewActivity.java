@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -17,6 +18,7 @@ import com.example.bodeul.data.AuthRepository;
 import com.example.bodeul.data.ManagerRepository;
 import com.example.bodeul.data.realtime.CompanionRealtimeSubscriber;
 import com.example.bodeul.domain.model.GuideStep;
+import com.example.bodeul.ui.booking.BookingLocationMapView;
 import com.example.bodeul.ui.manager.ManagerGuideActivity;
 
 /** 운영 서버 저장소와 realtime을 사용하지 않는 debug 가이드 미리보기다. */
@@ -60,6 +62,7 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreviewBanner();
+        replaceExternalMapWithLocalPreview();
         disableServerBackedDestinations();
     }
 
@@ -89,6 +92,11 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
     }
 
     @Override
+    protected boolean shouldInitializeGuideMap() {
+        return false;
+    }
+
+    @Override
     protected boolean isGuidePreviewMode() {
         return true;
     }
@@ -100,6 +108,13 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
 
     @Override
     protected void openCompanionChat() {
+        showLocalOnlyMessage();
+    }
+
+    @Override
+    protected void openMapFallback(
+            com.example.bodeul.ui.manager.ManagerGuideMapActionModel model
+    ) {
         showLocalOnlyMessage();
     }
 
@@ -145,6 +160,25 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
         findViewById(R.id.buttonGuideOpenChat).setOnClickListener(view -> showLocalOnlyMessage());
         findViewById(R.id.buttonGuideMeetingOpenChat).setOnClickListener(
                 view -> showLocalOnlyMessage());
+    }
+
+    private void replaceExternalMapWithLocalPreview() {
+        View externalMap = findViewById(R.id.mapViewManagerGuide);
+        ViewGroup parent = (ViewGroup) externalMap.getParent();
+        int index = parent.indexOfChild(externalMap);
+        externalMap.setVisibility(View.GONE);
+
+        BookingLocationMapView localMap = new BookingLocationMapView(this);
+        localMap.setClickable(false);
+        localMap.setContentDescription(getString(R.string.debug_figma_preview_local_map));
+        parent.addView(
+                localMap,
+                index,
+                new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        dp(250)
+                )
+        );
     }
 
     private void showLocalOnlyMessage() {

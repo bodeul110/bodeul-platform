@@ -11,6 +11,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
@@ -26,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -95,6 +97,10 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private ManagerGuidePrescriptionBinder managerGuidePrescriptionBinder;
     private ManagerGuideConsultationBinder managerGuideConsultationBinder;
     private ManagerGuideMedicationBinder managerGuideMedicationBinder;
+    private ManagerGuideConsultationSummaryBinder managerGuideConsultationSummaryBinder;
+    private ManagerGuidePharmacyRouteBinder managerGuidePharmacyRouteBinder;
+    private ManagerGuideCareCompletionBinder managerGuideCareCompletionBinder;
+    private ManagerGuideJournalBinder managerGuideJournalBinder;
 
     private int pendingLocationPermissionAction = LOCATION_ACTION_NONE;
     private boolean liveLocationActivationInFlight;
@@ -243,7 +249,9 @@ public class ManagerGuideActivity extends AppCompatActivity {
         managerGuideContentContainer = findViewById(R.id.managerGuideContentContainer);
         managerGuideBottomAction = findViewById(R.id.managerGuideBottomAction);
         managerGuideScroll = (ScrollView) findViewById(R.id.guideScrollContent).getParent();
+        configureSystemBars();
         configureBottomActionInsets();
+        configureRemainingStepToolbarInsets();
         inputGuideLocationSummary = findViewById(R.id.inputGuideLocationSummary);
         inputGuardianUpdate = findViewById(R.id.inputGuardianUpdate);
         inputGuidePhotoNote = findViewById(R.id.inputGuidePhotoNote);
@@ -346,6 +354,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 viewModel::saveConsultationDraft);
         managerGuideMedicationBinder = new ManagerGuideMedicationBinder(
                 findViewById(android.R.id.content));
+        managerGuideConsultationSummaryBinder = new ManagerGuideConsultationSummaryBinder(
+                findViewById(android.R.id.content));
+        managerGuidePharmacyRouteBinder = new ManagerGuidePharmacyRouteBinder(
+                findViewById(android.R.id.content));
+        managerGuideCareCompletionBinder = new ManagerGuideCareCompletionBinder(
+                LayoutInflater.from(this), findViewById(android.R.id.content));
+        managerGuideJournalBinder = new ManagerGuideJournalBinder(
+                findViewById(android.R.id.content));
 
         findViewById(R.id.buttonBackGuide).setOnClickListener(
                 view -> attemptExit(this::finish));
@@ -362,6 +378,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonBackGuideConsultation).setOnClickListener(
                 view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuideMedication).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideConsultationSummary).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuidePharmacyRoute).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideCareCompletion).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideJournal).setOnClickListener(
                 view -> attemptExit(this::finish));
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -408,6 +432,11 @@ public class ManagerGuideActivity extends AppCompatActivity {
             if ("CONSULTATION_SUPPORT".equals(currentStepCode) && !mutationInFlight) {
                 viewModel.saveConsultationFieldNote(
                         managerGuideConsultationBinder.fieldNote());
+            }
+        });
+        findViewById(R.id.buttonGuideSummarySaveNote).setOnClickListener(view -> {
+            if ("CONSULTATION_SUMMARY".equals(currentStepCode) && !mutationInFlight) {
+                viewModel.saveFieldPhotoNote(managerGuideConsultationSummaryBinder.note());
             }
         });
         buttonSelectGuideSessionArtifact.setOnClickListener(view -> selectCurrentStepArtifact());
@@ -476,28 +505,30 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonStopLiveLocationSharing).setOnClickListener(view -> stopLiveLocationSharing(true, true));
 
         mapView = findViewById(R.id.mapViewManagerGuide);
-        mapView.start(new MapLifeCycleCallback() {
-            @Override
-            public void onMapDestroy() {
-                kakaoMap = null;
-                currentLocationMarker = null;
-            }
-
-            @Override
-            public void onMapError(Exception e) {
-                Log.w(TAG, "카카오 지도 초기화 실패: " + e.getClass().getSimpleName());
-            }
-        }, new KakaoMapReadyCallback() {
-            @Override
-            public void onMapReady(KakaoMap map) {
-                kakaoMap = map;
-                mapView.setVisibility(View.VISIBLE);
-                updateMapMarker();
-                if (legacyManagerLocationEnabled && hasLocationPermission()) {
-                    startMapTracking();
+        if (shouldInitializeGuideMap()) {
+            mapView.start(new MapLifeCycleCallback() {
+                @Override
+                public void onMapDestroy() {
+                    kakaoMap = null;
+                    currentLocationMarker = null;
                 }
-            }
-        });
+
+                @Override
+                public void onMapError(Exception e) {
+                    Log.w(TAG, "카카오 지도 초기화 실패: " + e.getClass().getSimpleName());
+                }
+            }, new KakaoMapReadyCallback() {
+                @Override
+                public void onMapReady(KakaoMap map) {
+                    kakaoMap = map;
+                    mapView.setVisibility(View.VISIBLE);
+                    updateMapMarker();
+                    if (legacyManagerLocationEnabled && hasLocationPermission()) {
+                        startMapTracking();
+                    }
+                }
+            });
+        }
 
         viewModel.getUiState().observe(this, this::handleUiState);
         viewModel.getToastMessage().observe(this, message -> {
@@ -554,6 +585,11 @@ public class ManagerGuideActivity extends AppCompatActivity {
         return true;
     }
 
+    /** Debug 정적 미리보기에서는 외부 지도 SDK 초기화를 생략한다. */
+    protected boolean shouldInitializeGuideMap() {
+        return true;
+    }
+
     /** debug 미리보기에서만 실제 녹음과 분리된 로컬 상태 시뮬레이션을 노출한다. */
     protected boolean isGuidePreviewMode() {
         return false;
@@ -575,6 +611,10 @@ public class ManagerGuideActivity extends AppCompatActivity {
             managerGuidePrescriptionBinder.hideForState();
             managerGuideConsultationBinder.hideForState();
             managerGuideMedicationBinder.hideForState();
+            managerGuideConsultationSummaryBinder.hideForState();
+            managerGuidePharmacyRouteBinder.hideForState();
+            managerGuideCareCompletionBinder.hideForState();
+            managerGuideJournalBinder.hideForState();
             currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
             currentStepCode = "";
             clearCurrentLocationMarkerOutsideMeetingStep();
@@ -635,6 +675,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
                             viewModel.getConsultationDraft(sessionId));
                     managerGuideMedicationBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight);
+                    managerGuideConsultationSummaryBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
+                    managerGuidePharmacyRouteBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
+                    managerGuideCareCompletionBinder.bind(
+                            state.screenModel, state.dashboard);
+                    managerGuideJournalBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
                     applyReportDraft();
                 } finally {
                     bindingPreConsultationConfirmation = false;
@@ -661,6 +709,10 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 managerGuidePrescriptionBinder.hideForState();
                 managerGuideConsultationBinder.hideForState();
                 managerGuideMedicationBinder.hideForState();
+                managerGuideConsultationSummaryBinder.hideForState();
+                managerGuidePharmacyRouteBinder.hideForState();
+                managerGuideCareCompletionBinder.hideForState();
+                managerGuideJournalBinder.hideForState();
                 currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
                 currentStepCode = "";
                 clearCurrentLocationMarkerOutsideMeetingStep();
@@ -725,6 +777,9 @@ public class ManagerGuideActivity extends AppCompatActivity {
         managerGuidePrescriptionBinder.setActionsEnabled(false);
         managerGuideConsultationBinder.setInputsEnabled(false);
         managerGuideMedicationBinder.setInputsEnabled(false);
+        managerGuideConsultationSummaryBinder.setInputsEnabled(false);
+        managerGuidePharmacyRouteBinder.setActionEnabled(false);
+        managerGuideJournalBinder.setInputsEnabled(false);
         findViewById(R.id.buttonGuidePreConsultationComplete).setEnabled(false);
         buttonAdvanceGuide.setEnabled(false);
         buttonSubmitReport.setEnabled(false);
@@ -1139,6 +1194,59 @@ public class ManagerGuideActivity extends AppCompatActivity {
         ViewCompat.requestApplyInsets(managerGuideBottomAction);
     }
 
+    private void configureSystemBars() {
+        getWindow().setStatusBarColor(ContextCompat.getColor(
+                this, R.color.figma_mvp_background));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(
+                this, R.color.figma_mvp_surface));
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(true);
+    }
+
+    private void configureRemainingStepToolbarInsets() {
+        View root = findViewById(android.R.id.content);
+        View[] toolbars = new View[]{
+                findViewById(R.id.guideConsultationSummaryToolbar),
+                findViewById(R.id.guidePharmacyRouteToolbar),
+                findViewById(R.id.guideCareCompletionToolbar),
+                findViewById(R.id.guideJournalToolbar)
+        };
+        int[] initialHeights = new int[toolbars.length];
+        int[] initialLeftPaddings = new int[toolbars.length];
+        int[] initialTopPaddings = new int[toolbars.length];
+        int[] initialRightPaddings = new int[toolbars.length];
+        for (int index = 0; index < toolbars.length; index++) {
+            initialHeights[index] = toolbars[index].getLayoutParams().height;
+            initialLeftPaddings[index] = toolbars[index].getPaddingLeft();
+            initialTopPaddings[index] = toolbars[index].getPaddingTop();
+            initialRightPaddings[index] = toolbars[index].getPaddingRight();
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
+            Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets displayCutout = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.displayCutout());
+            int safeTop = Math.max(systemBars.top, displayCutout.top);
+            int safeLeft = Math.max(systemBars.left, displayCutout.left);
+            int safeRight = Math.max(systemBars.right, displayCutout.right);
+            for (int index = 0; index < toolbars.length; index++) {
+                View toolbar = toolbars[index];
+                ViewGroup.LayoutParams params = toolbar.getLayoutParams();
+                params.height = initialHeights[index] + safeTop;
+                toolbar.setLayoutParams(params);
+                toolbar.setPadding(
+                        initialLeftPaddings[index] + safeLeft,
+                        initialTopPaddings[index] + safeTop,
+                        initialRightPaddings[index] + safeRight,
+                        toolbar.getPaddingBottom()
+                );
+            }
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(root);
+    }
+
     private void renderHospitalAndPharmacyMarkers(HospitalMapCoordinateResult result) {
         if (kakaoMap == null || result == null) {
             return;
@@ -1314,7 +1422,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         return bitmap;
     }
 
-    private void openMapFallback(ManagerGuideMapActionModel model) {
+    protected void openMapFallback(ManagerGuideMapActionModel model) {
         ManagerGuideMapFallbackLauncher.OpenResult result =
                 ManagerGuideMapFallbackLauncher.open(this, model);
         if (model.isKakaoPlaceSearch()
@@ -1484,7 +1592,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         if (activityVisible && pharmacySearchNavigationInProgress) {
             pharmacySearchNavigationInProgress = false;
         }
-        if (mapView != null) {
+        if (mapView != null && shouldInitializeGuideMap()) {
             mapView.resume();
         }
     }
@@ -1492,7 +1600,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (mapView != null) {
+        if (mapView != null && shouldInitializeGuideMap()) {
             mapView.pause();
         }
     }

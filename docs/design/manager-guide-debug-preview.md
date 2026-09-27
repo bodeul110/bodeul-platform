@@ -11,7 +11,7 @@ Core API가 `GUIDE_NOT_READY`를 반환하거나 개발용 동행 세션이 아�
 - 운영 `ManagerGuideActivity`는 기존 `ServiceLocator`와 서버 진행 판정을 계속 사용한다.
 - 인증·매니저 저장소·realtime 구독을 교체할 수 있는 작은 `protected` 주입 지점만 운영 Activity에 둔다.
 - 단계 선택기, 13단계 코드 픽스처, 로컬 저장소와 미리보기 Activity는 모두 `app/src/debug` 소스 셋에 둔다.
-- Preview Activity는 Firebase, Core API, Supabase realtime, 기존 위치 공유를 사용하지 않고 가이드 진행·메모·리포트를 로컬 메모리에만 반영한다.
+- Preview Activity는 Firebase, Core API, Supabase realtime, 기존 위치 공유와 Kakao 지도 SDK를 시작하지 않고 가이드 진행·메모·리포트를 로컬 메모리에만 반영한다.
 - 실제 가이드 화면과 혼동하지 않도록 화면 상단에 `DEBUG 미리보기 · 서버에 저장되지 않음` 배너를 고정한다.
 
 ## 진입 방법
@@ -27,6 +27,16 @@ Core API가 `GUIDE_NOT_READY`를 반환하거나 개발용 동행 세션이 아�
 adb shell am start -n com.example.bodeul/.debug.ManagerGuidePreviewSelectorActivity
 ```
 
+이번 피그마 구현 화면 전체 선택기는 다음 명령으로 연다.
+
+```powershell
+adb shell am start -n com.example.bodeul/.debug.FigmaScreenPreviewSelectorActivity
+```
+
+이 선택기는 매니저 7·9·12·13단계, 환자 예약 메인, 보호자 최종 리포트를
+로컬 데이터로 연다. 앱 아이콘을 길게 눌러 표시되는 `피그마 미리보기` 바로가기도
+같은 선택기를 사용하며 운영 서버, Firebase와 실제 동행 세션을 변경하지 않는다.
+
 ## 대안과 선택 이유
 
 - 운영 화면에 `BuildConfig.DEBUG` 분기로 강제 다음 버튼을 넣는 방식은 release 바이너리에 우회 경로가 남아 제외했다.
@@ -36,6 +46,6 @@ adb shell am start -n com.example.bodeul/.debug.ManagerGuidePreviewSelectorActiv
 ## 리스크와 남은 범위
 
 - 미리보기는 화면과 로컬 입력 흐름을 검증하지만 Core API 인가, DB snapshot, 실제 파일 업로드, realtime 연동을 검증하지 않는다.
-- 상봉 단계의 일회성 현재 위치, 약국 이동의 카카오맵, 증빙·처방 자료의 Android 파일 선택기는 실제 기기 기능과 외부 SDK를 사용한다. 이 동작들은 서버 세션을 변경하지 않지만 위치 권한 요청, 외부 앱·네트워크 연결, 로컬 URI 읽기 권한이 발생할 수 있다.
+- 지도와 외부 화면 CTA는 미리보기에서 로컬 안내만 표시한다. 증빙·처방 자료의 Android 파일 선택기는 실제 기기의 로컬 URI 읽기 권한을 사용할 수 있다.
 - 서버 통합 검증은 Preview fixture와 실제 개발 매니저 UID를 사용해 별도로 수행한다.
 - Core API의 13단계 코드·순서·의미가 바뀐다면 debug 카탈로그와 계약 테스트를 같이 갱신해야 한다.
