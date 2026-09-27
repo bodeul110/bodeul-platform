@@ -16,6 +16,7 @@ export const STATUS = Object.freeze({
 const FIXED = Object.freeze({
   projectId: "bodeul-prod-110",
   projectNumber: "649312328770",
+  oidcSubjectPrefix: "repo:bodeul110@275679915/bodeul-platform@1209358990",
   region: "asia-northeast1",
   firebaseDisplayName: "bodeul-prod",
   androidAppId: "1:649312328770:android:b0698534ff92da7fdea1db",
@@ -652,7 +653,7 @@ async function auditIam(client, checks) {
       const members = asArray(policy.bindings)
         .filter((binding) => binding.role === "roles/iam.workloadIdentityUser")
         .flatMap((binding) => asArray(binding.members));
-      const expected = `principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:production-infrastructure-audit`;
+      const expected = `principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:production-infrastructure-audit`;
       const bindings = asArray(policy.bindings);
       const valid = bindings.length === 1 &&
         bindings[0].role === "roles/iam.workloadIdentityUser" &&
@@ -667,7 +668,7 @@ async function auditIam(client, checks) {
       account: FIXED.serviceAccounts.deploy,
       bindings: [{
         role: "roles/iam.workloadIdentityUser",
-        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:core-api-production`],
+        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:core-api-production`],
       }],
     },
     {
@@ -683,7 +684,7 @@ async function auditIam(client, checks) {
       account: FIXED.serviceAccounts.backup,
       bindings: [{
         role: "roles/iam.workloadIdentityUser",
-        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:core-api-migration-production`],
+        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:core-api-migration-production`],
       }],
     },
     {
@@ -691,7 +692,7 @@ async function auditIam(client, checks) {
       account: FIXED.serviceAccounts.retention,
       bindings: [{
         role: "roles/iam.workloadIdentityUser",
-        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:firebase-retention-production`],
+        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:firebase-retention-production`],
       }],
     },
   ];
@@ -826,7 +827,7 @@ async function auditSecrets(client, checks, releaseChecks, env) {
   }
 }
 
-async function auditCloudRun(client, checks, releaseChecks, configuration) {
+export async function auditCloudRun(client, checks, releaseChecks, configuration) {
   const url = `https://run.googleapis.com/v2/projects/${FIXED.projectId}/locations/${FIXED.region}/services/${FIXED.cloudRunService}`;
   try {
     const service = await client.get(url);
@@ -844,9 +845,12 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
     let secretRefsValid = true;
     for (const [name, expectedSecret] of Object.entries(expectedSecretBindings)) {
       const ref = runtimeEnv.get(name)?.valueSource?.secretKeyRef;
-      const actualSecret = String(ref?.secret ?? "").split("/").at(-1);
+      const actualSecret = String(ref?.secret ?? "");
+      const allowedSecretNames = [expectedSecret,
+        `projects/${FIXED.projectId}/secrets/${expectedSecret}`,
+        `projects/${FIXED.projectNumber}/secrets/${expectedSecret}`];
       const version = String(ref?.version ?? "");
-      if (actualSecret !== expectedSecret || !/^\d+$/.test(version)) {
+      if (!allowedSecretNames.includes(actualSecret) || !/^\d+$/.test(version)) {
         secretRefsValid = false;
         continue;
       }
@@ -861,9 +865,13 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
       "FIREBASE_PROJECT_ID",
       "FIREBASE_PROJECT_NUMBER",
       "BODEUL_APP_CHECK_MODE",
+      "BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT",
+      "BODEUL_SESSION_COMPLETION_ENFORCEMENT",
+      "BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED",
       ...Object.keys(expectedSecretBindings),
     ];
-    const envNamesValid = exactStringSet([...runtimeEnv.keys()], expectedEnvNames);
+    const envNamesValid = exactStringSet([...runtimeEnv.keys()], expectedEnvNames) &&
+      runtimeEnv.size === asArray(primaryContainer.env).length;
     const vpc = template.vpcAccess ?? {};
     const dynamicOutbound = !vpc.connector && asArray(vpc.networkInterfaces).length === 0;
     const labels = service.labels ?? {};
@@ -871,10 +879,12 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
     const ports = asArray(primaryContainer.ports);
     const latestTraffic = asArray(service.traffic).some((target) =>
       target.type === "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST" && Number(target.percent) === 100);
-    const revisionReady = service.reconciling === false &&
+    // ProtoJSON 응답은 false 기본값을 생략하므로 완료 조건과 함께 판정한다.
+    const revisionReady = (service.reconciling === undefined || service.reconciling === false) &&
       service.terminalCondition?.state === "CONDITION_SUCCEEDED" &&
       Boolean(service.latestReadyRevision) &&
       service.latestReadyRevision === service.latestCreatedRevision &&
+      Boolean(service.generation) &&
       String(service.observedGeneration ?? "") === String(service.generation ?? "");
     const expectedAppCheckMode = configuration.APP_CHECK_EXPECTED_STATE === "enforced" ? "enforce" : "observe";
     const valid = configuration.CLOUD_RUN_EXPECTED_STATE === "present" &&
@@ -891,6 +901,9 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
       runtimeEnv.get("SPRING_PROFILES_ACTIVE")?.value === "production" && runtimeEnv.get("CORE_DB_POOL_MAX")?.value === "2" &&
       runtimeEnv.get("FIREBASE_PROJECT_ID")?.value === FIXED.projectId &&
       runtimeEnv.get("FIREBASE_PROJECT_NUMBER")?.value === FIXED.projectNumber &&
+      ["false", "true"].includes(runtimeEnv.get("BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT")?.value) &&
+      ["false", "true"].includes(runtimeEnv.get("BODEUL_SESSION_COMPLETION_ENFORCEMENT")?.value) &&
+      runtimeEnv.get("BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED")?.value === "false" &&
       runtimeEnv.get("BODEUL_APP_CHECK_MODE")?.value === expectedAppCheckMode && envNamesValid && secretRefsValid && dynamicOutbound;
     checks.push(makeCheck({
       id: "cloud-run.configuration",
@@ -906,17 +919,18 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
     }));
     try {
       const policy = await client.get(`${url}:getIamPolicy?options.requestedPolicyVersion=3`);
-      const publiclyInvokable = exactIamPolicy(policy, [{
-        role: "roles/run.invoker",
-        members: ["allUsers"],
-      }]);
+      // 공식 조직의 도메인 제한을 풀지 않고 서비스 수준의 공개 호출을 허용한다.
+      const publiclyInvokable = service.invokerIamDisabled === true
+        ? exactIamPolicy(policy, [])
+        : (service.invokerIamDisabled === undefined || service.invokerIamDisabled === false)
+          && exactIamPolicy(policy, [{role: "roles/run.invoker", members: ["allUsers"]}]);
       releaseChecks.push(makeCheck({
         id: "release.cloud-run-invoker",
         area: "출시 준비",
         status: publiclyInvokable ? STATUS.PASS : STATUS.EXPECTED_BLOCKER,
         message: publiclyInvokable ?
-          "Core API 공개 호출 IAM이 기준과 일치합니다." :
-          "첫 배포 뒤 공개 호출 IAM을 최소 권한 기준으로 구성해야 합니다.",
+          "Core API 공개 호출 설정이 기준과 일치합니다. 업무 요청의 Firebase 인증은 별도 smoke test로 확인합니다." :
+          "첫 배포 뒤 서비스 수준의 공개 호출 설정을 최소 권한 기준으로 구성해야 합니다.",
       }));
     } catch (error) {
       releaseChecks.push(checkFromError("release.cloud-run-invoker", "출시 준비", error));

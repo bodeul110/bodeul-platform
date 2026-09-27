@@ -38,6 +38,8 @@
 
 Android, Firebase 도구, 공통 데이터 계약과 함께 변경 내용을 검토하기 위해 메인 저장소 안에서 관리한다. 배포는 저장소 구조와 별개로 Cloud Run 서비스와 `core-api-preview` 또는 `core-api-production` GitHub Environment를 사용한다.
 
+개발 배포는 `dev`, 운영 배포는 `master`로 분리한다. 개발은 CI 통과 후 push 배포와 수동 배포를 지원하고, 운영은 기존 SHA·서비스명 확인과 승인을 유지한다. DB migration은 자동 배포에 포함하지 않는다. [환경 분리 기준과 실행 기록](../docs/operations/dev-production-branch-transition-plan.md)을 함께 확인한다.
+
 ## 로컬 검증
 
 ```powershell

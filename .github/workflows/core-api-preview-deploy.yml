@@ -1,6 +1,12 @@
 name: Core API Preview Deploy
 
 on:
+  push:
+    branches: [dev]
+    paths:
+      - "core-api/**"
+      - ".github/workflows/core-api.yml"
+      - ".github/workflows/core-api-preview-deploy.yml"
   workflow_dispatch:
     inputs:
       confirm_service:
@@ -10,18 +16,27 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: core-api-preview-deploy
   cancel-in-progress: false
 
 jobs:
+  validate:
+    if: github.repository == 'bodeul110/bodeul-platform' && github.ref == 'refs/heads/dev'
+    uses: ./.github/workflows/core-api.yml
+    permissions:
+      contents: read
+
   deploy-preview:
     name: deploy-preview
     runs-on: ubuntu-latest
     environment: core-api-preview
     timeout-minutes: 30
+    needs: validate
+    permissions:
+      contents: read
+      id-token: write
     env:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCP_REGION: ${{ vars.GCP_REGION }}
@@ -52,8 +67,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${GITHUB_REF}" != "refs/heads/master" ]]; then
-            echo "Core API preview는 master 브랜치에서만 배포할 수 있습니다." >&2
+          if [[ "${GITHUB_REF}" != "refs/heads/dev" ]]; then
+            echo "Core API preview는 dev 브랜치에서만 배포할 수 있습니다." >&2
+            exit 1
+          fi
+
+          if [[ "$GCP_PROJECT_ID" != "bodeul-dev" || "$FIREBASE_PROJECT_ID" != "bodeul-dev" || "$FIREBASE_PROJECT_NUMBER" != "533563500316" || "$GCP_REGION" != "asia-northeast1" ]]; then
+            echo "개발 GCP/Firebase 프로젝트와 리전이 일치하지 않습니다." >&2
             exit 1
           fi
 
@@ -85,7 +105,7 @@ jobs:
             exit 1
           fi
 
-          if [[ "${CONFIRM_SERVICE}" != "${CLOUD_RUN_SERVICE}" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "${CONFIRM_SERVICE}" != "${CLOUD_RUN_SERVICE}" ]]; then
             echo "입력한 서비스명과 실제 배포 대상이 일치하지 않습니다." >&2
             exit 1
           fi
@@ -159,6 +179,23 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.gcp-auth.outputs.access_token }}
 
+      - name: Google Cloud CLI 설정
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: 기존 개발 트래픽 확인
+        id: previous
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud run services describe "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format=json > previous-service.json
+          revision="$(jq -r '[.status.traffic[] | select(.percent == 100) | .revisionName] | if length == 1 then .[0] else empty end' previous-service.json)"
+          if [ -z "$revision" ]; then
+            echo "개발 서비스의 단일 복구 revision을 확인하지 못했습니다." >&2
+            exit 1
+          fi
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+
       - name: Docker Buildx 설정
         uses: docker/setup-buildx-action@v4
 
@@ -218,6 +255,7 @@ jobs:
           revision_traffic: LATEST=100
 
       - name: 배포 smoke test
+        id: smoke
         shell: bash
         env:
           SERVICE_URL: ${{ steps.deploy.outputs.url }}
@@ -257,6 +295,15 @@ jobs:
           fi
 
           jq -e '.error == "missing_authorization"' place-auth.json > /dev/null
+
+      - name: 개발 배포 실패 시 기존 revision 복구
+        if: failure() && steps.previous.outputs.revision != '' && (steps.deploy.outcome == 'failure' || steps.smoke.outcome == 'failure')
+        env:
+          PREVIOUS_REVISION: ${{ steps.previous.outputs.revision }}
+        run: >-
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE"
+          --project "$GCP_PROJECT_ID" --region "$GCP_REGION"
+          --to-revisions "${PREVIOUS_REVISION}=100" --quiet
 
       - name: 배포 결과 기록
         shell: bash
