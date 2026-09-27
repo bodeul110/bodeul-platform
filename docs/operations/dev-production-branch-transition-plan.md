@@ -13,7 +13,7 @@
 | 관리자 웹 | Vercel Preview, `dev` 고정 주소 | Vercel Production, `master` |
 | Android | debug, 개발 인증·API·Storage·Realtime | release, 운영 인증·API·Storage·Realtime |
 
-같은 환경 안에서는 관리자 서버와 Core API가 같은 DB를 보되 별도 최소 권한 role을 쓴다. 개발과 운영 사이에는 DB·인증·파일·자격 증명을 공유하지 않는다. Supabase 콘솔의 `main`/`Production` 표시는 각 Supabase 프로젝트 내부 브랜치이며 보들의 개발·운영 구분과 다르다.
+같은 환경 안에서는 관리자 서버와 Core API가 같은 DB를 보되 별도 최소 권한 role을 쓴다. 개발과 운영 사이에는 업무 DB·Firebase 인증·파일·DB 자격 증명을 공유하지 않는다. 예외로 Kakao Local 장소 검색은 사용자 승인에 따라 기존 REST 키를 함께 사용하되, 각 Google Cloud 프로젝트의 별도 Secret Manager 항목에 보관한다. 쿼터와 키 폐기 영향은 공유되며 DB나 Firebase 인증 경계를 합치는 것은 아니다. Supabase 콘솔의 `main`/`Production` 표시는 각 Supabase 프로젝트 내부 브랜치이며 보들의 개발·운영 구분과 다르다.
 
 ## 브랜치 흐름
 

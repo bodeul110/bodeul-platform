@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   STATUS,
   auditAppCheck,
+  auditCloudRun,
   auditProductionInfrastructure,
   buildReport,
   classifyAppCheckStage,
@@ -226,6 +227,127 @@ test("Cloud Run 이미지는 production 저장소의 불변 식별자만 허용�
   assert.equal(isExpectedCloudRunImage(`${prefix}@sha256:${"b".repeat(64)}`), true);
   assert.equal(isExpectedCloudRunImage(`${prefix}:production`), false);
   assert.equal(isExpectedCloudRunImage(`docker.io/example/bodeul-core-api:${"a".repeat(40)}`), false);
+});
+
+function productionCloudRunService() {
+  const env = Object.entries({
+    SPRING_PROFILES_ACTIVE: "production",
+    CORE_DB_POOL_MAX: "2",
+    FIREBASE_PROJECT_ID: "bodeul-prod-110",
+    FIREBASE_PROJECT_NUMBER: "649312328770",
+    BODEUL_APP_CHECK_MODE: "observe",
+    BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT: "false",
+    BODEUL_SESSION_COMPLETION_ENFORCEMENT: "false",
+    BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED: "false",
+  }).map(([name, value]) => ({name, value}));
+  for (const [name, suffix] of Object.entries({
+    CORE_DB_JDBC_URL: "db-jdbc-url",
+    CORE_DB_USERNAME: "db-username",
+    CORE_DB_PASSWORD: "db-password",
+    KAKAO_LOCAL_REST_API_KEY: "kakao-local-rest-api-key",
+  })) {
+    env.push({name, valueSource: {secretKeyRef: {
+      secret: `bodeul-core-api-production-${suffix}`, version: "1",
+    }}});
+  }
+  return {
+    invokerIamDisabled: true,
+    reconciling: false,
+    terminalCondition: {state: "CONDITION_SUCCEEDED"},
+    latestReadyRevision: "revision-1", latestCreatedRevision: "revision-1",
+    observedGeneration: "1", generation: "1",
+    ingress: "INGRESS_TRAFFIC_ALL",
+    labels: {environment: "production", component: "core-api", "kakao-egress": "dynamic"},
+    traffic: [{type: "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST", percent: 100}],
+    template: {
+      serviceAccount: validEnvironment.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT,
+      scaling: {minInstanceCount: 0, maxInstanceCount: 2},
+      maxInstanceRequestConcurrency: 8, timeout: "60s",
+      executionEnvironment: "EXECUTION_ENVIRONMENT_GEN2",
+      containers: [{
+        image: `asia-northeast1-docker.pkg.dev/bodeul-prod-110/bodeul-core-api/bodeul-core-api:${"a".repeat(40)}`,
+        env, ports: [{containerPort: 8080}],
+        resources: {limits: {cpu: "1", memory: "1Gi"}, startupCpuBoost: true},
+      }],
+    },
+  };
+}
+
+async function checkCloudRun(service, bindings = []) {
+  const checks = [];
+  const releaseChecks = [];
+  await auditCloudRun({get: async (url) => {
+    if (url.includes(":getIamPolicy")) return {bindings};
+    if (url.startsWith("https://secretmanager.googleapis.com/")) return {state: "ENABLED"};
+    return service;
+  }}, checks, releaseChecks, {...validEnvironment, CLOUD_RUN_EXPECTED_STATE: "present"});
+  return [...checks, ...releaseChecks];
+}
+
+test("운영 workflow의 세션 플래그와 실제 런타임 감사 계약이 일치한다", async () => {
+  const valid = await checkCloudRun(productionCloudRunService());
+  assert.ok(valid.every((entry) => entry.status === STATUS.PASS));
+  for (const name of [
+    "BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT",
+    "BODEUL_SESSION_COMPLETION_ENFORCEMENT",
+    "BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED",
+  ]) {
+    const service = productionCloudRunService();
+    service.template.containers[0].env.find((entry) => entry.name === name).value = "invalid";
+    const result = await checkCloudRun(service);
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, STATUS.DRIFT);
+  }
+  const legacy = productionCloudRunService();
+  legacy.template.containers[0].env.find((entry) => entry.name === "BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED").value = "true";
+  assert.equal((await checkCloudRun(legacy))[0].status, STATUS.DRIFT);
+});
+
+test("운영 런타임의 환경변수 누락과 중복 및 알 수 없는 설정을 거부한다", async () => {
+  const missing = productionCloudRunService();
+  missing.template.containers[0].env.pop();
+  const duplicate = productionCloudRunService();
+  duplicate.template.containers[0].env.push({...duplicate.template.containers[0].env[0]});
+  const unknown = productionCloudRunService();
+  unknown.template.containers[0].env.push({name: "UNKNOWN_SETTING", value: "true"});
+  for (const service of [missing, duplicate, unknown]) {
+    const result = await checkCloudRun(service);
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, STATUS.DRIFT);
+  }
+});
+
+test("운영 Secret은 같은 이름이라도 다른 프로젝트를 참조할 수 없다", async () => {
+  const secretName = "bodeul-core-api-production-db-password";
+  const cases = [
+    [secretName, STATUS.PASS],
+    [`projects/bodeul-prod-110/secrets/${secretName}`, STATUS.PASS],
+    [`projects/649312328770/secrets/${secretName}`, STATUS.PASS],
+    [`projects/bodeul-dev/secrets/${secretName}`, STATUS.DRIFT],
+    [`projects/533563500316/secrets/${secretName}`, STATUS.DRIFT],
+  ];
+  for (const [secret, expected] of cases) {
+    const service = productionCloudRunService();
+    const binding = service.template.containers[0].env.find((entry) => entry.name === "CORE_DB_PASSWORD");
+    binding.valueSource.secretKeyRef.secret = secret;
+    const result = await checkCloudRun(service);
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, expected);
+  }
+});
+
+test("공개 호출 방식은 정확한 서비스 설정과 최소 IAM policy만 허용한다", async () => {
+  const publicBinding = {role: "roles/run.invoker", members: ["allUsers"]};
+  const cases = [
+    [true, [], STATUS.PASS],
+    [false, [publicBinding], STATUS.PASS],
+    [undefined, [publicBinding], STATUS.PASS],
+    [false, [], STATUS.EXPECTED_BLOCKER],
+    ["true", [], STATUS.EXPECTED_BLOCKER],
+    [true, [publicBinding], STATUS.EXPECTED_BLOCKER],
+    [true, [{role: "roles/run.admin", members: ["allUsers"]}], STATUS.EXPECTED_BLOCKER],
+  ];
+  for (const [invokerIamDisabled, bindings, expected] of cases) {
+    const result = await checkCloudRun({...productionCloudRunService(), invokerIamDisabled}, bindings);
+    assert.equal(result.find((entry) => entry.id === "release.cloud-run-invoker").status, expected);
+  }
 });
 
 test("App Check provider와 서비스 상태를 운영 단계로 분류한다", () => {
