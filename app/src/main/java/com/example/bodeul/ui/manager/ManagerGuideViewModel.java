@@ -22,6 +22,7 @@ import com.example.bodeul.domain.model.User;
 import com.example.bodeul.domain.model.UserRole;
 import com.example.bodeul.ui.auth.AuthFlowRouter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ public class ManagerGuideViewModel extends ViewModel {
     private static final String REPORT_DRAFT_PREFIX = "managerGuide.reportDraft.";
     private static final String ARTIFACT_REQUEST_PREFIX = "managerGuide.artifactRequest.";
     private static final String VITALS_DRAFT_PREFIX = "managerGuide.vitalsDraft.";
+    private static final String PAYMENT_DRAFT_PREFIX = "managerGuide.paymentDraft.";
 
     public enum StatePanelType {
         NONE,
@@ -108,12 +110,33 @@ public class ManagerGuideViewModel extends ViewModel {
     private PendingLocationUpdate pendingLiveLocationUpdate;
     private String subscribedSessionId = "";
     private boolean mutationInFlight;
+    private boolean authenticationInFlight;
     @Nullable
     private ManagerGuideConsultationDraft consultationDraft;
     private String consultationDraftSessionId = "";
     @Nullable
-    private ManagerGuidePaymentDraft paymentDraft;
-    private String paymentDraftSessionId = "";
+    private PendingArtifactReplacement pendingArtifactReplacement;
+
+    private static final class PendingArtifactReplacement {
+        final String expectedSessionId;
+        final String expectedStepCode;
+        final String purpose;
+        final List<Uri> fileUris;
+
+        PendingArtifactReplacement(
+                String expectedSessionId,
+                String expectedStepCode,
+                String purpose,
+                List<Uri> fileUris
+        ) {
+            this.expectedSessionId = expectedSessionId;
+            this.expectedStepCode = expectedStepCode;
+            this.purpose = purpose;
+            this.fileUris = fileUris == null
+                    ? new ArrayList<>()
+                    : new ArrayList<>(fileUris);
+        }
+    }
 
     public ManagerGuideViewModel(
             AuthRepository authRepository,
@@ -132,25 +155,46 @@ public class ManagerGuideViewModel extends ViewModel {
     }
 
     public void reload() {
+        if (authenticationInFlight) {
+            return;
+        }
+        authenticationInFlight = true;
         _uiState.setValue(UiState.loading());
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
+                authenticationInFlight = false;
+                currentUser = null;
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
+                    pendingArtifactReplacement = null;
                     _uiState.setValue(UiState.profileCompletion());
                     return;
                 }
                 if (result.getRole() != UserRole.MANAGER) {
+                    pendingArtifactReplacement = null;
                     _uiState.setValue(UiState.panel(StatePanelType.PERMISSION, null));
                     return;
                 }
 
                 currentUser = result;
-                loadDashboard();
+                PendingArtifactReplacement pending = pendingArtifactReplacement;
+                pendingArtifactReplacement = null;
+                if (pending == null) {
+                    loadDashboard();
+                    return;
+                }
+                replaceSessionArtifactsAuthenticated(
+                        pending.expectedSessionId,
+                        pending.expectedStepCode,
+                        pending.purpose,
+                        pending.fileUris);
             }
 
             @Override
             public void onError(String message) {
+                authenticationInFlight = false;
+                currentUser = null;
+                pendingArtifactReplacement = null;
                 _uiState.setValue(UiState.panel(StatePanelType.AUTH, null));
             }
         });
@@ -178,6 +222,59 @@ public class ManagerGuideViewModel extends ViewModel {
                 _uiState.setValue(UiState.panel(StatePanelType.LOAD_ERROR, message));
             }
         });
+    }
+
+    /**
+     * 쓰기 실패 뒤에는 단계 충돌 여부를 포함해 서버 상태를 다시 확인한다. 기존 화면이 있으면
+     * 재조회까지 실패해도 입력 화면과 초안을 유지해 사용자가 바로 수정하거나 재시도할 수 있다.
+     */
+    private void refreshDashboardAfterMutationFailure() {
+        if (currentUser == null) {
+            return;
+        }
+        UiState previousState = _uiState.getValue();
+        managerRepository.getManagerDashboard(
+                currentUser.getId(),
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        ensureRealtimeSubscription(result);
+                        bindDashboard(result);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        if (ManagerRepository.MESSAGE_NO_ACTIVE_SESSION.equals(message)) {
+                            _uiState.setValue(UiState.panel(StatePanelType.EMPTY, null));
+                            return;
+                        }
+
+                        UiState currentState = _uiState.getValue();
+                        if (hasScreen(currentState)) {
+                            return;
+                        }
+                        if (!isLoading(currentState)) {
+                            return;
+                        }
+                        if (hasScreen(previousState)) {
+                            _uiState.setValue(previousState);
+                            return;
+                        }
+                        _uiState.setValue(UiState.panel(StatePanelType.LOAD_ERROR, message));
+                    }
+                });
+    }
+
+    private static boolean hasScreen(@Nullable UiState state) {
+        return state != null && state.dashboard != null && state.screenModel != null;
+    }
+
+    private static boolean isLoading(@Nullable UiState state) {
+        return state != null
+                && state.dashboard == null
+                && state.screenModel == null
+                && state.statePanelType == StatePanelType.NONE
+                && !state.requireProfileCompletion;
     }
 
     private void bindDashboard(@Nullable ManagerDashboard dashboard) {
@@ -456,9 +553,7 @@ public class ManagerGuideViewModel extends ViewModel {
                     public void onError(String errorMessage) {
                         finishMutation();
                         _toastMessage.setValue(errorMessage);
-                        if (ManagerRepository.MESSAGE_STALE_GUIDE_STEP.equals(errorMessage)) {
-                            loadDashboard();
-                        }
+                        refreshDashboardAfterMutationFailure();
                     }
                 });
     }
@@ -643,12 +738,41 @@ public class ManagerGuideViewModel extends ViewModel {
             String purpose,
             List<Uri> fileUris
     ) {
-        if (currentUser == null) return;
         if (TextUtils.isEmpty(expectedSessionId)
                 || TextUtils.isEmpty(expectedStepCode)
                 || TextUtils.isEmpty(purpose)) {
             _toastMessage.setValue(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
             loadDashboard();
+            return;
+        }
+        if (authenticationInFlight || currentUser == null) {
+            pendingArtifactReplacement = new PendingArtifactReplacement(
+                    expectedSessionId,
+                    expectedStepCode,
+                    purpose,
+                    fileUris);
+            if (!authenticationInFlight) {
+                reload();
+            }
+            return;
+        }
+        replaceSessionArtifactsAuthenticated(
+                expectedSessionId, expectedStepCode, purpose, fileUris);
+    }
+
+    private void replaceSessionArtifactsAuthenticated(
+            String expectedSessionId,
+            String expectedStepCode,
+            String purpose,
+            List<Uri> fileUris
+    ) {
+        if (currentUser == null) {
+            pendingArtifactReplacement = new PendingArtifactReplacement(
+                    expectedSessionId,
+                    expectedStepCode,
+                    purpose,
+                    fileUris);
+            reload();
             return;
         }
         String requestFingerprint = artifactRequestFingerprint(
@@ -675,46 +799,72 @@ public class ManagerGuideViewModel extends ViewModel {
                     public void onError(String message) {
                         finishMutation();
                         _toastMessage.setValue(message);
-                        if (ManagerRepository.MESSAGE_STALE_GUIDE_STEP.equals(message)) {
-                            loadDashboard();
-                        }
+                        refreshDashboardAfterMutationFailure();
                     }
                 });
     }
 
     @Nullable
     ManagerGuidePaymentDraft getPaymentDraft(String sessionId) {
-        if (sessionId == null || sessionId.isEmpty()
-                || !sessionId.equals(paymentDraftSessionId)) {
-            return null;
-        }
-        return paymentDraft;
+        return restorePaymentDraft(savedStateHandle, sessionId);
     }
 
     void savePaymentDraft(String sessionId, ManagerGuidePaymentDraft draft) {
-        if (sessionId == null || sessionId.isEmpty() || draft == null) {
-            return;
-        }
-        paymentDraftSessionId = sessionId;
-        paymentDraft = draft;
+        savePaymentDraft(savedStateHandle, sessionId, draft);
     }
 
     void clearPaymentDraft(String sessionId) {
-        if (sessionId != null && sessionId.equals(paymentDraftSessionId)) {
-            paymentDraftSessionId = "";
-            paymentDraft = null;
-        }
+        clearPaymentDraft(savedStateHandle, sessionId);
     }
 
     private void retainPaymentDraftFor(ManagerDashboard dashboard) {
-        if (paymentDraft == null || dashboard.getSession() == null) {
+        String savedSessionId = savedStateHandle.get(PAYMENT_DRAFT_PREFIX + "sessionId");
+        if (savedSessionId == null || dashboard.getSession() == null) {
             return;
         }
         String activeSessionId = dashboard.getSession().getId();
         String activeStepCode = dashboard.getSession().getCurrentStepCode();
-        if (!paymentDraftSessionId.equals(activeSessionId)
+        if (!savedSessionId.equals(activeSessionId)
                 || !"PAYMENT_EVIDENCE".equals(activeStepCode)) {
-            clearPaymentDraft(paymentDraftSessionId);
+            clearPaymentDraft(savedStateHandle, savedSessionId);
+        }
+    }
+
+    static void savePaymentDraft(
+            SavedStateHandle state,
+            String sessionId,
+            ManagerGuidePaymentDraft draft
+    ) {
+        if (sessionId == null || sessionId.isEmpty() || draft == null) {
+            return;
+        }
+        state.set(PAYMENT_DRAFT_PREFIX + "sessionId", sessionId);
+        state.set(PAYMENT_DRAFT_PREFIX + "note", draft.note);
+        state.set(PAYMENT_DRAFT_PREFIX + "baseline", draft.baseline);
+    }
+
+    @Nullable
+    static ManagerGuidePaymentDraft restorePaymentDraft(
+            SavedStateHandle state,
+            String sessionId
+    ) {
+        String savedSessionId = state.get(PAYMENT_DRAFT_PREFIX + "sessionId");
+        if (sessionId == null || sessionId.isEmpty() || !sessionId.equals(savedSessionId)) {
+            return null;
+        }
+        String note = state.get(PAYMENT_DRAFT_PREFIX + "note");
+        String baseline = state.get(PAYMENT_DRAFT_PREFIX + "baseline");
+        return ManagerGuidePaymentDraft.fromInput(
+                note == null ? "" : note,
+                baseline == null ? "" : baseline);
+    }
+
+    static void clearPaymentDraft(SavedStateHandle state, String sessionId) {
+        String savedSessionId = state.get(PAYMENT_DRAFT_PREFIX + "sessionId");
+        if (sessionId != null && sessionId.equals(savedSessionId)) {
+            state.remove(PAYMENT_DRAFT_PREFIX + "sessionId");
+            state.remove(PAYMENT_DRAFT_PREFIX + "note");
+            state.remove(PAYMENT_DRAFT_PREFIX + "baseline");
         }
     }
 
@@ -750,9 +900,7 @@ public class ManagerGuideViewModel extends ViewModel {
                     public void onError(String message) {
                         finishMutation();
                         _toastMessage.setValue(message);
-                        if (ManagerRepository.MESSAGE_STALE_GUIDE_STEP.equals(message)) {
-                            loadDashboard();
-                        }
+                        refreshDashboardAfterMutationFailure();
                     }
                 });
     }

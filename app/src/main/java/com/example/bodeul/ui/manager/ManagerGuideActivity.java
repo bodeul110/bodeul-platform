@@ -57,6 +57,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.kakao.vectormap.KakaoMap;
@@ -187,7 +188,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                                 expectation.sessionId,
                                 expectation.stepCode,
                                 CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE,
-                                List.of(uri));
+                                Collections.singletonList(uri));
                     }
                 });
         prescriptionImagePicker = registerForActivityResult(

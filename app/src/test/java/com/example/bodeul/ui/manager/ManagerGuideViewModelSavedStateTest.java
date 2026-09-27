@@ -95,6 +95,39 @@ public class ManagerGuideViewModelSavedStateTest {
     }
 
     @Test
+    public void paymentDraftSurvivesProcessStateOnlyForItsSession() {
+        SavedStateHandle state = new SavedStateHandle();
+        ManagerGuidePaymentDraft draft = ManagerGuidePaymentDraft.fromInput(
+                "수납 창구에서 보호자 확인 필요",
+                "이전 서버 메모");
+
+        ManagerGuideViewModel.savePaymentDraft(state, "session-a", draft);
+
+        ManagerGuidePaymentDraft restored =
+                ManagerGuideViewModel.restorePaymentDraft(state, "session-a");
+        assertNotNull(restored);
+        assertEquals("수납 창구에서 보호자 확인 필요", restored.note);
+        assertEquals("이전 서버 메모", restored.baseline);
+        assertTrue(restored.hasUnsavedChanges());
+        assertNull(ManagerGuideViewModel.restorePaymentDraft(state, "session-b"));
+    }
+
+    @Test
+    public void paymentDraftClearDoesNotRemoveAnotherSessionsDraft() {
+        SavedStateHandle state = new SavedStateHandle();
+        ManagerGuideViewModel.savePaymentDraft(
+                state,
+                "session-a",
+                ManagerGuidePaymentDraft.fromInput("작성 중", "서버 메모"));
+
+        ManagerGuideViewModel.clearPaymentDraft(state, "session-b");
+        assertNotNull(ManagerGuideViewModel.restorePaymentDraft(state, "session-a"));
+
+        ManagerGuideViewModel.clearPaymentDraft(state, "session-a");
+        assertNull(ManagerGuideViewModel.restorePaymentDraft(state, "session-a"));
+    }
+
+    @Test
     public void consultationDraftTracksDirtyFieldsAgainstServerBaseline() {
         ManagerGuideConsultationDraft draft = ManagerGuideConsultationDraft.fromInputs(
                 "로컬 보호자 공유",

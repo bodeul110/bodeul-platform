@@ -80,6 +80,33 @@ public class ManagerGuidePaymentPreviewTest {
         }
     }
 
+    @Test
+    public void registeredEvidence_rendersReplaceStateAndCanBeCleared() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(
+                        context, "PAYMENT_EVIDENCE", true))) {
+            onView(withId(R.id.textGuidePaymentStatus)).check(matches(
+                    withText(R.string.guide_payment_status_registered)));
+            onView(withId(R.id.textGuidePaymentFile)).check(matches(
+                    withText("receipt.pdf · 2.0 MiB")));
+            onView(withId(R.id.buttonGuidePaymentSelect)).check(matches(
+                    withContentDescription(R.string.guide_payment_replace_description)));
+            onView(withId(R.id.buttonGuidePaymentClear))
+                    .perform(scrollTo())
+                    .check(matches(isDisplayed()))
+                    .perform(click());
+
+            onView(withId(R.id.textGuidePaymentStatus)).check(matches(
+                    withText(R.string.guide_payment_status_empty)));
+            onView(withId(R.id.buttonGuidePaymentSelect)).check(matches(
+                    withContentDescription(R.string.guide_payment_upload_description)));
+            onView(withId(R.id.buttonGuidePaymentClear))
+                    .check(matches(withEffectiveVisibility(GONE)));
+        }
+    }
+
     private void assertPaymentScreen() {
         onView(withText(R.string.debug_manager_guide_preview_banner))
                 .check(matches(isDisplayed()));
