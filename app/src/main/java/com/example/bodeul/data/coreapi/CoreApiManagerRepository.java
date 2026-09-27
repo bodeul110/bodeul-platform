@@ -313,6 +313,30 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public void savePaymentEvidenceNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesPaymentExpectation(
+                    session, expectedSessionId, expectedStepCode)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.updateText(
+                    session.getId(),
+                    "fieldPhotoNote",
+                    note,
+                    expectedStepCode,
+                    refreshCallback(managerUserId, callback));
+        });
+    }
+
+    @Override
     public void saveMedicationNote(
             String managerUserId,
             String expectedSessionId,
@@ -413,49 +437,69 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     @Override
     public void replaceSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             String clientRequestId,
             List<Uri> fileUris,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        withDashboard(managerUserId, callback, dashboard -> sessionClient.replaceArtifacts(
-                dashboard.getSession().getId(),
-                purpose,
-                clientRequestId,
-                fileUris,
-                new RepositoryCallback<org.json.JSONObject>() {
-                    @Override
-                    public void onSuccess(org.json.JSONObject result) {
-                        getManagerDashboard(managerUserId, callback);
-                    }
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesArtifactExpectation(
+                    session, expectedSessionId, expectedStepCode, purpose)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.replaceArtifacts(
+                    session.getId(),
+                    purpose,
+                    clientRequestId,
+                    fileUris,
+                    new RepositoryCallback<org.json.JSONObject>() {
+                        @Override
+                        public void onSuccess(org.json.JSONObject result) {
+                            getManagerDashboard(managerUserId, callback);
+                        }
 
-                    @Override
-                    public void onError(String message) {
-                        callback.onError(message);
-                    }
-                }));
+                        @Override
+                        public void onError(String message) {
+                            callback.onError(message);
+                        }
+                    });
+        });
     }
 
     @Override
     public void clearSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        withDashboard(managerUserId, callback, dashboard -> sessionClient.clearArtifacts(
-                dashboard.getSession().getId(),
-                purpose,
-                new RepositoryCallback<org.json.JSONObject>() {
-                    @Override
-                    public void onSuccess(org.json.JSONObject result) {
-                        getManagerDashboard(managerUserId, callback);
-                    }
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesArtifactExpectation(
+                    session, expectedSessionId, expectedStepCode, purpose)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.clearArtifacts(
+                    session.getId(),
+                    purpose,
+                    new RepositoryCallback<org.json.JSONObject>() {
+                        @Override
+                        public void onSuccess(org.json.JSONObject result) {
+                            getManagerDashboard(managerUserId, callback);
+                        }
 
-                    @Override
-                    public void onError(String message) {
-                        callback.onError(message);
-                    }
-                }));
+                        @Override
+                        public void onError(String message) {
+                            callback.onError(message);
+                        }
+                    });
+        });
     }
 
     @Override

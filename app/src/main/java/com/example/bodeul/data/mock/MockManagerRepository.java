@@ -192,6 +192,23 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public synchronized void savePaymentEvidenceNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        ManagerDashboard current = managerStore.getManagerDashboard(managerUserId);
+        if (current == null || !ManagerRepository.matchesPaymentExpectation(
+                current.getSession(), expectedSessionId, expectedStepCode)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+            return;
+        }
+        saveFieldPhotoNote(managerUserId, note, callback);
+    }
+
+    @Override
     public synchronized void saveMedicationNote(
             String managerUserId,
             String expectedSessionId,
@@ -324,16 +341,19 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void replaceSessionArtifacts(
+    public synchronized void replaceSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             String clientRequestId,
             List<Uri> fileUris,
             RepositoryCallback<ManagerDashboard> callback
     ) {
         ManagerDashboard dashboard = managerStore.getManagerDashboard(managerUserId);
-        if (dashboard == null || dashboard.getSession() == null) {
-            callback.onError("동행 첨부를 저장할 세션이 없습니다.");
+        if (dashboard == null || !ManagerRepository.matchesArtifactExpectation(
+                dashboard.getSession(), expectedSessionId, expectedStepCode, purpose)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
             return;
         }
         CompanionSession session = dashboard.getSession();
@@ -362,14 +382,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
-    public void clearSessionArtifacts(
+    public synchronized void clearSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             RepositoryCallback<ManagerDashboard> callback
     ) {
         ManagerDashboard dashboard = managerStore.getManagerDashboard(managerUserId);
-        if (dashboard == null || dashboard.getSession() == null) {
-            callback.onError("동행 첨부를 삭제할 세션이 없습니다.");
+        if (dashboard == null || !ManagerRepository.matchesArtifactExpectation(
+                dashboard.getSession(), expectedSessionId, expectedStepCode, purpose)) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
             return;
         }
         CompanionSession session = dashboard.getSession();

@@ -160,6 +160,47 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
+    /** 수납 증빙 화면의 공유 메모는 확인한 세션과 8단계가 그대로일 때만 저장한다. */
+    default void savePaymentEvidenceNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        callback.onError("수납 메모 저장에는 Core API 연결이 필요합니다.");
+    }
+
+    static boolean matchesPaymentExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "PAYMENT_EVIDENCE".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
+    /** 첨부 용도와 현재 단계가 일치해야 선택 창을 연 시점의 세션에만 파일을 반영한다. */
+    static boolean matchesArtifactExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode,
+            String purpose
+    ) {
+        String normalizedPurpose = normalize(purpose);
+        String requiredStepCode;
+        if (CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE.equals(normalizedPurpose)) {
+            requiredStepCode = "PAYMENT_EVIDENCE";
+        } else if (CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE.equals(
+                normalizedPurpose)) {
+            requiredStepCode = "PRESCRIPTION_DOCUMENTS";
+        } else {
+            return false;
+        }
+        return requiredStepCode.equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
     /** 복약 확인 입력은 화면에서 확인한 세션과 11단계가 그대로일 때만 적용한다. */
     static boolean matchesMedicationExpectation(
             CompanionSession session,
@@ -215,6 +256,8 @@ public interface ManagerRepository {
 
     default void replaceSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             String clientRequestId,
             List<Uri> fileUris,
@@ -225,6 +268,8 @@ public interface ManagerRepository {
 
     default void clearSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             RepositoryCallback<ManagerDashboard> callback
     ) {

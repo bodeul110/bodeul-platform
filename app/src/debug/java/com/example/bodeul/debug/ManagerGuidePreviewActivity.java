@@ -23,6 +23,8 @@ import com.example.bodeul.ui.manager.ManagerGuideActivity;
 public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
     static final String EXTRA_STEP_CODE =
             "com.example.bodeul.debug.extra.MANAGER_GUIDE_STEP_CODE";
+    private static final String EXTRA_SEED_PAYMENT_EVIDENCE =
+            "com.example.bodeul.debug.extra.SEED_PAYMENT_EVIDENCE";
 
     private static final CompanionRealtimeSubscriber NO_OP_REALTIME =
             new CompanionRealtimeSubscriber() {
@@ -41,8 +43,17 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
     private ManagerGuidePreviewDependencies dependencies;
 
     static Intent createIntent(Context context, String stepCode) {
+        return createIntent(context, stepCode, false);
+    }
+
+    static Intent createIntent(
+            Context context,
+            String stepCode,
+            boolean seedPaymentEvidence
+    ) {
         return new Intent(context, ManagerGuidePreviewActivity.class)
-                .putExtra(EXTRA_STEP_CODE, stepCode);
+                .putExtra(EXTRA_STEP_CODE, stepCode)
+                .putExtra(EXTRA_SEED_PAYMENT_EVIDENCE, seedPaymentEvidence);
     }
 
     @Override
@@ -96,7 +107,8 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
         if (dependencies == null) {
             dependencies = ManagerGuidePreviewDependencies.create(
                     this,
-                    selectedStep().getCode());
+                    selectedStep().getCode(),
+                    getIntent().getBooleanExtra(EXTRA_SEED_PAYMENT_EVIDENCE, false));
         }
         return dependencies;
     }

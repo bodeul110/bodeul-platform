@@ -57,6 +57,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.kakao.vectormap.KakaoMap;
@@ -78,12 +79,19 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private static final int LOCATION_ACTION_SHARE_ONCE = 1;
     private static final int LOCATION_ACTION_START_LIVE = 2;
     private static final int LOCATION_ACTION_SHOW_CURRENT_ON_MAP = 3;
+    private static final String STATE_PENDING_ARTIFACT_SESSION =
+            "managerGuide.pendingArtifact.session";
+    private static final String STATE_PENDING_ARTIFACT_STEP =
+            "managerGuide.pendingArtifact.step";
+    private static final String STATE_PENDING_ARTIFACT_PURPOSE =
+            "managerGuide.pendingArtifact.purpose";
 
     private ManagerGuideViewModel viewModel;
     private ManagerGuideDashboardBinder managerGuideDashboardBinder;
     private ManagerGuideReceptionBinder managerGuideReceptionBinder;
     private ManagerGuidePreConsultationBinder managerGuidePreConsultationBinder;
     private ManagerGuideVitalsBinder managerGuideVitalsBinder;
+    private ManagerGuidePaymentBinder managerGuidePaymentBinder;
     private ManagerGuidePrescriptionBinder managerGuidePrescriptionBinder;
     private ManagerGuideConsultationBinder managerGuideConsultationBinder;
     private ManagerGuideMedicationBinder managerGuideMedicationBinder;
@@ -130,6 +138,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private MaterialButton buttonShowCurrentLocation;
     private ActivityResultLauncher<String[]> paymentEvidencePicker;
     private ActivityResultLauncher<String[]> prescriptionImagePicker;
+    @Nullable
+    private ArtifactSelectionExpectation pendingArtifactSelection;
 
     private MapView mapView;
     private KakaoMap kakaoMap;
@@ -144,26 +154,53 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private String currentCoordinateQueryKey = "";
     private boolean coordinateSearchInFlight;
 
+    private static final class ArtifactSelectionExpectation {
+        final String sessionId;
+        final String stepCode;
+        final String purpose;
+
+        ArtifactSelectionExpectation(String sessionId, String stepCode, String purpose) {
+            this.sessionId = sessionId;
+            this.stepCode = stepCode;
+            this.purpose = purpose;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manager_guide);
         legacyManagerLocationEnabled = isLegacyManagerLocationEnabled();
+        restorePendingArtifactSelection(savedInstanceState);
 
         paymentEvidencePicker = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(),
                 uri -> {
+                    ArtifactSelectionExpectation expectation = consumeArtifactSelection(
+                            CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE);
                     if (uri != null) {
+                        if (expectation == null) {
+                            rejectStaleArtifactSelection();
+                            return;
+                        }
                         preserveReadPermission(uri);
                         viewModel.replaceSessionArtifacts(
+                                expectation.sessionId,
+                                expectation.stepCode,
                                 CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE,
-                                List.of(uri));
+                                Collections.singletonList(uri));
                     }
                 });
         prescriptionImagePicker = registerForActivityResult(
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
+                    ArtifactSelectionExpectation expectation = consumeArtifactSelection(
+                            CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE);
                     if (uris == null || uris.isEmpty()) {
+                        return;
+                    }
+                    if (expectation == null) {
+                        rejectStaleArtifactSelection();
                         return;
                     }
                     if (ManagerGuidePrescriptionSelectionPolicy.exceedsLimit(uris.size())) {
@@ -178,6 +215,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                         preserveReadPermission(uri);
                     }
                     viewModel.replaceSessionArtifacts(
+                            expectation.sessionId,
+                            expectation.stepCode,
                             CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE,
                             selected);
                 });
@@ -296,6 +335,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 findViewById(android.R.id.content));
         managerGuideVitalsBinder = new ManagerGuideVitalsBinder(
                 findViewById(android.R.id.content), viewModel::saveVitalsDraft);
+        managerGuidePaymentBinder = new ManagerGuidePaymentBinder(
+                findViewById(android.R.id.content), viewModel::savePaymentDraft);
         managerGuidePrescriptionBinder = new ManagerGuidePrescriptionBinder(
                 findViewById(android.R.id.content));
         managerGuideConsultationBinder = new ManagerGuideConsultationBinder(
@@ -313,6 +354,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonBackGuidePreConsultation).setOnClickListener(
                 view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuideVitals).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuidePayment).setOnClickListener(
                 view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuidePrescription).setOnClickListener(
                 view -> attemptExit(this::finish));
@@ -373,6 +416,15 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 view -> selectCurrentStepArtifact());
         findViewById(R.id.buttonGuidePrescriptionClear).setOnClickListener(
                 view -> clearCurrentStepArtifact());
+        findViewById(R.id.buttonGuidePaymentSelect).setOnClickListener(
+                view -> selectCurrentStepArtifact());
+        findViewById(R.id.buttonGuidePaymentClear).setOnClickListener(
+                view -> clearCurrentStepArtifact());
+        findViewById(R.id.buttonGuidePaymentSaveNote).setOnClickListener(view -> {
+            if ("PAYMENT_EVIDENCE".equals(currentStepCode) && !mutationInFlight) {
+                viewModel.savePaymentEvidenceNote(managerGuidePaymentBinder.note());
+            }
+        });
         checkGuidePreConsultationConfirmed.setOnCheckedChangeListener((button, checked) -> {
             if (!bindingPreConsultationConfirmation) {
                 checkGuidePreConsultationConfirmed.setEnabled(false);
@@ -519,6 +571,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             managerGuideReceptionBinder.hideForState();
             managerGuidePreConsultationBinder.hideForState();
             managerGuideVitalsBinder.hideForState();
+            managerGuidePaymentBinder.hideForState();
             managerGuidePrescriptionBinder.hideForState();
             managerGuideConsultationBinder.hideForState();
             managerGuideMedicationBinder.hideForState();
@@ -568,6 +621,11 @@ public class ManagerGuideActivity extends AppCompatActivity {
                     managerGuideVitalsBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight,
                             viewModel.getVitalsDraft(state.dashboard.getSession().getId()));
+                    managerGuidePaymentBinder.bind(
+                            state.screenModel,
+                            state.dashboard,
+                            mutationInFlight,
+                            viewModel.getPaymentDraft(sessionId));
                     managerGuidePrescriptionBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight);
                     managerGuideConsultationBinder.bind(
@@ -599,6 +657,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 managerGuideReceptionBinder.hideForState();
                 managerGuidePreConsultationBinder.hideForState();
                 managerGuideVitalsBinder.hideForState();
+                managerGuidePaymentBinder.hideForState();
                 managerGuidePrescriptionBinder.hideForState();
                 managerGuideConsultationBinder.hideForState();
                 managerGuideMedicationBinder.hideForState();
@@ -662,6 +721,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private void disableMutationActions() {
         managerGuideReceptionBinder.setShareEnabled(false);
         managerGuideVitalsBinder.setInputsEnabled(false);
+        managerGuidePaymentBinder.setInputsEnabled(false);
         managerGuidePrescriptionBinder.setActionsEnabled(false);
         managerGuideConsultationBinder.setInputsEnabled(false);
         managerGuideMedicationBinder.setInputsEnabled(false);
@@ -680,6 +740,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
         if (currentPrimaryAction == ManagerGuidePrimaryAction.ADVANCE) {
             if ("CONSULTATION_SUPPORT".equals(currentStepCode)
                     && managerGuideConsultationBinder.showUnsavedInputError()) {
+                return;
+            }
+            if ("PAYMENT_EVIDENCE".equals(currentStepCode)
+                    && managerGuidePaymentBinder.hasUnsavedInput()) {
+                Toast.makeText(
+                        this,
+                        R.string.guide_payment_unsaved_advance,
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
             if ("MEDICATION_CONFIRMATION".equals(currentStepCode)
@@ -726,16 +794,23 @@ public class ManagerGuideActivity extends AppCompatActivity {
         boolean hasUnsavedMedication = medicationMayStillBeActive
                 && managerGuideMedicationBinder != null
                 && managerGuideMedicationBinder.hasUnsavedInput();
-        if (!hasUnsavedConsultation && !hasUnsavedMedication) {
+        boolean paymentMayStillBeActive = "PAYMENT_EVIDENCE".equals(currentStepCode)
+                || TextUtils.isEmpty(currentStepCode);
+        boolean hasUnsavedPayment = paymentMayStillBeActive
+                && managerGuidePaymentBinder != null
+                && managerGuidePaymentBinder.hasUnsavedInput();
+        if (!hasUnsavedConsultation && !hasUnsavedMedication && !hasUnsavedPayment) {
             exitAction.run();
             return;
         }
         if (mutationInFlight) {
             Toast.makeText(
                     this,
-                    hasUnsavedMedication
-                            ? R.string.guide_medication_save_in_progress
-                            : R.string.guide_consultation_save_in_progress,
+                    hasUnsavedPayment
+                            ? R.string.guide_payment_save_in_progress
+                            : hasUnsavedMedication
+                                    ? R.string.guide_medication_save_in_progress
+                                    : R.string.guide_consultation_save_in_progress,
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -744,10 +819,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
         }
         exitConfirmationShowing = true;
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.guide_consultation_exit_title)
-                .setMessage(hasUnsavedMedication
-                        ? R.string.guide_medication_exit_body
-                        : R.string.guide_consultation_exit_body)
+                .setTitle(hasUnsavedPayment
+                        ? R.string.guide_payment_exit_title
+                        : R.string.guide_consultation_exit_title)
+                .setMessage(hasUnsavedPayment
+                        ? R.string.guide_payment_exit_body
+                        : hasUnsavedMedication
+                                ? R.string.guide_medication_exit_body
+                                : R.string.guide_consultation_exit_body)
                 .setNegativeButton(R.string.guide_consultation_exit_stay, null)
                 .setPositiveButton(
                         R.string.guide_consultation_exit_discard,
@@ -757,6 +836,9 @@ public class ManagerGuideActivity extends AppCompatActivity {
                             }
                             if (hasUnsavedMedication) {
                                 managerGuideMedicationBinder.discardUnsavedInput();
+                            }
+                            if (hasUnsavedPayment) {
+                                discardPaymentDraft();
                             }
                             exitAction.run();
                         })
@@ -772,6 +854,15 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 ? ""
                 : currentDashboard.getSession().getId();
         viewModel.clearConsultationDraft(sessionId);
+    }
+
+    private void discardPaymentDraft() {
+        managerGuidePaymentBinder.discardUnsavedInput();
+        String sessionId = currentDashboard == null
+                || currentDashboard.getSession() == null
+                ? ""
+                : currentDashboard.getSession().getId();
+        viewModel.clearPaymentDraft(sessionId);
     }
 
     private void showRouteCompletionConfirmation() {
@@ -814,17 +905,66 @@ public class ManagerGuideActivity extends AppCompatActivity {
 
     private void selectCurrentStepArtifact() {
         String purpose = currentArtifactPurpose();
+        CompanionSession session = currentDashboard == null
+                ? null
+                : currentDashboard.getSession();
+        if (session == null || !ManagerRepository.matchesArtifactExpectation(
+                session, session.getId(), session.getCurrentStepCode(), purpose)) {
+            rejectStaleArtifactSelection();
+            return;
+        }
+        pendingArtifactSelection = new ArtifactSelectionExpectation(
+                session.getId(), session.getCurrentStepCode(), purpose);
         if (CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE.equals(purpose)) {
             paymentEvidencePicker.launch(new String[]{"image/jpeg", "image/png", "application/pdf"});
         } else if (CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE.equals(purpose)) {
             prescriptionImagePicker.launch(new String[]{"image/jpeg", "image/png"});
+        } else {
+            pendingArtifactSelection = null;
         }
     }
 
     private void clearCurrentStepArtifact() {
         String purpose = currentArtifactPurpose();
-        if (!purpose.isEmpty()) {
-            viewModel.clearSessionArtifacts(purpose);
+        CompanionSession session = currentDashboard == null
+                ? null
+                : currentDashboard.getSession();
+        if (session != null && !purpose.isEmpty()) {
+            viewModel.clearSessionArtifacts(
+                    session.getId(), session.getCurrentStepCode(), purpose);
+        }
+    }
+
+    @Nullable
+    private ArtifactSelectionExpectation consumeArtifactSelection(String expectedPurpose) {
+        ArtifactSelectionExpectation expectation = pendingArtifactSelection;
+        pendingArtifactSelection = null;
+        if (expectation == null || !TextUtils.equals(expectation.purpose, expectedPurpose)) {
+            return null;
+        }
+        return expectation;
+    }
+
+    private void restorePendingArtifactSelection(@Nullable Bundle state) {
+        if (state == null) {
+            return;
+        }
+        String sessionId = state.getString(STATE_PENDING_ARTIFACT_SESSION, "").trim();
+        String stepCode = state.getString(STATE_PENDING_ARTIFACT_STEP, "").trim();
+        String purpose = state.getString(STATE_PENDING_ARTIFACT_PURPOSE, "").trim();
+        if (!sessionId.isEmpty() && !stepCode.isEmpty() && !purpose.isEmpty()) {
+            pendingArtifactSelection = new ArtifactSelectionExpectation(
+                    sessionId, stepCode, purpose);
+        }
+    }
+
+    private void rejectStaleArtifactSelection() {
+        Toast.makeText(
+                this,
+                ManagerRepository.MESSAGE_STALE_GUIDE_STEP,
+                Toast.LENGTH_SHORT).show();
+        if (viewModel != null) {
+            viewModel.loadDashboard();
         }
     }
 
@@ -1380,6 +1520,17 @@ public class ManagerGuideActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         if (managerGuideConsultationBinder != null) {
             managerGuideConsultationBinder.saveInstanceState(outState);
+        }
+        if (pendingArtifactSelection != null) {
+            outState.putString(
+                    STATE_PENDING_ARTIFACT_SESSION,
+                    pendingArtifactSelection.sessionId);
+            outState.putString(
+                    STATE_PENDING_ARTIFACT_STEP,
+                    pendingArtifactSelection.stepCode);
+            outState.putString(
+                    STATE_PENDING_ARTIFACT_PURPOSE,
+                    pendingArtifactSelection.purpose);
         }
         super.onSaveInstanceState(outState);
     }

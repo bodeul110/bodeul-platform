@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guide_payment_toolbar_title">보들</string>
+    <string name="guide_payment_step_format">%1$02d단계</string>
+    <string name="guide_payment_step_unknown">수납 증빙</string>
+    <string name="guide_payment_title">수납 및 결제</string>
+    <string name="guide_payment_body">병원 수납 창구를 확인하고, 필요하면 결제 증빙을 등록해 주세요.</string>
+    <string name="guide_payment_location_title">수납 창구 안내</string>
+    <string name="guide_payment_location_empty">병원 안내 데스크에서 수납 창구 위치를 확인해 주세요.</string>
+    <string name="guide_payment_location_format">%1$s · %2$s</string>
+    <string name="guide_payment_location_helper">정확한 창구 위치는 병원 안내 데스크 또는 현장 표지판에서 확인해 주세요.</string>
+    <string name="guide_payment_evidence_title">결제 증빙</string>
+    <string name="guide_payment_evidence_optional">선택 사항</string>
+    <string name="guide_payment_select_empty">증빙 파일 선택하기</string>
+    <string name="guide_payment_select_replace">증빙 파일 다시 선택하기</string>
+    <string name="guide_payment_select_helper">JPEG, PNG, PDF · 1개 · 최대 10MiB</string>
+    <string name="guide_payment_status_empty">미등록 · 파일 없이도 다음 단계로 이동할 수 있습니다.</string>
+    <string name="guide_payment_status_registered">1개 등록됨</string>
+    <string name="guide_payment_file_format">%1$s · %2$s</string>
+    <string name="guide_payment_file_size_unknown">크기 정보 없음</string>
+    <string name="guide_payment_file_size_kib">%1$.1f KiB</string>
+    <string name="guide_payment_file_size_mib">%1$.1f MiB</string>
+    <string name="guide_payment_clear">등록 파일 삭제</string>
+    <string name="guide_payment_upload_description">결제 증빙 선택</string>
+    <string name="guide_payment_replace_description">결제 증빙 다시 선택</string>
+    <string name="guide_payment_clear_description">결제 증빙 삭제</string>
+    <string name="guide_payment_note_title">현장 메모</string>
+    <string name="guide_payment_note_helper">현재 동행 세션에서 공유되는 최신 메모입니다. 수납 창구나 보호자 전달 사항을 기록할 수 있습니다.</string>
+    <string name="guide_payment_note_hint">예: 수납 창구 위치, 보호자 전달 사항</string>
+    <string name="guide_payment_note_save">메모 저장</string>
+    <string name="guide_payment_unsaved_advance">저장하지 않은 현장 메모가 있습니다. 메모를 저장한 뒤 다음 단계로 이동해 주세요.</string>
+    <string name="guide_payment_exit_title">작성 중인 메모가 있습니다</string>
+    <string name="guide_payment_exit_body">지금 나가면 저장하지 않은 현장 메모가 사라집니다.</string>
+    <string name="guide_payment_save_in_progress">수납 증빙 정보를 저장하고 있습니다. 잠시 후 다시 시도해 주세요.</string>
+</resources>

@@ -163,6 +163,26 @@ public class ManagerGuidePreviewRepositoryTest {
     }
 
     @Test
+    public void paymentWithoutArtifacts_advancesToPharmacyRoute() {
+        ManagerGuidePreviewRepository repository =
+                new ManagerGuidePreviewRepository("PAYMENT_EVIDENCE");
+        ManagerDashboard current = dashboard(repository);
+        assertTrue(current.getSession().getArtifacts(
+                CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE).isEmpty());
+        AtomicReference<ManagerDashboard> advanced = new AtomicReference<>();
+
+        repository.advanceCurrentStep(
+                ManagerGuidePreviewRepository.MANAGER_ID,
+                current.getSession().getId(),
+                current.getSession().getCurrentStepCode(),
+                callback(advanced));
+
+        assertNotNull(advanced.get());
+        assertEquals(9, advanced.get().getSession().getCurrentStepOrder());
+        assertEquals("PHARMACY_ROUTE", advanced.get().getSession().getCurrentStepCode());
+    }
+
+    @Test
     public void consultationNotes_areRetainedAfterAdvanceToSummary() {
         ManagerGuidePreviewRepository repository =
                 new ManagerGuidePreviewRepository("CONSULTATION_SUPPORT");
@@ -247,7 +267,7 @@ public class ManagerGuidePreviewRepositoryTest {
     @Test
     public void prescriptionArtifacts_replaceAndClearWithoutTouchingPaymentEvidence() {
         ManagerGuidePreviewRepository repository =
-                new ManagerGuidePreviewRepository("PRESCRIPTION_DOCUMENTS");
+                new ManagerGuidePreviewRepository("PAYMENT_EVIDENCE");
 
         ManagerDashboard withPayment = replaceArtifacts(
                 repository,
@@ -255,6 +275,23 @@ public class ManagerGuidePreviewRepositoryTest {
                 1);
         assertEquals(1, withPayment.getSession().getArtifacts(
                 CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE).size());
+
+        AtomicReference<ManagerDashboard> pharmacyRoute = new AtomicReference<>();
+        repository.advanceCurrentStep(
+                ManagerGuidePreviewRepository.MANAGER_ID,
+                withPayment.getSession().getId(),
+                withPayment.getSession().getCurrentStepCode(),
+                callback(pharmacyRoute));
+        assertNotNull(pharmacyRoute.get());
+        AtomicReference<ManagerDashboard> prescriptionStep = new AtomicReference<>();
+        repository.advanceCurrentStep(
+                ManagerGuidePreviewRepository.MANAGER_ID,
+                pharmacyRoute.get().getSession().getId(),
+                pharmacyRoute.get().getSession().getCurrentStepCode(),
+                callback(prescriptionStep));
+        assertNotNull(prescriptionStep.get());
+        assertEquals("PRESCRIPTION_DOCUMENTS",
+                prescriptionStep.get().getSession().getCurrentStepCode());
 
         ManagerDashboard withThreePrescriptions = replaceArtifacts(
                 repository,
@@ -277,6 +314,8 @@ public class ManagerGuidePreviewRepositoryTest {
         AtomicReference<ManagerDashboard> cleared = new AtomicReference<>();
         repository.clearSessionArtifacts(
                 ManagerGuidePreviewRepository.MANAGER_ID,
+                withOnePrescription.getSession().getId(),
+                withOnePrescription.getSession().getCurrentStepCode(),
                 CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE,
                 callback(cleared));
 
@@ -340,8 +379,11 @@ public class ManagerGuidePreviewRepositoryTest {
             uris.add(null);
         }
         AtomicReference<ManagerDashboard> result = new AtomicReference<>();
+        ManagerDashboard current = dashboard(repository);
         repository.replaceSessionArtifacts(
                 ManagerGuidePreviewRepository.MANAGER_ID,
+                current.getSession().getId(),
+                current.getSession().getCurrentStepCode(),
                 purpose,
                 "debug-request-" + purpose + "-" + count,
                 uris,

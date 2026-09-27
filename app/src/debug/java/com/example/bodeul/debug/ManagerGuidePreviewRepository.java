@@ -1,9 +1,11 @@
 package com.example.bodeul.debug;
 
 import com.example.bodeul.data.MockBodeulRepository;
+import com.example.bodeul.data.CompanionSessionArtifactUploadPolicy;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.data.mock.MockManagerRepository;
 import com.example.bodeul.domain.model.CompanionSession;
+import com.example.bodeul.domain.model.CompanionSessionArtifact;
 import com.example.bodeul.domain.model.GuideStep;
 import com.example.bodeul.domain.model.HospitalGuide;
 import com.example.bodeul.domain.model.ManagerDashboard;
@@ -11,6 +13,7 @@ import com.example.bodeul.domain.model.MedicationComparisonDecision;
 import com.example.bodeul.domain.model.SessionReport;
 import com.example.bodeul.domain.model.SessionStatus;
 
+import java.util.Collections;
 import java.util.List;
 
 /** 서버 쓰기 없이 13단계 화면과 로컬 상태 변경만 제공한다. */
@@ -20,12 +23,17 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
     private final PreviewDataRepository dataRepository;
 
     ManagerGuidePreviewRepository(String initialStepCode) {
-        this(new PreviewDataRepository(), initialStepCode);
+        this(initialStepCode, false);
+    }
+
+    ManagerGuidePreviewRepository(String initialStepCode, boolean seedPaymentEvidence) {
+        this(new PreviewDataRepository(), initialStepCode, seedPaymentEvidence);
     }
 
     private ManagerGuidePreviewRepository(
             PreviewDataRepository dataRepository,
-            String initialStepCode
+            String initialStepCode,
+            boolean seedPaymentEvidence
     ) {
         super(dataRepository);
         this.dataRepository = dataRepository;
@@ -33,6 +41,9 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
         CompanionSession session = requirePreviewSession();
         session.setCurrentStepOrder(initialStep.getOrder());
         applyPreviewProgress(session);
+        if (seedPaymentEvidence) {
+            seedPaymentEvidence(session);
+        }
     }
 
     MockBodeulRepository dataRepository() {
@@ -136,6 +147,23 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
             throw new IllegalStateException("debug 가이드 미리보기 세션을 찾지 못했습니다.");
         }
         return sessions.get(0);
+    }
+
+    private void seedPaymentEvidence(CompanionSession session) {
+        session.applyCompletionState(
+                session.getCareEndedAtMillis(),
+                session.getManagerJournal(),
+                session.getReportGenerationStatus(),
+                session.getReportGenerationAttempts(),
+                session.getReportGenerationLastError(),
+                session.getReportGenerationUpdatedAtMillis(),
+                Collections.singletonList(new CompanionSessionArtifact(
+                        "debug-payment-artifact",
+                        CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE,
+                        "receipt.pdf",
+                        "application/pdf",
+                        2L * 1024L * 1024L,
+                        1L)));
     }
 
     private void applyPreviewProgress(CompanionSession session) {
