@@ -16,6 +16,7 @@ export const STATUS = Object.freeze({
 const FIXED = Object.freeze({
   projectId: "bodeul-prod-110",
   projectNumber: "649312328770",
+  oidcSubjectPrefix: "repo:bodeul110@275679915/bodeul-platform@1209358990",
   region: "asia-northeast1",
   firebaseDisplayName: "bodeul-prod",
   androidAppId: "1:649312328770:android:b0698534ff92da7fdea1db",
@@ -652,7 +653,7 @@ async function auditIam(client, checks) {
       const members = asArray(policy.bindings)
         .filter((binding) => binding.role === "roles/iam.workloadIdentityUser")
         .flatMap((binding) => asArray(binding.members));
-      const expected = `principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:production-infrastructure-audit`;
+      const expected = `principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:production-infrastructure-audit`;
       const bindings = asArray(policy.bindings);
       const valid = bindings.length === 1 &&
         bindings[0].role === "roles/iam.workloadIdentityUser" &&
@@ -667,7 +668,7 @@ async function auditIam(client, checks) {
       account: FIXED.serviceAccounts.deploy,
       bindings: [{
         role: "roles/iam.workloadIdentityUser",
-        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:core-api-production`],
+        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:core-api-production`],
       }],
     },
     {
@@ -683,7 +684,7 @@ async function auditIam(client, checks) {
       account: FIXED.serviceAccounts.backup,
       bindings: [{
         role: "roles/iam.workloadIdentityUser",
-        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:core-api-migration-production`],
+        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:core-api-migration-production`],
       }],
     },
     {
@@ -691,7 +692,7 @@ async function auditIam(client, checks) {
       account: FIXED.serviceAccounts.retention,
       bindings: [{
         role: "roles/iam.workloadIdentityUser",
-        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110/bodeul-platform:environment:firebase-retention-production`],
+        members: [`principal://iam.googleapis.com/projects/${FIXED.projectNumber}/locations/global/workloadIdentityPools/github-actions/subject/${FIXED.oidcSubjectPrefix}:environment:firebase-retention-production`],
       }],
     },
   ];
