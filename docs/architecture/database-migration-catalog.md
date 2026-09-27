@@ -1,6 +1,6 @@
 # PostgreSQL Migration 목록
 
-소스 확인일: 2026-09-21
+소스·환경 적용 증거 확인일: 2026-09-27
 
 DDL의 원본은 메인 저장소의 [Flyway migration](../../core-api/src/main/resources/db/migration/)이다. 관리자 웹은 같은 계약을 사용하지만 migration을 중복 소유하지 않는다. 아래 버전은 **저장소에 있는 코드**이며 개발·운영 DB에 전부 적용됐다는 뜻이 아니다.
 
@@ -33,7 +33,7 @@ DDL의 원본은 메인 저장소의 [Flyway migration](../../core-api/src/main/
 ## 적용 상태 확인
 
 - 대상 프로젝트와 DB를 먼저 식별하고 `flyway_schema_history`의 성공 버전을 읽기 전용으로 확인한다. 앱 commit, migration 소스 버전과 실제 DB 버전을 별도로 기록한다.
-- 과거 production V15 복원 기록은 당시 schema 증거다. 9월 21일 관리자 환경 점검에서는 production DB 일시정지를 확인했고 재개·추가 migration은 하지 않았다.
+- 9월 27일 양쪽 DB V23·실패 이력 0건을 확인했다. 운영 V16~V23 적용 run `36310121342`, V23 백업·격리 복원 run `36316057495`의 [실행 기록](../reports/dev-production-separation-2026-09-27.md)을 현재 적용 근거로 사용한다. V15 복원·9월 21일 일시정지는 당시 이력이다.
 - [production 사전 점검](../operations/production-database-migration-readiness.md)은 연결·V14/V15 영향도에 한정된 검사다. 성공만으로 V16~V23 적용·호환성을 보장하지 않는다.
 - [bootstrap](../../core-api/db/bootstrap/), Realtime RLS와 [검증 SQL](../../core-api/db/verification/)도 함께 확인한다. Flyway 버전만 맞추고 환경별 인증·권한 설정을 생략하지 않는다.
 - 적용은 [Core API 런북](../operations/core-api-infrastructure-runbook.md)의 수동 workflow 경계를 따른다. 전체 DB reset이나 다른 환경에 대한 일괄 push를 하지 않는다.

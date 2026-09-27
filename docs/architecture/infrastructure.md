@@ -1,16 +1,16 @@
 # 인프라 개요
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 ## 런타임
 
 | 영역 | 구현 | 배포 |
 | --- | --- | --- |
 | Android | Java + XML | 로컬·실기기, GitHub Android Preflight |
-| 관리자 웹/서버 | 별도 저장소 React + Next.js | Vercel Preview·Production 웹 배포와 환경 표시. 운영 DB 업무 검증은 별도 |
-| 사용자 Core API | Java 21 + Spring Boot | Cloud Run Tokyo preview, production 배포 기반 준비 |
-| 공용 DB | PostgreSQL | Supabase Tokyo 개발·production 분리 |
-| 실시간 전달 | Supabase Realtime private Broadcast | 개발 검증 후 production 전환 |
+| 관리자 웹/서버 | 별도 저장소 React + Next.js | Vercel dev Preview·master Production. 운영 DB 연결·최초 관리자 MFA 로그인 확인 |
+| 사용자 Core API | Java 21 + Spring Boot | Cloud Run Tokyo 개발·운영 독립 서비스 배포 |
+| 공용 DB | PostgreSQL | Supabase Pro Tokyo 개발·운영 별도 프로젝트, 양쪽 V23 |
+| 실시간 전달 | Supabase Realtime private Broadcast | 양쪽 Firebase 허용 목록·인가 설정 적용. 운영 실소켓 검증은 별도 |
 | 인증·푸시·파일 | Firebase Auth, FCM, Storage | `bodeul-dev`, `bodeul-prod-110` 분리 |
 | Firebase 결합 로직 | Functions v2, 예약 파기 작업 | Firebase `asia-northeast3` |
 
@@ -30,7 +30,7 @@
 - GitHub Actions 배포는 장기 JSON key 대신 WIF를 사용한다.
 - DB migration 자격 증명은 runtime 서비스에 전달하지 않는다.
 - 예약 파기 함수는 Supavisor transaction mode와 `bodeul_retention_service`를 사용하며 Core·관리자 DB 자격 증명을 재사용하지 않는다. DB URL과 Supabase CA는 별도 Secret으로 주입한다.
-- production GCP/Firebase 식별자, DB migration secret과 Cloud Run DB Secret version은 별도로 만들었다. Vercel Production 값과 Kakao production key는 아직 연결하지 않았다.
+- 운영 DB·migration·Vercel Production 자격 증명을 분리해 등록했다. Kakao REST 키는 승인된 공유 예외이며 개발·운영 프로젝트의 별도 Secret Manager 항목에 보관한다.
 
 ## 저장소 경계
 
@@ -38,14 +38,14 @@
 
 ## 현재 리스크
 
-- Preview 500/503 관찰의 현재 상태 재확인(#429), production DB 일시정지와 관리자 DB 연결 게이트
-- 소스 V1~V23과 환경별 DB 적용 버전의 차이. [migration 목록](database-migration-catalog.md)과 대상 DB 이력을 대조
+- 최초 관리자 로그인과 별개인 역할별 업무·감사·MFA 복구 검증
+- 양쪽 V23 적용 이후 새 migration의 환경별 적용·백업 추적. [migration 목록](database-migration-catalog.md)과 대상 DB 이력을 대조
 
 - Firestore와 PostgreSQL 병행 도메인의 데이터 불일치
 - 자동 파기는 개발 PostgreSQL·Storage·Firestore 격리 fixture 리허설 기록이 있으나 production 적용과 현재 정책·처리방침 대조는 별도임
-- production 도메인과 실명 운영자 미확정
+- 최종 서비스 도메인·추가 운영자·출시 일정 확인
 - 관리자 App Check 미강제
 - production DB restore는 완료했지만 Cloud Run·Vercel rollback 리허설 미완료
 - 역할 동기화와 감사 로그의 확장 필요
 
-상세 흐름은 [현재 인프라 구성도](infra-overview.md), 목표와 전환 조건은 [목표 인프라 구조](target-infrastructure.md)를 따른다.
+상세 흐름은 [현재 인프라 구성도](infra-overview.md), 목표와 전환 조건은 [목표 인프라 구조](target-infrastructure.md), 환경별 적용·미확인 범위는 [9월 27일 실행 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다.
