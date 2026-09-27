@@ -14,6 +14,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
 
 import com.example.bodeul.MainActivity;
 import com.example.bodeul.R;
@@ -32,8 +34,12 @@ import com.example.bodeul.domain.model.UserRole;
 import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationBinder;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationRouter;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
 import com.example.bodeul.util.EnvironmentModeBadgeHelper;
 import com.example.bodeul.util.StatePanelHelper;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -49,11 +55,14 @@ public class BookingActivity extends AppCompatActivity {
     private BookingCoordinator bookingCoordinator;
     private BookingDashboardBinder dashboardBinder;
     private BookingFormBinder formBinder;
+    private BookingHospitalMapPreviewController hospitalMapPreviewController;
+    private BookingMainScreenBinder mainScreenBinder;
 
     private View bookingStatePanel;
     private View bookingContentContainer;
     private ProgressBar progressBooking;
     private TextView textBookingMode;
+    private BottomNavigationView bottomNavigation;
 
     private User currentUser;
     private BookingDashboard currentDashboard;
@@ -80,8 +89,8 @@ public class BookingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_booking);
         pendingEditRequestId = getIntent().getStringExtra(EXTRA_EDIT_REQUEST_ID);
 
-        authRepository = ServiceLocator.provideAuthRepository(this);
-        bookingRepository = ServiceLocator.provideBookingRepository(this);
+        authRepository = provideAuthRepository();
+        bookingRepository = provideBookingRepository();
         bookingCoordinator = new BookingCoordinator(bookingRepository);
         healthProfileLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -164,12 +173,28 @@ public class BookingActivity extends AppCompatActivity {
         bookingContentContainer = findViewById(R.id.bookingContentContainer);
         progressBooking = findViewById(R.id.progressBooking);
         textBookingMode = findViewById(R.id.textBookingMode);
+        bottomNavigation = findViewById(R.id.clientBottomNavigation);
+
+        mainScreenBinder = new BookingMainScreenBinder(
+                this,
+                findViewById(R.id.buttonBookingSelectHospital),
+                findViewById(R.id.textBookingVisitDateSummary),
+                findViewById(R.id.textBookingVisitTimeSummary)
+        );
+        hospitalMapPreviewController = new BookingHospitalMapPreviewController(
+                findViewById(R.id.mapViewBookingHospitalPreview),
+                findViewById(R.id.layoutBookingHospitalMapPlaceholder),
+                findViewById(R.id.textBookingHospitalMapPlaceholderTitle),
+                findViewById(R.id.textBookingHospitalMapPlaceholderBody)
+        );
 
         BookingPresentationFormatter formatter = new BookingPresentationFormatter(this);
         BookingAppointmentSelector appointmentSelector = new BookingAppointmentSelector(
                 this,
                 findViewById(R.id.layoutBookingAppointmentAt),
                 findViewById(R.id.inputBookingAppointmentAt),
+                findViewById(R.id.buttonBookingAppointmentSummary),
+                findViewById(R.id.textBookingAppointmentError),
                 findViewById(R.id.buttonBookingQuickToday),
                 findViewById(R.id.buttonBookingQuickTomorrow),
                 findViewById(R.id.buttonBookingQuickDayAfterTomorrow),
@@ -179,6 +204,7 @@ public class BookingActivity extends AppCompatActivity {
                 appointmentSelectorLauncher,
                 () -> preserveFormOnNextDashboardBind = true
         );
+        appointmentSelector.setOnAppointmentChangedListener(mainScreenBinder::bindAppointment);
 
         dashboardBinder = new BookingDashboardBinder(
                 this,
@@ -211,6 +237,7 @@ public class BookingActivity extends AppCompatActivity {
                 findViewById(R.id.textBookingPaymentHelper),
                 findViewById(R.id.textBookingHealthProfileSummary),
                 findViewById(R.id.textBookingHealthProfileError),
+                findViewById(R.id.textBookingHospitalSelectionError),
                 findViewById(R.id.layoutBookingHealthSummary),
                 findViewById(R.id.layoutBookingMedicationSummary),
                 findViewById(R.id.layoutBookingLinkedName),
@@ -255,8 +282,25 @@ public class BookingActivity extends AppCompatActivity {
         formBinder.setOnHealthProfileSelectorClickListener(view -> openHealthProfile());
         formBinder.setOnHospitalSelectorClickListener(view -> openHospitalSelector());
         formBinder.setOnMeetingPlaceSelectorClickListener(view -> openLocationSelector());
+        formBinder.setOnHospitalSelectionChangedListener(selection -> {
+            mainScreenBinder.bindHospitalSelection(selection);
+            hospitalMapPreviewController.bindSelection(selection);
+        });
         ((MaterialButton) findViewById(R.id.buttonSubmitBooking)).setOnClickListener(view -> submitAppointmentRequest());
         ((MaterialButton) findViewById(R.id.buttonCancelBookingEdit)).setOnClickListener(view -> exitEditMode());
+        findViewById(R.id.buttonCloseBooking).setOnClickListener(view -> finish());
+
+        bottomNavigation.setVisibility(View.GONE);
+        ClientBottomNavigationBinder.bind(
+                bottomNavigation,
+                ClientBottomNavigationTab.SCHEDULE_HISTORY,
+                tab -> ClientBottomNavigationRouter.open(
+                        this,
+                        ClientBottomNavigationTab.SCHEDULE_HISTORY,
+                        tab
+                )
+        );
+        configureSystemBars();
 
         EnvironmentModeBadgeHelper.bind(
                 textBookingMode,
@@ -272,6 +316,30 @@ public class BookingActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         reloadDashboard();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (hospitalMapPreviewController != null) {
+            hospitalMapPreviewController.onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (hospitalMapPreviewController != null) {
+            hospitalMapPreviewController.onPause();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (hospitalMapPreviewController != null) {
+            hospitalMapPreviewController.onDestroy();
+        }
+        super.onDestroy();
     }
 
     private void reloadDashboard() {
@@ -295,6 +363,7 @@ public class BookingActivity extends AppCompatActivity {
                 }
 
                 currentUser = result;
+                bottomNavigation.setVisibility(View.VISIBLE);
                 bookingCoordinator.loadDashboard(result, new RepositoryCallback<BookingDashboard>() {
                     @Override
                     public void onSuccess(BookingDashboard dashboard) {
@@ -319,6 +388,9 @@ public class BookingActivity extends AppCompatActivity {
                         });
                         bindFormState(dashboard);
                         bookingContentContainer.setVisibility(View.VISIBLE);
+                        if (shouldStartHospitalMapPreview()) {
+                            hospitalMapPreviewController.onHostContentVisible();
+                        }
                     }
 
                     @Override
@@ -478,7 +550,7 @@ public class BookingActivity extends AppCompatActivity {
         formBinder.bindEditMode(currentUser, request);
     }
 
-    private void openRequestDetail(AppointmentRequest request) {
+    protected void openRequestDetail(AppointmentRequest request) {
         startActivity(BookingStatusActivity.createIntent(this, request.getId()));
     }
 
@@ -627,13 +699,14 @@ public class BookingActivity extends AppCompatActivity {
                 secondaryListener
         );
         bookingContentContainer.setVisibility(View.GONE);
+        bottomNavigation.setVisibility(View.GONE);
     }
 
     private void hideBlockingState() {
         StatePanelHelper.hide(bookingStatePanel);
     }
 
-    private void openHospitalSelector() {
+    protected void openHospitalSelector() {
         preserveFormOnNextDashboardBind = true;
         hospitalSelectorLauncher.launch(BookingHospitalSelectorActivity.createIntent(
                 this,
@@ -641,7 +714,7 @@ public class BookingActivity extends AppCompatActivity {
         ));
     }
 
-    private void openHealthProfile() {
+    protected void openHealthProfile() {
         preserveFormOnNextDashboardBind = true;
         healthProfileLauncher.launch(BookingHealthProfileActivity.createIntent(
                 this,
@@ -649,7 +722,7 @@ public class BookingActivity extends AppCompatActivity {
         ));
     }
 
-    private void openLocationSelector() {
+    protected void openLocationSelector() {
         BookingHospitalSelection hospitalSelection = formBinder.getHospitalSelection();
         if (!hospitalSelection.isComplete()) {
             Toast.makeText(this, R.string.booking_location_selector_hospital_required, Toast.LENGTH_SHORT).show();
@@ -691,5 +764,37 @@ public class BookingActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    protected AuthRepository provideAuthRepository() {
+        return ServiceLocator.provideAuthRepository(this);
+    }
+
+    protected BookingRepository provideBookingRepository() {
+        return ServiceLocator.provideBookingRepository(this);
+    }
+
+    protected int bookingTopBarExtraHeightPx() {
+        return 0;
+    }
+
+    /** Debug 전용 정적 미리보기는 외부 지도 SDK를 시작하지 않는다. */
+    protected boolean shouldStartHospitalMapPreview() {
+        return true;
+    }
+
+    private void configureSystemBars() {
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.figma_mvp_background));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.figma_mvp_background));
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(true);
+        BookingMainScreenInsets.apply(
+                findViewById(R.id.scrollBooking),
+                findViewById(R.id.layoutBookingTopBar),
+                bottomNavigation,
+                bookingTopBarExtraHeightPx()
+        );
     }
 }

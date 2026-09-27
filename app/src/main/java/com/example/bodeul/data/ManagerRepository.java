@@ -140,6 +140,26 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
+    /** 진료 요약 메모도 세션과 단계가 일치하는 쓰기 경계에서만 저장한다. */
+    default void saveConsultationSummaryNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        callback.onError("진료 요약 저장에는 Core API 연결이 필요합니다.");
+    }
+
+    static boolean matchesConsultationSummaryExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "CONSULTATION_SUMMARY".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
     /** 기초 측정값은 화면에서 확인한 세션과 단계가 그대로일 때만 저장한다. */
     default void saveVitalsNote(
             String managerUserId,
@@ -160,9 +180,70 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
-    void saveMedicationNote(String managerUserId, String medicationNote, RepositoryCallback<ManagerDashboard> callback);
+    /** 수납 증빙 화면의 공유 메모는 확인한 세션과 8단계가 그대로일 때만 저장한다. */
+    default void savePaymentEvidenceNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        callback.onError("수납 메모 저장에는 Core API 연결이 필요합니다.");
+    }
 
-    void savePharmacySummary(String managerUserId, String pharmacySummary, RepositoryCallback<ManagerDashboard> callback);
+    static boolean matchesPaymentExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "PAYMENT_EVIDENCE".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
+    /** 첨부 용도와 현재 단계가 일치해야 선택 창을 연 시점의 세션에만 파일을 반영한다. */
+    static boolean matchesArtifactExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode,
+            String purpose
+    ) {
+        String normalizedPurpose = normalize(purpose);
+        String requiredStepCode;
+        if (CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE.equals(normalizedPurpose)) {
+            requiredStepCode = "PAYMENT_EVIDENCE";
+        } else if (CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE.equals(
+                normalizedPurpose)) {
+            requiredStepCode = "PRESCRIPTION_DOCUMENTS";
+        } else {
+            return false;
+        }
+        return requiredStepCode.equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
+    /** 복약 확인 입력은 화면에서 확인한 세션과 11단계가 그대로일 때만 적용한다. */
+    static boolean matchesMedicationExpectation(
+            CompanionSession session,
+            String expectedSessionId,
+            String expectedStepCode
+    ) {
+        return "MEDICATION_CONFIRMATION".equals(normalize(expectedStepCode))
+                && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
+    }
+
+    void saveMedicationNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String medicationNote,
+            RepositoryCallback<ManagerDashboard> callback);
+
+    void savePharmacySummary(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String pharmacySummary,
+            RepositoryCallback<ManagerDashboard> callback);
 
     void updatePreConsultationConfirmed(
             String managerUserId,
@@ -172,20 +253,31 @@ public interface ManagerRepository {
 
     void updatePrescriptionCollected(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean prescriptionCollected,
             RepositoryCallback<ManagerDashboard> callback
     );
 
-    void updatePharmacyCompleted(String managerUserId, boolean pharmacyCompleted, RepositoryCallback<ManagerDashboard> callback);
+    void updatePharmacyCompleted(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            boolean pharmacyCompleted,
+            RepositoryCallback<ManagerDashboard> callback);
 
     void updateMedicationGuidanceCompleted(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             boolean medicationGuidanceCompleted,
             RepositoryCallback<ManagerDashboard> callback
     );
 
     default void replaceSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             String clientRequestId,
             List<Uri> fileUris,
@@ -196,6 +288,8 @@ public interface ManagerRepository {
 
     default void clearSessionArtifacts(
             String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
             String purpose,
             RepositoryCallback<ManagerDashboard> callback
     ) {

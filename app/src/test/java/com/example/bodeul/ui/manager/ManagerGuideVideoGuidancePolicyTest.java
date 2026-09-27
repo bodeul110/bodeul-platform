@@ -85,10 +85,13 @@ public class ManagerGuideVideoGuidancePolicyTest {
     }
 
     @Test
-    public void confirmation_requiresHospitalRouteAdvanceOnly() {
+    public void confirmation_requiresRouteStepAdvance() {
         assertTrue(ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
                 ManagerGuidePrimaryAction.ADVANCE,
                 " HOSPITAL_ROUTE "));
+        assertTrue(ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
+                ManagerGuidePrimaryAction.ADVANCE,
+                "PHARMACY_ROUTE"));
         assertFalse(ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
                 ManagerGuidePrimaryAction.NONE,
                 "HOSPITAL_ROUTE"));

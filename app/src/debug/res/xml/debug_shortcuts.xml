@@ -6,11 +6,11 @@
         android:shortcutId="manager_guide_preview"
         android:enabled="true"
         android:icon="@drawable/ic_client_nav_guide"
-        android:shortcutLongLabel="@string/debug_manager_guide_preview_long_label"
-        android:shortcutShortLabel="@string/debug_manager_guide_preview_short_label">
+        android:shortcutLongLabel="@string/debug_figma_preview_long_label"
+        android:shortcutShortLabel="@string/debug_figma_preview_short_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="com.example.bodeul.debug.ManagerGuidePreviewSelectorActivity"
+            android:targetClass="com.example.bodeul.debug.FigmaScreenPreviewSelectorActivity"
             android:targetPackage="com.example.bodeul" />
     </shortcut>
 </shortcuts>

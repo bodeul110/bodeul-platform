@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guide_summary_toolbar_title">동행 가이드 07</string>
+    <string name="guide_summary_step">STEP 07</string>
+    <string name="guide_summary_title">진료 내용을 정리해 주세요</string>
+    <string name="guide_summary_body">진료 중 기록한 메모를 확인하고, 보호자에게 전달할 핵심 내용을 정리해 주세요.</string>
+    <string name="guide_summary_card_title">진료 요약</string>
+    <string name="guide_summary_saved_badge">현재 저장 내용</string>
+    <string name="guide_summary_patient_label">대상 환자</string>
+    <string name="guide_summary_hospital_label">진료 기관</string>
+    <string name="guide_summary_department_label">진료과</string>
+    <string name="guide_summary_note_hint">진료 요약 메모</string>
+    <string name="guide_summary_save_note">메모 저장</string>
+    <string name="guide_summary_contract_note">저장한 메모는 현재 동행 세션의 진료 메모로 반영됩니다.</string>
+
+    <string name="guide_pharmacy_toolbar_title">동행 가이드 09</string>
+    <string name="guide_pharmacy_step">STEP 09</string>
+    <string name="guide_pharmacy_title">가까운 약국으로 이동해 주세요</string>
+    <string name="guide_pharmacy_body">현재 병원을 기준으로 카카오맵에서 주변 약국을 확인할 수 있습니다.</string>
+    <string name="guide_pharmacy_location_title">약국 위치 안내</string>
+    <string name="guide_pharmacy_location_body">지도에서 병원 위치를 확인한 뒤 아래 카카오맵 약국 검색을 이용해 주세요.</string>
+    <string name="guide_pharmacy_hospital_label">출발 병원</string>
+    <string name="guide_pharmacy_department_label">진료과</string>
+    <string name="guide_pharmacy_action_unavailable">약국 검색 연결을 준비 중입니다.</string>
+    <string name="guide_pharmacy_no_saved_selection">약국 선택 결과는 앱에 별도로 저장되지 않습니다.</string>
+
+    <string name="guide_completion_toolbar_title">보들 (Bodeul)</string>
+    <string name="guide_completion_step_badge">마지막 확인 단계</string>
+    <string name="guide_completion_step">STEP 12</string>
+    <string name="guide_completion_title">서비스 종료 전\n메모를 확인해 주세요</string>
+    <string name="guide_completion_body">동행 중 저장한 메모를 한 번 더 확인한 뒤 서비스를 종료해 주세요.</string>
+    <string name="guide_completion_patient_title">동행 대상</string>
+    <string name="guide_completion_memo_title">메모 모아보기</string>
+    <string name="guide_completion_memo_body">각 단계에서 저장한 원문을 그대로 보여드립니다.</string>
+    <string name="guide_completion_memo_empty">저장된 단계 메모가 없습니다.</string>
+    <string name="guide_completion_warning">서비스 종료 후에는 매니저 일지와 최종 리포트 작성 단계로 이동합니다.</string>
+
+    <string name="guide_journal_toolbar_title">보들 (Bodeul)</string>
+    <string name="guide_journal_step">STEP 13</string>
+    <string name="guide_journal_complete_badge">동행 서비스 종료</string>
+    <string name="guide_journal_title">오늘의 동행을\n일지로 남겨주세요</string>
+    <string name="guide_journal_body">300자 이내의 매니저 일지와 기존 리포트 항목을 작성해 제출해 주세요.</string>
+    <string name="guide_journal_patient_label">동행 대상</string>
+    <string name="guide_journal_ready_title">최종 리포트 작성</string>
+    <string name="guide_journal_ready_body">작성 내용은 기존 리포트 제출 API로 전송됩니다.</string>
+    <string name="guide_journal_retry_title">리포트 다시 제출</string>
+    <string name="guide_journal_retry_body">이전 제출 처리가 완료되지 않았습니다. 내용을 확인한 뒤 다시 제출해 주세요.</string>
+    <string name="guide_journal_form_title">동행 리포트</string>
+    <string name="guide_journal_form_body">필요한 항목만 작성할 수 있으며, 매니저 일지는 300자로 제한됩니다.</string>
+
+    <string name="guide_remaining_value_unknown">확인 전</string>
+</resources>

@@ -5,214 +5,465 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="22dp"
-        android:text="@string/booking_visit_section"
-        android:textColor="@color/bodeul_text_primary"
-        android:textSize="17sp"
-        android:textStyle="bold" />
+        android:layout_marginTop="28dp"
+        android:fontFamily="@font/pretendard_semibold"
+        android:letterSpacing="0.06"
+        android:text="@string/booking_main_step_visit"
+        android:textColor="@color/figma_mvp_primary"
+        android:textSize="12sp" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="48dp"
+        app:cardElevation="2dp"
+        app:strokeColor="@color/figma_mvp_card_outline"
+        app:strokeWidth="1dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="17dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonBookingSelectHospital"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:fontFamily="@font/pretendard_medium"
+                android:gravity="center_vertical|start"
+                android:maxLines="2"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="@string/booking_main_hospital_search"
+                android:textAllCaps="false"
+                android:textColor="@color/figma_mvp_text_hint"
+                android:textSize="16sp"
+                app:backgroundTint="@color/figma_mvp_input"
+                app:cornerRadius="32dp"
+                app:icon="@drawable/ic_figma_hospital_search_search"
+                app:iconGravity="textStart"
+                app:iconPadding="12dp"
+                app:iconTint="@color/figma_mvp_text_hint"
+                app:strokeWidth="0dp" />
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <TextView
+        android:id="@+id/textBookingHospitalSelectionError"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:text="@string/booking_visit_helper"
-        android:textColor="@color/bodeul_text_secondary"
-        android:textSize="13sp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonBookingSelectHospital"
-        style="@style/BodeulOutlinedButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:minHeight="48dp"
-        android:text="@string/booking_hospital_selector_button" />
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layoutBookingHospitalName"
-        style="@style/BodeulFilledInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:hint="@string/booking_hospital_name_hint"
-        app:helperText="@string/booking_hospital_selector_field_helper">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputBookingHospitalName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="false"
-            android:cursorVisible="false"
-            android:focusable="false"
-            android:inputType="none"
-            android:longClickable="false" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layoutBookingDepartmentName"
-        style="@style/BodeulFilledInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="@string/booking_department_name_hint">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputBookingDepartmentName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="false"
-            android:cursorVisible="false"
-            android:focusable="false"
-            android:inputType="none"
-            android:longClickable="false" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layoutBookingAppointmentAt"
-        style="@style/BodeulFilledInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="@string/booking_appointment_at_hint"
-        app:helperText="@string/booking_appointment_at_helper">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputBookingAppointmentAt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:cursorVisible="false"
-            android:focusable="true"
-            android:inputType="none"
-            android:longClickable="false" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/booking_quick_date_section"
-        android:textColor="@color/bodeul_text_primary"
-        android:textSize="13sp"
-        android:textStyle="bold" />
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="7dp"
+        android:fontFamily="@font/pretendard_medium"
+        android:text="@string/booking_main_hospital_required"
+        android:textColor="@color/bodeul_error"
+        android:textSize="12sp"
+        android:visibility="gone" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingQuickToday"
-            style="@style/BodeulOutlinedButton"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingHospitalName"
+            style="@style/BodeulFigmaFilledInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp"
+            android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:minHeight="44dp"
-            android:text="@string/booking_quick_today"
-            android:textSize="13sp" />
+            android:hint="@string/booking_hospital_name_hint">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingQuickTomorrow"
-            style="@style/BodeulOutlinedButton"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingHospitalName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:fontFamily="@font/pretendard_medium"
+                android:inputType="none"
+                android:longClickable="false"
+                android:maxLines="1"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingDepartmentName"
+            style="@style/BodeulFigmaFilledInput"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
+            android:layout_marginStart="5dp"
             android:layout_weight="1"
-            android:minHeight="44dp"
-            android:text="@string/booking_quick_tomorrow"
-            android:textSize="13sp" />
+            android:hint="@string/booking_department_name_hint">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingQuickDayAfterTomorrow"
-            style="@style/BodeulOutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:minHeight="44dp"
-            android:text="@string/booking_quick_day_after_tomorrow"
-            android:textSize="13sp" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingDepartmentName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:cursorVisible="false"
+                android:focusable="false"
+                android:fontFamily="@font/pretendard_medium"
+                android:inputType="none"
+                android:longClickable="false"
+                android:maxLines="1"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
-    <TextView
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="256dp"
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/figma_mvp_input"
+        app:cardCornerRadius="48dp"
+        app:cardElevation="2dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <com.kakao.vectormap.MapView
+                android:id="@+id/mapViewBookingHospitalPreview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="invisible" />
+
+            <LinearLayout
+                android:id="@+id/layoutBookingHospitalMapPlaceholder"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="28dp">
+
+                <ImageView
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_map_marker_hospital" />
+
+                <TextView
+                    android:id="@+id/textBookingHospitalMapPlaceholderTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:gravity="center"
+                    android:text="@string/booking_main_map_empty_title"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/textBookingHospitalMapPlaceholderBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/booking_main_map_empty_body"
+                    android:textColor="@color/figma_mvp_text_tertiary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/booking_quick_time_section"
-        android:textColor="@color/bodeul_text_primary"
-        android:textSize="13sp"
-        android:textStyle="bold" />
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="0dp"
+        app:strokeColor="@color/figma_mvp_card_outline"
+        app:strokeWidth="1dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingQuickMorning"
-            style="@style/BodeulOutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp"
-            android:layout_weight="1"
-            android:minHeight="44dp"
-            android:text="@string/booking_quick_time_morning"
-            android:textSize="13sp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingQuickAfternoon"
-            style="@style/BodeulOutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="3dp"
-            android:layout_weight="1"
-            android:minHeight="44dp"
-            android:text="@string/booking_quick_time_afternoon"
-            android:textSize="13sp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingQuickLateAfternoon"
-            style="@style/BodeulOutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:minHeight="44dp"
-            android:text="@string/booking_quick_time_late_afternoon"
-            android:textSize="13sp" />
-    </LinearLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layoutBookingMeetingPlace"
-        style="@style/BodeulFilledInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="@string/booking_meeting_place_hint"
-        app:helperText="@string/booking_location_selector_field_helper">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputBookingMeetingPlace"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:clickable="false"
-            android:cursorVisible="false"
-            android:focusable="false"
-            android:inputType="none"
-            android:longClickable="false" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:orientation="vertical"
+            android:padding="24dp">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonBookingSelectMeetingPlace"
-        style="@style/BodeulOutlinedButton"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_booking_completion_calendar" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:text="@string/booking_main_visit_datetime_title"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="17sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/buttonBookingAppointmentSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:clickable="true"
+                android:contentDescription="@string/booking_main_visit_datetime_action"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="96dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_figma_hospital_search_input"
+                    android:gravity="center_vertical|start"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/pretendard_regular"
+                        android:text="@string/booking_main_visit_date_label"
+                        android:textColor="@color/figma_mvp_text_tertiary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/textBookingVisitDateSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/pretendard_semibold"
+                        android:gravity="start"
+                        android:text="@string/booking_main_visit_date_empty"
+                        android:textColor="@color/figma_mvp_text_primary"
+                        android:textSize="15sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:minHeight="96dp"
+                    android:layout_marginStart="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_figma_hospital_search_input"
+                    android:gravity="center_vertical|start"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/pretendard_regular"
+                        android:text="@string/booking_main_visit_time_label"
+                        android:textColor="@color/figma_mvp_text_tertiary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/textBookingVisitTimeSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:fontFamily="@font/pretendard_semibold"
+                        android:gravity="start"
+                        android:text="@string/booking_main_visit_time_empty"
+                        android:textColor="@color/figma_mvp_text_primary"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/textBookingAppointmentError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="7dp"
+                android:fontFamily="@font/pretendard_medium"
+                android:text="@string/booking_main_visit_datetime_error"
+                android:textColor="@color/bodeul_error"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutBookingAppointmentAt"
+                style="@style/BodeulFigmaFilledInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/booking_appointment_at_hint"
+                android:visibility="gone"
+                app:helperText="@string/booking_appointment_at_helper">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputBookingAppointmentAt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:focusable="true"
+                    android:fontFamily="@font/pretendard_medium"
+                    android:inputType="none"
+                    android:longClickable="false"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/pretendard_semibold"
+                android:text="@string/booking_main_quick_selection"
+                android:textColor="@color/figma_mvp_text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonBookingQuickToday"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:minHeight="42dp"
+                    android:text="@string/booking_quick_today"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonBookingQuickTomorrow"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:layout_weight="1"
+                    android:minHeight="42dp"
+                    android:text="@string/booking_quick_tomorrow"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonBookingQuickDayAfterTomorrow"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:minHeight="42dp"
+                    android:text="@string/booking_quick_day_after_tomorrow"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonBookingQuickMorning"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:minHeight="42dp"
+                    android:text="@string/booking_quick_time_morning"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonBookingQuickAfternoon"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:layout_weight="1"
+                    android:minHeight="42dp"
+                    android:text="@string/booking_quick_time_afternoon"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonBookingQuickLateAfternoon"
+                    style="@style/BodeulOutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:minHeight="42dp"
+                    android:text="@string/booking_quick_time_late_afternoon"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:minHeight="48dp"
-        android:text="@string/booking_location_selector_button" />
+        android:layout_marginTop="16dp"
+        app:cardBackgroundColor="@color/figma_mvp_surface"
+        app:cardCornerRadius="32dp"
+        app:cardElevation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/pretendard_semibold"
+                android:text="@string/booking_main_request_title"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="16sp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutBookingSpecialNotes"
+                style="@style/BodeulFigmaFilledInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/booking_main_request_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputBookingSpecialNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:minHeight="104dp"
+                    android:minLines="3"
+                    android:paddingTop="16dp"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textColorHint="@color/figma_mvp_text_hint"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
 </merge>

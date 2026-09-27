@@ -153,15 +153,36 @@ public final class GuardianReportCoordinator {
     private List<GuardianReportEntryCardModel> createEntryCards(List<GuardianReportEntry> entries) {
         List<GuardianReportEntryCardModel> cards = new ArrayList<>();
         for (GuardianReportEntry entry : entries) {
+            List<GuardianReportSectionModel> reportSections = createReportSections(entry);
+            boolean finalReportReady = GuardianFinalReportPolicy.hasReportContent(
+                    entry.getSessionReport()
+            ) && GuardianFinalReportPolicy.shouldRenderFinalReport(
+                    entry.getAppointmentRequest().getStatus(),
+                    reportSections
+            );
+            CompanionSession session = entry.getSession();
             cards.add(new GuardianReportEntryCardModel(
                     entry.getAppointmentRequest().getId(),
                     entry.getAppointmentRequest().getStatus(),
+                    finalReportReady,
                     context.getString(
                             R.string.guardian_report_item_title,
                             entry.getAppointmentRequest().getHospitalName(),
                             entry.getAppointmentRequest().getDepartmentName()
                     ),
                     buildHeroBody(entry),
+                    GuardianFinalReportPolicy.resolveDateText(
+                            session,
+                            entry.getAppointmentRequest().getAppointmentAt()
+                    ),
+                    entry.getAppointmentRequest().getHospitalName(),
+                    entry.getAppointmentRequest().getDepartmentName(),
+                    GuardianFinalReportPolicy.optionalText(
+                            entry.getAppointmentRequest().getPatientConditionSummary()
+                    ),
+                    resolveManagerName(entry),
+                    resolveManagerMessageLabel(session),
+                    GuardianFinalReportPolicy.resolveManagerMessage(session),
                     context.getString(R.string.guardian_report_live_section_title),
                     createLiveLines(entry),
                     context.getString(R.string.guardian_report_history_section_title),
@@ -169,14 +190,32 @@ public final class GuardianReportCoordinator {
                     context.getString(R.string.guardian_report_memo_section_title),
                     createMemoLines(entry),
                     context.getString(R.string.guardian_report_report_section_title),
-                    createReportSections(entry),
-                    entry.getSessionReport() == null
+                    reportSections,
+                    reportSections.isEmpty()
                             ? context.getString(R.string.guardian_report_report_pending)
                             : null,
                     context.getString(R.string.guardian_report_action_open_detail)
             ));
         }
         return cards;
+    }
+
+    @Nullable
+    private String resolveManagerName(GuardianReportEntry entry) {
+        if (entry.getManager() != null) {
+            return GuardianFinalReportPolicy.optionalText(entry.getManager().getName());
+        }
+        return GuardianFinalReportPolicy.optionalText(entry.getAppointmentRequest().getManagerName());
+    }
+
+    @Nullable
+    private String resolveManagerMessageLabel(@Nullable CompanionSession session) {
+        if (GuardianFinalReportPolicy.resolveManagerMessage(session) == null) {
+            return null;
+        }
+        return context.getString(GuardianFinalReportPolicy.hasCompletionJournal(session)
+                ? R.string.guardian_final_report_manager_message
+                : R.string.guardian_final_report_manager_live_update);
     }
 
     private String buildHeroBody(GuardianReportEntry entry) {
@@ -291,11 +330,25 @@ public final class GuardianReportCoordinator {
         List<GuardianReportLineItem> hospitalLines = new ArrayList<>();
         addOptionalLine(hospitalLines, R.string.guardian_report_line_report_summary, report.getSummary(), true);
         addOptionalLine(hospitalLines, R.string.guardian_report_line_report_treatment, report.getTreatmentNotes(), false);
-        addOptionalLine(hospitalLines, R.string.guardian_report_line_report_next_visit, report.getNextVisitAt(), false);
         addSectionIfNotEmpty(
                 sections,
-                context.getString(R.string.guardian_report_report_section_hospital),
-                hospitalLines
+                context.getString(R.string.guardian_final_report_clinical_section),
+                hospitalLines,
+                GuardianReportSectionModel.Style.CLINICAL
+        );
+
+        List<GuardianReportLineItem> nextVisitLines = new ArrayList<>();
+        addOptionalLine(
+                nextVisitLines,
+                R.string.guardian_report_line_report_next_visit,
+                report.getNextVisitAt(),
+                true
+        );
+        addSectionIfNotEmpty(
+                sections,
+                context.getString(R.string.guardian_final_report_next_visit_section),
+                nextVisitLines,
+                GuardianReportSectionModel.Style.APPOINTMENT
         );
 
         List<GuardianReportLineItem> medicationLines = new ArrayList<>();
@@ -346,19 +399,21 @@ public final class GuardianReportCoordinator {
         }
         addSectionIfNotEmpty(
                 sections,
-                context.getString(R.string.guardian_report_report_section_medication),
-                medicationLines
+                context.getString(R.string.guardian_final_report_medication_section),
+                medicationLines,
+                GuardianReportSectionModel.Style.MEDICATION
         );
         return sections;
     }
 
     private void addOptionalLine(List<GuardianReportLineItem> items, int labelResId, String value, boolean emphasized) {
-        if (TextUtils.isEmpty(value)) {
+        String normalizedValue = GuardianFinalReportPolicy.optionalText(value);
+        if (normalizedValue == null) {
             return;
         }
         items.add(new GuardianReportLineItem(
                 context.getString(labelResId),
-                value,
+                normalizedValue,
                 emphasized
         ));
     }
@@ -366,12 +421,13 @@ public final class GuardianReportCoordinator {
     private void addSectionIfNotEmpty(
             List<GuardianReportSectionModel> sections,
             String title,
-            List<GuardianReportLineItem> lines
+            List<GuardianReportLineItem> lines,
+            GuardianReportSectionModel.Style style
     ) {
         if (lines.isEmpty()) {
             return;
         }
-        sections.add(new GuardianReportSectionModel(title, new ArrayList<>(lines)));
+        sections.add(new GuardianReportSectionModel(title, new ArrayList<>(lines), style));
     }
 
     private String buildPatientDisplay(GuardianReportEntry entry) {

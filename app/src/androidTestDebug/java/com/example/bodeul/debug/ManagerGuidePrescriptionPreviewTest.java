@@ -4,7 +4,6 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE;
-import static androidx.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isEnabled;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
@@ -39,11 +38,10 @@ public class ManagerGuidePrescriptionPreviewTest {
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
-            onView(withId(R.id.guideDefaultToolbar)).check(matches(isDisplayed()));
-            onView(withId(R.id.textGuideTitle))
-                    .check(matches(withText("Step 11. 복약 확인")));
-            onView(withId(R.id.groupGuideMedicationNote))
-                    .check(matches(withEffectiveVisibility(VISIBLE)));
+            onView(withId(R.id.guideMedicationToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuideMedicationContent)).check(matches(isDisplayed()));
+            onView(withId(R.id.textGuideMedicationExistingSummary))
+                    .check(matches(withText(R.string.guide_medication_existing_empty)));
             onView(withId(R.id.managerGuidePrescriptionContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }

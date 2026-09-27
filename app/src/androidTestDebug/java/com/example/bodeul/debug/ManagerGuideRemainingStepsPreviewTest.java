@@ -1,0 +1,265 @@
+package com.example.bodeul.debug;
+
+import static androidx.test.espresso.Espresso.closeSoftKeyboard;
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE;
+import static androidx.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
+import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
+import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.hamcrest.Matchers.allOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import android.content.Context;
+import android.os.Parcelable;
+import android.util.SparseArray;
+import android.widget.TextView;
+
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.example.bodeul.R;
+import com.example.bodeul.ui.manager.ManagerGuideViewModel;
+import com.google.android.material.textfield.TextInputEditText;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+/** 서버 권한 없이 Figma 기반 Step 7·9·12·13 전용 화면과 기존 계약 연결을 검증한다. */
+@RunWith(AndroidJUnit4.class)
+public class ManagerGuideRemainingStepsPreviewTest {
+
+    @Test
+    public void summarySaving_blocksToolbarAndSystemBackEvenForUnchangedNote() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUMMARY"))) {
+            scenario.onActivity(activity -> {
+                TextView banner = activity.findViewById(android.R.id.content)
+                        .findViewWithTag(ManagerGuidePreviewActivity.PREVIEW_BANNER_TAG);
+                assertNotNull(banner);
+                WindowInsetsCompat windowInsets = ViewCompat.getRootWindowInsets(banner);
+                assertNotNull(windowInsets);
+                Insets safe = windowInsets.getInsets(WindowInsetsCompat.Type.statusBars()
+                        | WindowInsetsCompat.Type.displayCutout());
+                int[] location = new int[2];
+                banner.getLocationOnScreen(location);
+                assertTrue("미리보기 안내가 상태표시줄과 겹칩니다.",
+                        location[1] + banner.getCompoundPaddingTop() >= safe.top);
+                ManagerGuideViewModel viewModel = new ViewModelProvider(activity)
+                        .get(ManagerGuideViewModel.class);
+                // 네트워크 대신 저장 상태 알림만 보내 이탈 UI 경계를 분리 검증한다.
+                ((MutableLiveData<Boolean>) viewModel.getMutationInFlight()).setValue(true);
+                activity.findViewById(R.id.buttonBackGuideConsultationSummary).performClick();
+                assertFalse(activity.isFinishing());
+                activity.getOnBackPressedDispatcher().onBackPressed();
+                assertFalse(activity.isFinishing());
+                assertFalse(activity.findViewById(R.id.buttonAdvanceGuide).isEnabled());
+                ((MutableLiveData<Boolean>) viewModel.getMutationInFlight()).setValue(false);
+            });
+            onView(withId(R.id.guideConsultationSummaryToolbar)).check(matches(isDisplayed()));
+        }
+    }
+
+    @Test
+    public void summaryDraft_survivesReloadAndRotation_butRequiresSaveOrExplicitDiscard()
+            throws InterruptedException {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        CountDownLatch destroyed = new CountDownLatch(1);
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUMMARY"))) {
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .perform(scrollTo(), replaceText("저장 전 진료 요약"));
+            closeSoftKeyboard();
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            scenario.recreate();
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .check(matches(withText("저장 전 진료 요약")));
+            scenario.onActivity(activity -> {
+                SparseArray<Parcelable> state = new SparseArray<>();
+                activity.findViewById(R.id.managerGuideConsultationSummaryContent)
+                        .saveHierarchyState(state);
+                assertNull(state.get(R.id.inputGuideSummaryNote));
+                activity.getLifecycle().addObserver((LifecycleEventObserver) (source, event) -> {
+                    if (event == Lifecycle.Event.ON_DESTROY && activity.isFinishing()) {
+                        destroyed.countDown();
+                    }
+                });
+            });
+            onView(withId(R.id.buttonAdvanceGuide)).perform(click());
+            onView(withId(R.id.guideConsultationSummaryToolbar)).check(matches(isDisplayed()));
+            closeSoftKeyboard();
+            onView(withId(R.id.buttonBackGuideConsultationSummary)).perform(click());
+            onView(withText(R.string.guide_consultation_exit_stay)).perform(click());
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .check(matches(withText("저장 전 진료 요약")));
+            onView(withId(R.id.buttonBackGuideConsultationSummary)).perform(click());
+            onView(withText(R.string.guide_consultation_exit_discard)).perform(click());
+            assertTrue("버리기 확인 뒤 화면이 종료되지 않았습니다.",
+                    destroyed.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void sharedMemoFields_useFigmaPrimaryTextColor() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "HOSPITAL_ROUTE"))) {
+            scenario.onActivity(activity -> {
+                assertPrimaryTextColor(activity.findViewById(R.id.inputGuideLocationSummary));
+                assertPrimaryTextColor(activity.findViewById(R.id.inputGuardianUpdate));
+            });
+        }
+    }
+
+    @Test
+    public void consultationSummary_savesExistingFieldNote_andAdvances() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUMMARY"))) {
+            onView(withId(R.id.guideConsultationSummaryToolbar))
+                    .check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuideConsultationSummaryContent))
+                    .check(matches(isDisplayed()));
+            onView(withId(R.id.cardGuideNotesActions))
+                    .check(matches(withEffectiveVisibility(GONE)));
+
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .perform(scrollTo(), replaceText("검사 결과와 다음 방문 일정을 확인했습니다."));
+            scenario.onActivity(activity -> assertPrimaryTextColor(
+                    activity.findViewById(R.id.inputGuideSummaryNote)));
+            closeSoftKeyboard();
+            onView(withId(R.id.buttonGuideSummarySaveNote)).perform(scrollTo(), click());
+
+            scenario.recreate();
+            onView(withId(R.id.inputGuideSummaryNote))
+                    .check(matches(withText("검사 결과와 다음 방문 일정을 확인했습니다.")));
+            onView(withId(R.id.buttonAdvanceGuide)).perform(click());
+            onView(withId(R.id.guidePaymentToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuideConsultationSummaryContent))
+                    .check(matches(withEffectiveVisibility(GONE)));
+        }
+    }
+
+    @Test
+    public void pharmacyRoute_keepsOnlyKakaoPharmacyAction_andConfirmsAdvance() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "PHARMACY_ROUTE"))) {
+            onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuidePharmacyRouteContent)).check(matches(isDisplayed()));
+            // 카드 전체가 뷰포트보다 클 수 있으므로 지도와 실제 버튼을 각각 스크롤한다.
+            onView(withContentDescription(R.string.debug_figma_preview_local_map))
+                    .perform(scrollTo()).check(matches(isDisplayed()));
+            onView(allOf(withId(R.id.buttonGuideMapAction), withEffectiveVisibility(VISIBLE)))
+                    .perform(scrollTo())
+                    .check(matches(withText(R.string.guide_map_action_pharmacy_button)));
+
+            onView(withId(R.id.buttonAdvanceGuide)).perform(click());
+            onView(withText(R.string.guide_route_confirmation_title))
+                    .check(matches(isDisplayed()));
+            onView(withText(R.string.guide_action_route_confirmed)).perform(click());
+            onView(withId(R.id.guidePrescriptionToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuidePharmacyRouteContent))
+                    .check(matches(withEffectiveVisibility(GONE)));
+        }
+    }
+
+    @Test
+    public void careCompletion_showsMemoSummary_thenOpensJournalWith300CharacterLimit() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "CARE_COMPLETION"))) {
+            onView(withId(R.id.guideCareCompletionToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuideCareCompletionContent)).check(matches(isDisplayed()));
+            onView(withId(R.id.guideCompletionMemoContainer))
+                    .perform(scrollTo()).check(matches(isDisplayed()));
+            onView(withId(R.id.cardGuideReportActions))
+                    .check(matches(withEffectiveVisibility(GONE)));
+
+            onView(withId(R.id.buttonAdvanceGuide)).perform(click());
+            onView(withId(R.id.guideJournalToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.managerGuideJournalContent)).check(matches(isDisplayed()));
+            onView(withId(R.id.cardGuideReportActions))
+                    .check(matches(withEffectiveVisibility(VISIBLE)));
+            scenario.onActivity(activity -> {
+                assertPrimaryTextColor(activity.findViewById(R.id.inputReportSummary));
+                assertPrimaryTextColor(
+                        activity.findViewById(R.id.radioMedicationComparisonMatched));
+            });
+
+            String overLimit = repeatedKoreanCharacter(320);
+            onView(withId(R.id.inputReportSummary))
+                    .perform(scrollTo(), replaceText(overLimit));
+            scenario.onActivity(activity -> {
+                TextInputEditText input = activity.findViewById(R.id.inputReportSummary);
+                assertEquals(300, input.getText() == null ? 0 : input.getText().length());
+            });
+        }
+    }
+
+    private String repeatedKoreanCharacter(int count) {
+        StringBuilder builder = new StringBuilder(count);
+        for (int index = 0; index < count; index++) {
+            builder.append('가');
+        }
+        return builder.toString();
+    }
+
+    private void assertPrimaryTextColor(TextView view) {
+        assertEquals(
+                ContextCompat.getColor(view.getContext(), R.color.figma_mvp_text_primary),
+                view.getCurrentTextColor());
+    }
+
+    @Test
+    public void journal_submitsThroughExistingReportAction() throws InterruptedException {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        CountDownLatch destroyed = new CountDownLatch(1);
+
+        try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
+                ManagerGuidePreviewActivity.createIntent(context, "MANAGER_JOURNAL"))) {
+            scenario.onActivity(activity -> activity.getLifecycle().addObserver(
+                    (LifecycleEventObserver) (source, event) -> {
+                        if (event == Lifecycle.Event.ON_DESTROY && activity.isFinishing()) {
+                            destroyed.countDown();
+                        }
+                    }));
+            onView(withId(R.id.inputReportSummary))
+                    .perform(scrollTo(), replaceText("환자 인계까지 안전하게 마쳤습니다."));
+            closeSoftKeyboard();
+            onView(withId(R.id.radioMedicationComparisonMatched)).perform(scrollTo(), click());
+            onView(withId(R.id.buttonAdvanceGuide)).perform(click());
+
+            assertTrue("리포트 제출 후 미리보기 화면이 종료되지 않았습니다.",
+                    destroyed.await(5, TimeUnit.SECONDS));
+        }
+    }
+}

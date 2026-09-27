@@ -5,6 +5,7 @@ import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -37,6 +38,16 @@ public final class GuardianReportEntryCardBinder {
 
     public void bind(View cardView, GuardianReportEntryCardModel model) {
         MaterialCardView rootCard = (MaterialCardView) cardView;
+        View finalReportGroup = cardView.findViewById(R.id.guardianFinalReportGroup);
+        View progressGroup = cardView.findViewById(R.id.guardianReportProgressGroup);
+        TextView textFinalDate = cardView.findViewById(R.id.textGuardianFinalReportDate);
+        View cardVisitSummary = cardView.findViewById(R.id.cardGuardianFinalReportVisitSummary);
+        View cardHospital = cardView.findViewById(R.id.cardGuardianFinalReportHospital);
+        TextView textHospital = cardView.findViewById(R.id.textGuardianFinalReportHospital);
+        View cardDepartment = cardView.findViewById(R.id.cardGuardianFinalReportDepartment);
+        TextView textDepartment = cardView.findViewById(R.id.textGuardianFinalReportDepartment);
+        View cardCondition = cardView.findViewById(R.id.cardGuardianFinalReportCondition);
+        TextView textCondition = cardView.findViewById(R.id.textGuardianFinalReportCondition);
         TextView textTitle = cardView.findViewById(R.id.textGuardianReportEntryTitle);
         TextView textStatus = cardView.findViewById(R.id.textGuardianReportEntryStatus);
         TextView textHeroBody = cardView.findViewById(R.id.textGuardianReportEntryHeroBody);
@@ -49,35 +60,54 @@ public final class GuardianReportEntryCardBinder {
         TextView textReportTitle = cardView.findViewById(R.id.textGuardianReportEntryReportTitle);
         LinearLayout reportContainer = cardView.findViewById(R.id.guardianReportEntryReportContainer);
         TextView textPending = cardView.findViewById(R.id.textGuardianReportEntryPending);
+        View cardManager = cardView.findViewById(R.id.cardGuardianFinalReportManager);
+        TextView textManagerName = cardView.findViewById(R.id.textGuardianFinalReportManagerName);
+        TextView textManagerMessageLabel = cardView.findViewById(
+                R.id.textGuardianFinalReportManagerMessageLabel
+        );
+        TextView textManagerMessage = cardView.findViewById(R.id.textGuardianFinalReportManagerMessage);
         MaterialButton buttonAction = cardView.findViewById(R.id.buttonGuardianReportEntryAction);
 
-        textTitle.setText(model.getTitleText());
-        textStatus.setText(toStatusLabel(model.getStatus()));
-        tintStatusBadge(textStatus, model.getStatus());
-        textHeroBody.setText(model.getHeroBodyText());
-        textLiveTitle.setText(model.getLiveSectionTitleText());
-        textReportTitle.setText(model.getReportSectionTitleText());
-        bindLines(liveContainer, model.getLiveLines());
-        if (model.getHistoryLines().isEmpty()) {
-            textHistoryTitle.setVisibility(View.GONE);
-            historyContainer.setVisibility(View.GONE);
-            historyContainer.removeAllViews();
+        boolean finalReportReady = model.isFinalReportReady();
+        finalReportGroup.setVisibility(finalReportReady ? View.VISIBLE : View.GONE);
+        progressGroup.setVisibility(finalReportReady ? View.GONE : View.VISIBLE);
+
+        if (finalReportReady) {
+            bindOptionalText(textFinalDate, model.getAppointmentDateText());
+            bindOptionalCard(cardHospital, textHospital, model.getHospitalNameText());
+            bindOptionalCard(cardDepartment, textDepartment, model.getDepartmentNameText());
+            bindOptionalCard(cardCondition, textCondition, model.getPatientConditionText());
+            cardVisitSummary.setVisibility(
+                    hasText(model.getHospitalNameText())
+                            || hasText(model.getDepartmentNameText())
+                            || hasText(model.getPatientConditionText())
+                            ? View.VISIBLE
+                            : View.GONE
+            );
         } else {
-            textHistoryTitle.setVisibility(View.VISIBLE);
-            historyContainer.setVisibility(View.VISIBLE);
-            textHistoryTitle.setText(model.getHistorySectionTitleText());
-            bindLines(historyContainer, model.getHistoryLines());
+            textTitle.setText(model.getTitleText());
+            textStatus.setText(toStatusLabel(model.getStatus()));
+            tintStatusBadge(textStatus, model.getStatus());
+            textHeroBody.setText(model.getHeroBodyText());
+            textLiveTitle.setText(model.getLiveSectionTitleText());
+            bindLines(liveContainer, model.getLiveLines());
+            bindOptionalLines(
+                    textHistoryTitle,
+                    historyContainer,
+                    model.getHistorySectionTitleText(),
+                    model.getHistoryLines()
+            );
+            bindOptionalLines(
+                    textMemoTitle,
+                    memoContainer,
+                    model.getMemoSectionTitleText(),
+                    model.getMemoLines()
+            );
         }
-        if (model.getMemoLines().isEmpty()) {
-            textMemoTitle.setVisibility(View.GONE);
-            memoContainer.setVisibility(View.GONE);
-            memoContainer.removeAllViews();
-        } else {
-            textMemoTitle.setVisibility(View.VISIBLE);
-            memoContainer.setVisibility(View.VISIBLE);
-            textMemoTitle.setText(model.getMemoSectionTitleText());
-            bindLines(memoContainer, model.getMemoLines());
-        }
+
+        textReportTitle.setText(finalReportReady
+                ? context.getString(R.string.guardian_final_report_treatment_title)
+                : model.getReportSectionTitleText());
         bindSections(reportContainer, model.getReportSections());
 
         if (model.getPendingReportText() == null) {
@@ -87,25 +117,75 @@ public final class GuardianReportEntryCardBinder {
             textPending.setText(model.getPendingReportText());
         }
 
+        boolean showManagerMessage = finalReportReady && model.getManagerMessageText() != null;
+        cardManager.setVisibility(showManagerMessage ? View.VISIBLE : View.GONE);
+        if (showManagerMessage) {
+            bindOptionalText(textManagerName, model.getManagerNameText());
+            textManagerMessageLabel.setText(model.getManagerMessageLabelText());
+            textManagerMessage.setText(model.getManagerMessageText());
+        }
+
         buttonAction.setText(model.getActionLabelText());
         if (model.getRequestId() == null) {
             buttonAction.setVisibility(View.GONE);
-            rootCard.setOnClickListener(null);
         } else {
             buttonAction.setVisibility(View.VISIBLE);
             buttonAction.setOnClickListener(view -> listener.onOpenRequestDetail(model.getRequestId()));
-            rootCard.setOnClickListener(view -> listener.onOpenRequestDetail(model.getRequestId()));
         }
+        rootCard.setOnClickListener(null);
+        rootCard.setClickable(false);
     }
 
     private void bindLines(LinearLayout container, List<GuardianReportLineItem> items) {
         container.removeAllViews();
-        addLineViews(container, items);
+        addLineViews(container, items, R.layout.item_guardian_report_line);
     }
 
-    private void addLineViews(LinearLayout container, List<GuardianReportLineItem> items) {
+    private void bindOptionalLines(
+            TextView titleView,
+            LinearLayout container,
+            String title,
+            List<GuardianReportLineItem> items
+    ) {
+        if (items.isEmpty()) {
+            titleView.setVisibility(View.GONE);
+            container.setVisibility(View.GONE);
+            container.removeAllViews();
+            return;
+        }
+        titleView.setVisibility(View.VISIBLE);
+        container.setVisibility(View.VISIBLE);
+        titleView.setText(title);
+        bindLines(container, items);
+    }
+
+    private void bindOptionalText(TextView textView, String value) {
+        boolean visible = hasText(value);
+        textView.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (visible) {
+            textView.setText(value);
+        }
+    }
+
+    private void bindOptionalCard(View card, TextView textView, String value) {
+        boolean visible = hasText(value);
+        card.setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (visible) {
+            textView.setText(value);
+        }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private void addLineViews(
+            LinearLayout container,
+            List<GuardianReportLineItem> items,
+            int layoutResId
+    ) {
         for (int index = 0; index < items.size(); index++) {
-            View itemView = inflater.inflate(R.layout.item_guardian_report_line, container, false);
+            View itemView = inflater.inflate(layoutResId, container, false);
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) itemView.getLayoutParams();
             if (index > 0) {
                 params.topMargin = dp(10);
@@ -130,33 +210,54 @@ public final class GuardianReportEntryCardBinder {
         container.removeAllViews();
         for (int index = 0; index < sections.size(); index++) {
             GuardianReportSectionModel section = sections.get(index);
-
-            TextView titleView = new TextView(context);
-            titleView.setText(section.getTitleText());
-            titleView.setTextColor(ContextCompat.getColor(context, R.color.bodeul_text_primary));
-            titleView.setTextSize(15f);
-            titleView.setTypeface(titleView.getTypeface(), android.graphics.Typeface.BOLD);
-
-            LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
+            View sectionView = inflater.inflate(
+                    R.layout.item_guardian_final_report_section,
+                    container,
+                    false
             );
+            ViewGroup.MarginLayoutParams params =
+                    (ViewGroup.MarginLayoutParams) sectionView.getLayoutParams();
             if (index > 0) {
-                titleParams.topMargin = dp(16);
+                params.topMargin = dp(12);
             }
-            titleView.setLayoutParams(titleParams);
-            container.addView(titleView);
+            sectionView.setLayoutParams(params);
 
-            LinearLayout linesLayout = new LinearLayout(context);
-            linesLayout.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout.LayoutParams linesParams = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            );
-            linesParams.topMargin = dp(12);
-            linesLayout.setLayoutParams(linesParams);
-            addLineViews(linesLayout, section.getLines());
-            container.addView(linesLayout);
+            View accent = sectionView.findViewById(R.id.viewGuardianFinalReportSectionAccent);
+            ImageView icon = sectionView.findViewById(R.id.imageGuardianFinalReportSectionIcon);
+            TextView title = sectionView.findViewById(R.id.textGuardianFinalReportSectionTitle);
+            LinearLayout lines = sectionView.findViewById(R.id.guardianFinalReportSectionLines);
+            accent.setBackgroundColor(ContextCompat.getColor(
+                    context,
+                    sectionAccentColor(section.getStyle())
+            ));
+            icon.setImageResource(sectionIcon(section.getStyle()));
+            title.setText(section.getTitleText());
+            addLineViews(lines, section.getLines(), R.layout.item_guardian_final_report_line);
+            container.addView(sectionView);
+        }
+    }
+
+    private int sectionAccentColor(GuardianReportSectionModel.Style style) {
+        switch (style) {
+            case APPOINTMENT:
+                return R.color.guardian_final_report_section_purple;
+            case MEDICATION:
+                return R.color.guardian_final_report_section_orange;
+            case CLINICAL:
+            default:
+                return R.color.guardian_final_report_section_blue;
+        }
+    }
+
+    private int sectionIcon(GuardianReportSectionModel.Style style) {
+        switch (style) {
+            case APPOINTMENT:
+                return R.drawable.ic_figma_medication_calendar;
+            case MEDICATION:
+                return R.drawable.ic_figma_prescription_pharmacy;
+            case CLINICAL:
+            default:
+                return R.drawable.ic_figma_prescription_document;
         }
     }
 

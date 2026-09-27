@@ -11,8 +11,10 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -56,6 +59,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.kakao.vectormap.KakaoMap;
@@ -77,14 +81,26 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private static final int LOCATION_ACTION_SHARE_ONCE = 1;
     private static final int LOCATION_ACTION_START_LIVE = 2;
     private static final int LOCATION_ACTION_SHOW_CURRENT_ON_MAP = 3;
+    private static final String STATE_PENDING_ARTIFACT_SESSION =
+            "managerGuide.pendingArtifact.session";
+    private static final String STATE_PENDING_ARTIFACT_STEP =
+            "managerGuide.pendingArtifact.step";
+    private static final String STATE_PENDING_ARTIFACT_PURPOSE =
+            "managerGuide.pendingArtifact.purpose";
 
     private ManagerGuideViewModel viewModel;
     private ManagerGuideDashboardBinder managerGuideDashboardBinder;
     private ManagerGuideReceptionBinder managerGuideReceptionBinder;
     private ManagerGuidePreConsultationBinder managerGuidePreConsultationBinder;
     private ManagerGuideVitalsBinder managerGuideVitalsBinder;
+    private ManagerGuidePaymentBinder managerGuidePaymentBinder;
     private ManagerGuidePrescriptionBinder managerGuidePrescriptionBinder;
     private ManagerGuideConsultationBinder managerGuideConsultationBinder;
+    private ManagerGuideMedicationBinder managerGuideMedicationBinder;
+    private ManagerGuideConsultationSummaryBinder managerGuideConsultationSummaryBinder;
+    private ManagerGuidePharmacyRouteBinder managerGuidePharmacyRouteBinder;
+    private ManagerGuideCareCompletionBinder managerGuideCareCompletionBinder;
+    private ManagerGuideJournalBinder managerGuideJournalBinder;
 
     private int pendingLocationPermissionAction = LOCATION_ACTION_NONE;
     private boolean liveLocationActivationInFlight;
@@ -97,10 +113,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private boolean exitConfirmationShowing;
     private ManagerGuidePrimaryAction currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
     private String currentStepCode = "";
+    private String lastRenderedSessionId = "";
+    private String lastRenderedStepCode = "";
+    private boolean hasRenderedGuideScreen;
 
     private View managerGuideStatePanel;
     private View managerGuideContentContainer;
     private View managerGuideBottomAction;
+    private ScrollView managerGuideScroll;
     private TextInputEditText inputGuideLocationSummary;
     private TextInputEditText inputGuardianUpdate;
     private TextInputEditText inputGuidePhotoNote;
@@ -124,6 +144,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private MaterialButton buttonShowCurrentLocation;
     private ActivityResultLauncher<String[]> paymentEvidencePicker;
     private ActivityResultLauncher<String[]> prescriptionImagePicker;
+    @Nullable
+    private ArtifactSelectionExpectation pendingArtifactSelection;
 
     private MapView mapView;
     private KakaoMap kakaoMap;
@@ -138,26 +160,53 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private String currentCoordinateQueryKey = "";
     private boolean coordinateSearchInFlight;
 
+    private static final class ArtifactSelectionExpectation {
+        final String sessionId;
+        final String stepCode;
+        final String purpose;
+
+        ArtifactSelectionExpectation(String sessionId, String stepCode, String purpose) {
+            this.sessionId = sessionId;
+            this.stepCode = stepCode;
+            this.purpose = purpose;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manager_guide);
         legacyManagerLocationEnabled = isLegacyManagerLocationEnabled();
+        restorePendingArtifactSelection(savedInstanceState);
 
         paymentEvidencePicker = registerForActivityResult(
                 new ActivityResultContracts.OpenDocument(),
                 uri -> {
+                    ArtifactSelectionExpectation expectation = consumeArtifactSelection(
+                            CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE);
                     if (uri != null) {
+                        if (expectation == null) {
+                            rejectStaleArtifactSelection();
+                            return;
+                        }
                         preserveReadPermission(uri);
                         viewModel.replaceSessionArtifacts(
+                                expectation.sessionId,
+                                expectation.stepCode,
                                 CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE,
-                                List.of(uri));
+                                Collections.singletonList(uri));
                     }
                 });
         prescriptionImagePicker = registerForActivityResult(
                 new ActivityResultContracts.OpenMultipleDocuments(),
                 uris -> {
+                    ArtifactSelectionExpectation expectation = consumeArtifactSelection(
+                            CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE);
                     if (uris == null || uris.isEmpty()) {
+                        return;
+                    }
+                    if (expectation == null) {
+                        rejectStaleArtifactSelection();
                         return;
                     }
                     if (ManagerGuidePrescriptionSelectionPolicy.exceedsLimit(uris.size())) {
@@ -172,6 +221,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                         preserveReadPermission(uri);
                     }
                     viewModel.replaceSessionArtifacts(
+                            expectation.sessionId,
+                            expectation.stepCode,
                             CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE,
                             selected);
                 });
@@ -197,7 +248,10 @@ public class ManagerGuideActivity extends AppCompatActivity {
         managerGuideStatePanel = findViewById(R.id.managerGuideStatePanel);
         managerGuideContentContainer = findViewById(R.id.managerGuideContentContainer);
         managerGuideBottomAction = findViewById(R.id.managerGuideBottomAction);
+        managerGuideScroll = (ScrollView) findViewById(R.id.guideScrollContent).getParent();
+        configureSystemBars();
         configureBottomActionInsets();
+        configureRemainingStepToolbarInsets();
         inputGuideLocationSummary = findViewById(R.id.inputGuideLocationSummary);
         inputGuardianUpdate = findViewById(R.id.inputGuardianUpdate);
         inputGuidePhotoNote = findViewById(R.id.inputGuidePhotoNote);
@@ -289,6 +343,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 findViewById(android.R.id.content));
         managerGuideVitalsBinder = new ManagerGuideVitalsBinder(
                 findViewById(android.R.id.content), viewModel::saveVitalsDraft);
+        managerGuidePaymentBinder = new ManagerGuidePaymentBinder(
+                findViewById(android.R.id.content), viewModel::savePaymentDraft);
         managerGuidePrescriptionBinder = new ManagerGuidePrescriptionBinder(
                 findViewById(android.R.id.content));
         managerGuideConsultationBinder = new ManagerGuideConsultationBinder(
@@ -296,6 +352,16 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 isGuidePreviewMode(),
                 savedInstanceState,
                 viewModel::saveConsultationDraft);
+        managerGuideMedicationBinder = new ManagerGuideMedicationBinder(
+                findViewById(android.R.id.content));
+        managerGuideConsultationSummaryBinder = new ManagerGuideConsultationSummaryBinder(
+                findViewById(android.R.id.content), viewModel::saveSummaryDraft);
+        managerGuidePharmacyRouteBinder = new ManagerGuidePharmacyRouteBinder(
+                findViewById(android.R.id.content));
+        managerGuideCareCompletionBinder = new ManagerGuideCareCompletionBinder(
+                LayoutInflater.from(this), findViewById(android.R.id.content));
+        managerGuideJournalBinder = new ManagerGuideJournalBinder(
+                findViewById(android.R.id.content));
 
         findViewById(R.id.buttonBackGuide).setOnClickListener(
                 view -> attemptExit(this::finish));
@@ -305,9 +371,21 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuideVitals).setOnClickListener(
                 view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuidePayment).setOnClickListener(
+                view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuidePrescription).setOnClickListener(
                 view -> attemptExit(this::finish));
         findViewById(R.id.buttonBackGuideConsultation).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideMedication).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideConsultationSummary).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuidePharmacyRoute).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideCareCompletion).setOnClickListener(
+                view -> attemptExit(this::finish));
+        findViewById(R.id.buttonBackGuideJournal).setOnClickListener(
                 view -> attemptExit(this::finish));
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -356,12 +434,27 @@ public class ManagerGuideActivity extends AppCompatActivity {
                         managerGuideConsultationBinder.fieldNote());
             }
         });
+        findViewById(R.id.buttonGuideSummarySaveNote).setOnClickListener(view -> {
+            if ("CONSULTATION_SUMMARY".equals(currentStepCode) && !mutationInFlight) {
+                viewModel.saveConsultationSummaryNote(
+                        managerGuideConsultationSummaryBinder.note());
+            }
+        });
         buttonSelectGuideSessionArtifact.setOnClickListener(view -> selectCurrentStepArtifact());
         buttonClearGuideSessionArtifact.setOnClickListener(view -> clearCurrentStepArtifact());
         findViewById(R.id.buttonGuidePrescriptionSelect).setOnClickListener(
                 view -> selectCurrentStepArtifact());
         findViewById(R.id.buttonGuidePrescriptionClear).setOnClickListener(
                 view -> clearCurrentStepArtifact());
+        findViewById(R.id.buttonGuidePaymentSelect).setOnClickListener(
+                view -> selectCurrentStepArtifact());
+        findViewById(R.id.buttonGuidePaymentClear).setOnClickListener(
+                view -> clearCurrentStepArtifact());
+        findViewById(R.id.buttonGuidePaymentSaveNote).setOnClickListener(view -> {
+            if ("PAYMENT_EVIDENCE".equals(currentStepCode) && !mutationInFlight) {
+                viewModel.savePaymentEvidenceNote(managerGuidePaymentBinder.note());
+            }
+        });
         checkGuidePreConsultationConfirmed.setOnCheckedChangeListener((button, checked) -> {
             if (!bindingPreConsultationConfirmation) {
                 checkGuidePreConsultationConfirmed.setEnabled(false);
@@ -374,6 +467,31 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonTogglePrescriptionCollected).setOnClickListener(view -> viewModel.togglePrescriptionCollected());
         findViewById(R.id.buttonTogglePharmacyCompleted).setOnClickListener(view -> viewModel.togglePharmacyCompleted());
         findViewById(R.id.buttonToggleMedicationGuidanceCompleted).setOnClickListener(view -> viewModel.toggleMedicationGuidanceCompleted());
+        findViewById(R.id.buttonGuideMedicationSavePharmacyNote).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.savePharmacySummary(managerGuideMedicationBinder.pharmacyNote());
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationSaveGuidanceNote).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.saveMedicationNote(managerGuideMedicationBinder.guidanceNote());
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationTogglePrescription).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.togglePrescriptionCollected();
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationTogglePharmacy).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.togglePharmacyCompleted();
+            }
+        });
+        findViewById(R.id.buttonGuideMedicationToggleGuidance).setOnClickListener(view -> {
+            if (isMedicationMutationAvailable()) {
+                viewModel.toggleMedicationGuidanceCompleted();
+            }
+        });
         buttonSubmitReport.setOnClickListener(view -> {
             if (currentPrimaryAction == ManagerGuidePrimaryAction.SUBMIT_REPORT) {
                 submitCurrentReport();
@@ -388,28 +506,30 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonStopLiveLocationSharing).setOnClickListener(view -> stopLiveLocationSharing(true, true));
 
         mapView = findViewById(R.id.mapViewManagerGuide);
-        mapView.start(new MapLifeCycleCallback() {
-            @Override
-            public void onMapDestroy() {
-                kakaoMap = null;
-                currentLocationMarker = null;
-            }
-
-            @Override
-            public void onMapError(Exception e) {
-                Log.w(TAG, "카카오 지도 초기화 실패: " + e.getClass().getSimpleName());
-            }
-        }, new KakaoMapReadyCallback() {
-            @Override
-            public void onMapReady(KakaoMap map) {
-                kakaoMap = map;
-                mapView.setVisibility(View.VISIBLE);
-                updateMapMarker();
-                if (legacyManagerLocationEnabled && hasLocationPermission()) {
-                    startMapTracking();
+        if (shouldInitializeGuideMap()) {
+            mapView.start(new MapLifeCycleCallback() {
+                @Override
+                public void onMapDestroy() {
+                    kakaoMap = null;
+                    currentLocationMarker = null;
                 }
-            }
-        });
+
+                @Override
+                public void onMapError(Exception e) {
+                    Log.w(TAG, "카카오 지도 초기화 실패: " + e.getClass().getSimpleName());
+                }
+            }, new KakaoMapReadyCallback() {
+                @Override
+                public void onMapReady(KakaoMap map) {
+                    kakaoMap = map;
+                    mapView.setVisibility(View.VISIBLE);
+                    updateMapMarker();
+                    if (legacyManagerLocationEnabled && hasLocationPermission()) {
+                        startMapTracking();
+                    }
+                }
+            });
+        }
 
         viewModel.getUiState().observe(this, this::handleUiState);
         viewModel.getToastMessage().observe(this, message -> {
@@ -466,6 +586,11 @@ public class ManagerGuideActivity extends AppCompatActivity {
         return true;
     }
 
+    /** Debug 정적 미리보기에서는 외부 지도 SDK 초기화를 생략한다. */
+    protected boolean shouldInitializeGuideMap() {
+        return true;
+    }
+
     /** debug 미리보기에서만 실제 녹음과 분리된 로컬 상태 시뮬레이션을 노출한다. */
     protected boolean isGuidePreviewMode() {
         return false;
@@ -483,8 +608,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
             managerGuideReceptionBinder.hideForState();
             managerGuidePreConsultationBinder.hideForState();
             managerGuideVitalsBinder.hideForState();
+            managerGuidePaymentBinder.hideForState();
             managerGuidePrescriptionBinder.hideForState();
             managerGuideConsultationBinder.hideForState();
+            managerGuideMedicationBinder.hideForState();
+            managerGuideConsultationSummaryBinder.hideForState();
+            managerGuidePharmacyRouteBinder.hideForState();
+            managerGuideCareCompletionBinder.hideForState();
+            managerGuideJournalBinder.hideForState();
             currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
             currentStepCode = "";
             clearCurrentLocationMarkerOutsideMeetingStep();
@@ -510,6 +641,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
         } else {
             StatePanelHelper.hide(managerGuideStatePanel);
             if (state.screenModel != null) {
+                String nextStepCode = state.screenModel.getCurrentStepCode();
+                String sessionId = state.dashboard == null
+                        || state.dashboard.getSession() == null
+                        ? ""
+                        : state.dashboard.getSession().getId();
+                boolean guideScreenChanged = hasRenderedGuideScreen
+                        && (!TextUtils.equals(lastRenderedSessionId, sessionId)
+                        || !TextUtils.equals(lastRenderedStepCode, nextStepCode));
                 managerGuideContentContainer.setVisibility(View.VISIBLE);
                 managerGuideBottomAction.setVisibility(View.VISIBLE);
                 currentDashboard = state.dashboard;
@@ -523,23 +662,41 @@ public class ManagerGuideActivity extends AppCompatActivity {
                     managerGuideVitalsBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight,
                             viewModel.getVitalsDraft(state.dashboard.getSession().getId()));
+                    managerGuidePaymentBinder.bind(
+                            state.screenModel,
+                            state.dashboard,
+                            mutationInFlight,
+                            viewModel.getPaymentDraft(sessionId));
                     managerGuidePrescriptionBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight);
-                    String sessionId = state.dashboard == null
-                            || state.dashboard.getSession() == null
-                            ? ""
-                            : state.dashboard.getSession().getId();
                     managerGuideConsultationBinder.bind(
                             state.screenModel,
                             state.dashboard,
                             mutationInFlight,
                             viewModel.getConsultationDraft(sessionId));
+                    managerGuideMedicationBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
+                    managerGuideConsultationSummaryBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight,
+                            viewModel.getSummaryDraft(sessionId));
+                    managerGuidePharmacyRouteBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
+                    managerGuideCareCompletionBinder.bind(
+                            state.screenModel, state.dashboard);
+                    managerGuideJournalBinder.bind(
+                            state.screenModel, state.dashboard, mutationInFlight);
                     applyReportDraft();
                 } finally {
                     bindingPreConsultationConfirmation = false;
                 }
                 currentPrimaryAction = state.screenModel.getPrimaryAction();
-                currentStepCode = state.screenModel.getCurrentStepCode();
+                currentStepCode = nextStepCode;
+                lastRenderedSessionId = sessionId;
+                lastRenderedStepCode = nextStepCode;
+                hasRenderedGuideScreen = true;
+                if (guideScreenChanged) {
+                    managerGuideScroll.post(() -> managerGuideScroll.scrollTo(0, 0));
+                }
                 clearCurrentLocationMarkerOutsideMeetingStep();
                 bindSessionArtifactSection(state.screenModel.isInputsEnabled());
                 if (mutationInFlight) {
@@ -550,8 +707,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 managerGuideReceptionBinder.hideForState();
                 managerGuidePreConsultationBinder.hideForState();
                 managerGuideVitalsBinder.hideForState();
+                managerGuidePaymentBinder.hideForState();
                 managerGuidePrescriptionBinder.hideForState();
                 managerGuideConsultationBinder.hideForState();
+                managerGuideMedicationBinder.hideForState();
+                managerGuideConsultationSummaryBinder.hideForState();
+                managerGuidePharmacyRouteBinder.hideForState();
+                managerGuideCareCompletionBinder.hideForState();
+                managerGuideJournalBinder.hideForState();
                 currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
                 currentStepCode = "";
                 clearCurrentLocationMarkerOutsideMeetingStep();
@@ -612,8 +775,13 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private void disableMutationActions() {
         managerGuideReceptionBinder.setShareEnabled(false);
         managerGuideVitalsBinder.setInputsEnabled(false);
+        managerGuidePaymentBinder.setInputsEnabled(false);
         managerGuidePrescriptionBinder.setActionsEnabled(false);
         managerGuideConsultationBinder.setInputsEnabled(false);
+        managerGuideMedicationBinder.setInputsEnabled(false);
+        managerGuideConsultationSummaryBinder.setInputsEnabled(false);
+        managerGuidePharmacyRouteBinder.setActionEnabled(false);
+        managerGuideJournalBinder.setInputsEnabled(false);
         findViewById(R.id.buttonGuidePreConsultationComplete).setEnabled(false);
         buttonAdvanceGuide.setEnabled(false);
         buttonSubmitReport.setEnabled(false);
@@ -627,8 +795,28 @@ public class ManagerGuideActivity extends AppCompatActivity {
             return;
         }
         if (currentPrimaryAction == ManagerGuidePrimaryAction.ADVANCE) {
+            if ("CONSULTATION_SUMMARY".equals(currentStepCode)
+                    && managerGuideConsultationSummaryBinder.showUnsavedInputError()) {
+                return;
+            }
             if ("CONSULTATION_SUPPORT".equals(currentStepCode)
                     && managerGuideConsultationBinder.showUnsavedInputError()) {
+                return;
+            }
+            if ("PAYMENT_EVIDENCE".equals(currentStepCode)
+                    && managerGuidePaymentBinder.hasUnsavedInput()) {
+                Toast.makeText(
+                        this,
+                        R.string.guide_payment_unsaved_advance,
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if ("MEDICATION_CONFIRMATION".equals(currentStepCode)
+                    && managerGuideMedicationBinder.hasUnsavedInput()) {
+                Toast.makeText(
+                        this,
+                        R.string.guide_medication_unsaved_advance,
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
             if ("VITALS_CHECK".equals(currentStepCode)) {
@@ -652,20 +840,49 @@ public class ManagerGuideActivity extends AppCompatActivity {
         }
     }
 
+    private boolean isMedicationMutationAvailable() {
+        return "MEDICATION_CONFIRMATION".equals(currentStepCode) && !mutationInFlight;
+    }
+
     private void attemptExit(Runnable exitAction) {
+        boolean summaryMayStillBeActive = "CONSULTATION_SUMMARY".equals(currentStepCode)
+                || TextUtils.isEmpty(currentStepCode);
+        if (summaryMayStillBeActive && mutationInFlight) {
+            Toast.makeText(this, R.string.guide_consultation_save_in_progress,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        boolean hasUnsavedSummary = summaryMayStillBeActive
+                && managerGuideConsultationSummaryBinder != null
+                && managerGuideConsultationSummaryBinder.hasUnsavedInput();
         boolean consultationMayStillBeActive = "CONSULTATION_SUPPORT".equals(currentStepCode)
                 || TextUtils.isEmpty(currentStepCode);
         boolean hasUnsavedConsultation = consultationMayStillBeActive
                 && managerGuideConsultationBinder != null
                 && managerGuideConsultationBinder.hasUnsavedInput();
-        if (!hasUnsavedConsultation) {
+        boolean medicationMayStillBeActive = "MEDICATION_CONFIRMATION".equals(currentStepCode)
+                || TextUtils.isEmpty(currentStepCode);
+        boolean hasUnsavedMedication = medicationMayStillBeActive
+                && managerGuideMedicationBinder != null
+                && managerGuideMedicationBinder.hasUnsavedInput();
+        boolean paymentMayStillBeActive = "PAYMENT_EVIDENCE".equals(currentStepCode)
+                || TextUtils.isEmpty(currentStepCode);
+        boolean hasUnsavedPayment = paymentMayStillBeActive
+                && managerGuidePaymentBinder != null
+                && managerGuidePaymentBinder.hasUnsavedInput();
+        if (!hasUnsavedConsultation && !hasUnsavedMedication && !hasUnsavedPayment
+                && !hasUnsavedSummary) {
             exitAction.run();
             return;
         }
         if (mutationInFlight) {
             Toast.makeText(
                     this,
-                    R.string.guide_consultation_save_in_progress,
+                    hasUnsavedPayment
+                            ? R.string.guide_payment_save_in_progress
+                            : hasUnsavedMedication
+                                    ? R.string.guide_medication_save_in_progress
+                                    : R.string.guide_consultation_save_in_progress,
                     Toast.LENGTH_SHORT).show();
             return;
         }
@@ -674,13 +891,34 @@ public class ManagerGuideActivity extends AppCompatActivity {
         }
         exitConfirmationShowing = true;
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.guide_consultation_exit_title)
-                .setMessage(R.string.guide_consultation_exit_body)
+                .setTitle(hasUnsavedPayment
+                        ? R.string.guide_payment_exit_title
+                        : R.string.guide_consultation_exit_title)
+                .setMessage(hasUnsavedPayment
+                        ? R.string.guide_payment_exit_body
+                        : hasUnsavedMedication
+                                ? R.string.guide_medication_exit_body
+                                : R.string.guide_consultation_exit_body)
                 .setNegativeButton(R.string.guide_consultation_exit_stay, null)
                 .setPositiveButton(
                         R.string.guide_consultation_exit_discard,
                         (ignored, which) -> {
-                            discardConsultationDraft();
+                            if (hasUnsavedSummary) {
+                                managerGuideConsultationSummaryBinder.discardUnsavedInput();
+                                String sessionId = currentDashboard == null
+                                        || currentDashboard.getSession() == null
+                                        ? "" : currentDashboard.getSession().getId();
+                                viewModel.clearSummaryDraft(sessionId);
+                            }
+                            if (hasUnsavedConsultation) {
+                                discardConsultationDraft();
+                            }
+                            if (hasUnsavedMedication) {
+                                managerGuideMedicationBinder.discardUnsavedInput();
+                            }
+                            if (hasUnsavedPayment) {
+                                discardPaymentDraft();
+                            }
                             exitAction.run();
                         })
                 .create();
@@ -695,6 +933,15 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 ? ""
                 : currentDashboard.getSession().getId();
         viewModel.clearConsultationDraft(sessionId);
+    }
+
+    private void discardPaymentDraft() {
+        managerGuidePaymentBinder.discardUnsavedInput();
+        String sessionId = currentDashboard == null
+                || currentDashboard.getSession() == null
+                ? ""
+                : currentDashboard.getSession().getId();
+        viewModel.clearPaymentDraft(sessionId);
     }
 
     private void showRouteCompletionConfirmation() {
@@ -737,17 +984,66 @@ public class ManagerGuideActivity extends AppCompatActivity {
 
     private void selectCurrentStepArtifact() {
         String purpose = currentArtifactPurpose();
+        CompanionSession session = currentDashboard == null
+                ? null
+                : currentDashboard.getSession();
+        if (session == null || !ManagerRepository.matchesArtifactExpectation(
+                session, session.getId(), session.getCurrentStepCode(), purpose)) {
+            rejectStaleArtifactSelection();
+            return;
+        }
+        pendingArtifactSelection = new ArtifactSelectionExpectation(
+                session.getId(), session.getCurrentStepCode(), purpose);
         if (CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE.equals(purpose)) {
             paymentEvidencePicker.launch(new String[]{"image/jpeg", "image/png", "application/pdf"});
         } else if (CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE.equals(purpose)) {
             prescriptionImagePicker.launch(new String[]{"image/jpeg", "image/png"});
+        } else {
+            pendingArtifactSelection = null;
         }
     }
 
     private void clearCurrentStepArtifact() {
         String purpose = currentArtifactPurpose();
-        if (!purpose.isEmpty()) {
-            viewModel.clearSessionArtifacts(purpose);
+        CompanionSession session = currentDashboard == null
+                ? null
+                : currentDashboard.getSession();
+        if (session != null && !purpose.isEmpty()) {
+            viewModel.clearSessionArtifacts(
+                    session.getId(), session.getCurrentStepCode(), purpose);
+        }
+    }
+
+    @Nullable
+    private ArtifactSelectionExpectation consumeArtifactSelection(String expectedPurpose) {
+        ArtifactSelectionExpectation expectation = pendingArtifactSelection;
+        pendingArtifactSelection = null;
+        if (expectation == null || !TextUtils.equals(expectation.purpose, expectedPurpose)) {
+            return null;
+        }
+        return expectation;
+    }
+
+    private void restorePendingArtifactSelection(@Nullable Bundle state) {
+        if (state == null) {
+            return;
+        }
+        String sessionId = state.getString(STATE_PENDING_ARTIFACT_SESSION, "").trim();
+        String stepCode = state.getString(STATE_PENDING_ARTIFACT_STEP, "").trim();
+        String purpose = state.getString(STATE_PENDING_ARTIFACT_PURPOSE, "").trim();
+        if (!sessionId.isEmpty() && !stepCode.isEmpty() && !purpose.isEmpty()) {
+            pendingArtifactSelection = new ArtifactSelectionExpectation(
+                    sessionId, stepCode, purpose);
+        }
+    }
+
+    private void rejectStaleArtifactSelection() {
+        Toast.makeText(
+                this,
+                ManagerRepository.MESSAGE_STALE_GUIDE_STEP,
+                Toast.LENGTH_SHORT).show();
+        if (viewModel != null) {
+            viewModel.loadDashboard();
         }
     }
 
@@ -920,6 +1216,59 @@ public class ManagerGuideActivity extends AppCompatActivity {
             return windowInsets;
         });
         ViewCompat.requestApplyInsets(managerGuideBottomAction);
+    }
+
+    private void configureSystemBars() {
+        getWindow().setStatusBarColor(ContextCompat.getColor(
+                this, R.color.figma_mvp_background));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(
+                this, R.color.figma_mvp_surface));
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(true);
+    }
+
+    private void configureRemainingStepToolbarInsets() {
+        View root = findViewById(android.R.id.content);
+        View[] toolbars = new View[]{
+                findViewById(R.id.guideConsultationSummaryToolbar),
+                findViewById(R.id.guidePharmacyRouteToolbar),
+                findViewById(R.id.guideCareCompletionToolbar),
+                findViewById(R.id.guideJournalToolbar)
+        };
+        int[] initialHeights = new int[toolbars.length];
+        int[] initialLeftPaddings = new int[toolbars.length];
+        int[] initialTopPaddings = new int[toolbars.length];
+        int[] initialRightPaddings = new int[toolbars.length];
+        for (int index = 0; index < toolbars.length; index++) {
+            initialHeights[index] = toolbars[index].getLayoutParams().height;
+            initialLeftPaddings[index] = toolbars[index].getPaddingLeft();
+            initialTopPaddings[index] = toolbars[index].getPaddingTop();
+            initialRightPaddings[index] = toolbars[index].getPaddingRight();
+        }
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
+            Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets displayCutout = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.displayCutout());
+            int safeTop = Math.max(systemBars.top, displayCutout.top);
+            int safeLeft = Math.max(systemBars.left, displayCutout.left);
+            int safeRight = Math.max(systemBars.right, displayCutout.right);
+            for (int index = 0; index < toolbars.length; index++) {
+                View toolbar = toolbars[index];
+                ViewGroup.LayoutParams params = toolbar.getLayoutParams();
+                params.height = initialHeights[index] + safeTop;
+                toolbar.setLayoutParams(params);
+                toolbar.setPadding(
+                        initialLeftPaddings[index] + safeLeft,
+                        initialTopPaddings[index] + safeTop,
+                        initialRightPaddings[index] + safeRight,
+                        toolbar.getPaddingBottom()
+                );
+            }
+            return windowInsets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     private void renderHospitalAndPharmacyMarkers(HospitalMapCoordinateResult result) {
@@ -1097,7 +1446,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         return bitmap;
     }
 
-    private void openMapFallback(ManagerGuideMapActionModel model) {
+    protected void openMapFallback(ManagerGuideMapActionModel model) {
         ManagerGuideMapFallbackLauncher.OpenResult result =
                 ManagerGuideMapFallbackLauncher.open(this, model);
         if (model.isKakaoPlaceSearch()
@@ -1267,7 +1616,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         if (activityVisible && pharmacySearchNavigationInProgress) {
             pharmacySearchNavigationInProgress = false;
         }
-        if (mapView != null) {
+        if (mapView != null && shouldInitializeGuideMap()) {
             mapView.resume();
         }
     }
@@ -1275,7 +1624,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (mapView != null) {
+        if (mapView != null && shouldInitializeGuideMap()) {
             mapView.pause();
         }
     }
@@ -1303,6 +1652,17 @@ public class ManagerGuideActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         if (managerGuideConsultationBinder != null) {
             managerGuideConsultationBinder.saveInstanceState(outState);
+        }
+        if (pendingArtifactSelection != null) {
+            outState.putString(
+                    STATE_PENDING_ARTIFACT_SESSION,
+                    pendingArtifactSelection.sessionId);
+            outState.putString(
+                    STATE_PENDING_ARTIFACT_STEP,
+                    pendingArtifactSelection.stepCode);
+            outState.putString(
+                    STATE_PENDING_ARTIFACT_PURPOSE,
+                    pendingArtifactSelection.purpose);
         }
         super.onSaveInstanceState(outState);
     }
