@@ -42,7 +42,11 @@
 | 운영 관리자 DB 비밀값 | 11:16 UTC에 Vercel Production에만 `ADMIN_DATABASE_URL`을 sensitive 형식으로 등록. 메타데이터 재조회 완료. 비밀번호·DB URL 원문은 출력·파일 저장·커밋하지 않았고 Preview 설정은 변경하지 않음 |
 | 관리자 웹 운영 출시 | [웹 #75](https://github.com/bodeul110/bodeul-admin-web/pull/75)를 dev → master merge commit `559d950d612959f338c714bc61cbd5d0d13262dd`로 병합. 필수 CI 통과 후 Production 환경으로 다시 빌드. [Vercel 배포](https://vercel.com/bodeul110/bodeul-admin-web/3pxNQh2TaALMbAABzgTprj9fLDqs) `READY`, Functions `hnd1`, 기존 운영 주소가 새 배포를 가리킴 |
 | 관리자 웹 운영 HTTP 검증 | [운영 웹](https://bodeul-admin-web-iota.vercel.app/)의 로그인 화면에서 `운영 환경 / 운영 배포 · Production` 확인. access-context·가이드·결제 조회 GET에 무인증·잘못된 인증 형식·가짜 Firebase token을 보내 9건 모두 401·JSON·no-store·입력 token 비노출 확인. 인증된 업무 요청이나 실제 쓰기는 수행하지 않음 |
-| 업무 관리자 등록 상태 | 운영 DB의 `app_users` 중 ADMIN 0건, 활성 세부 관리자 역할 0건. DB 서비스 로그인 활성화와 사람의 업무 권한 부여는 별개이며 이번 작업에서 사람 계정 권한은 추가하지 않음 |
+| 관리자 로그인 경계 수정 | [웹 #76](https://github.com/bodeul110/bodeul-admin-web/pull/76), [웹 #77](https://github.com/bodeul110/bodeul-admin-web/pull/77)로 로그인 화면의 선행 Firestore 사용자 조회를 제거. 운영 commit `30d366116bd40971b66c06356d18089e139beb55`, Vercel `dpl_8xVLVv2pvdGgigyLHUe4SPmTJUBa`에 반영. 앞선 배포 검증에서 테스트 167건·lint·Next.js/Vite 빌드·CodeQL 및 실제 운영 인증 거부 9건 통과 |
+| 최초 운영 관리자 MFA | 개인 Firebase Auth 계정의 이메일 인증·TOTP 1개 등록을 서버에서 재확인. 도우미의 12:06 UTC 완료 기록에서 MFA 재로그인 성공 확인. 비밀번호·인증키·토큰을 증적에 저장하지 않음 |
+| 업무 관리자 등록 상태 | 사용자 명시 승인 후 12:18 UTC에 운영 `app_users.ADMIN` 1건과 활성 `SUPER_ADMIN` 1건 등록. 동일 트랜잭션의 `ROLE_CHANGE / ALLOWED` 감사 1건 확인. 승인 계정 UID 일치 확인, break-glass 0건 유지 |
+| 최초 등록 검증 | V23 백업·격리 복원 확인 후 기존 `bodeul_migration` 역할로 rollback 검증, 0건 복귀 확인, commit, 별도 읽기 연결 재조회 순서로 실행. DB role 7개의 로그인·특권·직접 쓰기·함수 실행 검사 결과가 적용 전후 동일. 관리자 서비스의 역할 테이블 직접 INSERT 계속 차단 |
+| 실제 운영 관리자 로그인 | 등록 후 사용자가 운영 웹을 새로고침하고 2차 인증을 거쳐 대시보드가 열리는 것을 확인. 주요 업무 API 전체의 성공이나 App Check `enforce` 검증으로 확대 해석하지 않음 |
 
 ## 운영 적용 근거
 
@@ -81,10 +85,28 @@ Cloud Run API의 `reconciling`은 boolean이고 ProtoJSON은 false 기본값을 
 - 선택 이유: 현재 MVP 규모에서는 기존 Next.js 서버·DB role을 유지하고 환경별 자격 증명을 분리하는 편이 추가 서버와 운영 부담 없이 멘토가 제안한 서버 경계를 지킨다.
 - 리스크: 로컬에서의 실제 DB 연결과 운영 빌드·무인증 API 검증만으로 인증된 관리자 업무를 보장할 수 없다. 운영 관리자 역할·MFA·App Check와 정상 업무 요청은 별도로 검증한다.
 
+### 최초 개인 관리자 등록
+
+- 작업 목적: MFA를 완료한 최초 개인 계정을 PostgreSQL 관리자 인가에 연결해 운영 웹의 권한 미등록 차단을 해소한다.
+- 선택한 방식: 이번 인프라 작업에 한해 팀원 확인 없이 진행하라는 사용자 지시와 대상 계정의 `SUPER_ADMIN` 등록 승인을 근거로 최초 배정 1건만 수행했다. 기존 관리 역할을 사용하고 권한 부여와 감사 기록을 하나의 트랜잭션으로 묶었다.
+- 대안: 공용 계정 사용, Firestore ADMIN 문서 복제, Firebase custom claims만으로 관리자 권한 허용은 하지 않았다. 서버·DB 접속 권한을 넓히거나 관리자 인가를 생략하지 않았다.
+- 선택 이유: 현재 MVP 규모에서는 인증 주체는 Firebase, 업무 권한과 감사는 PostgreSQL 한 곳에서 관리해야 계정별 작업자를 구분하고 권한 불일치를 줄일 수 있다.
+- 리스크: 최초 계정의 접속 확인은 모든 관리자 업무나 MFA 복구 절차의 검증이 아니다. 이후 역할 변경·회수는 기존 관리자 함수 경계를 사용하고, 추가 관리자와 비상 복구 체계는 별도로 준비한다.
+
+등록 전 [V23 백업·격리 복원 실행 36316057495](https://github.com/bodeul110/bodeul-platform/actions/runs/36316057495)의 성공과 보관 증적을 확인했다. dump는 340,598 bytes, SHA-256은 `aca10082f0a980fa63dda9382e04005fbffc5f453d172f914e36250a893c4f5a`이며 원본·격리 복원 manifest 및 외부 checksum이 일치했다.
+
+적용 SQL은 역할 변경 함수와 같은 advisory lock `110349`, 대상 테이블 잠금, V23·실패 migration 0건, 최초 등록 대상 테이블 0건 검사를 포함한다. 승인된 운영 Firebase UID로만 `ADMIN`을 생성하고 `SUPER_ADMIN`과 감사 기록을 추가한다. 실행 후 계정·역할·감사 각각 1건, 긴급 접근 0건과 인가 함수 반환을 검사한다. 최초 시도는 rollback하여 0건 유지를 독립 조회했고 같은 내용으로 commit했다. 개인 이메일·UID·자격 증명은 공개 기록에 넣지 않는다.
+
+최종 관리 쿼리에서 정상 관리자 인가 반환과 미등록 UID의 결과 0건을 확인했다. `anon`, `authenticated`, `service_role`, Core/Admin runtime, 관리자 LOGIN, migration 등 DB role 7개의 로그인·superuser·BYPASSRLS·직접 쓰기·함수 실행 권한이 적용 전후 동일했다. SQL Editor에서 `bodeul_admin_runtime`으로의 별도 역할 전환은 기존 정책으로 거부되어 권한을 추가하지 않았다. 관리 쿼리 검증과 사용자가 직접 확인한 MFA 후 대시보드 접속을 구분한다.
+
+업무 데이터·개발 환경·DB schema·Firebase custom claims·MFA/App Check 모드·운영 쓰기 플래그는 변경하지 않았다. 별도 원본 다운로드용 break-glass도 부여하지 않았다.
+
+등록 후 Supabase Security Advisor는 Error 0, Warning 0, 기존 Info 6건이다. [RLS Enabled No Policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)는 직접 접근을 막고 기존 업무 함수로만 처리하는 테이블의 참고 항목이며, 이번 작업에서 공개 정책이나 테이블 권한을 추가하지 않았다.
+
 ## 남은 범위
 
-- 운영 Firebase 계정과 PostgreSQL ADMIN·세부 관리자 역할을 연결하고, 실제 로그인 후 Vercel 서버에서 DB 업무 조회가 성공하는지 검증한다. 현재 업무 관리자 등록은 0건이며 서비스 계정 권한을 사람의 관리자 권한으로 간주하지 않는다.
+- 최초 운영 관리자 등록과 MFA 후 대시보드 접속은 확인했다. 주요 업무 API의 정상·거부·감사 흐름, 관리자 MFA 강제와 비상 복구, App Check 유효 요청·강제 전환은 별도로 검증한다.
 - 운영 Core API의 실제 서명된 Firebase 토큰, 개발 토큰 거부 및 인증 후 Kakao 검색을 검증한다. 공유 쿼터와 키 폐기 영향은 [키 관리 결정](../architecture/kakao-local-core-api.md#개발운영-키-관리)을 따른다.
 - Android Release 설정, 환경 간 정상 토큰 거부와 실제 Realtime 소켓을 검증한다. 웹 Preview의 일반 HTTP 접근은 Vercel 로그인으로 전환되므로, 이를 앱 API의 200 성공으로 계산하지 않았다.
 
-개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정, 운영 Core API 배포와 관리자 웹 Production 출시·DB 자격 증명 등록까지 반영했다. 관리자 웹의 인증된 DB 업무 요청과 정상 로그인 후 환경 간 경계 검증은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
+개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정, 운영 Core API 배포와 관리자 웹 Production 출시·DB 자격 증명·최초 개인 관리자 등록까지 반영했다. MFA 후 운영 대시보드 접속은 사용자 확인을 받았지만 주요 업무와 환경 간 경계 검증은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
