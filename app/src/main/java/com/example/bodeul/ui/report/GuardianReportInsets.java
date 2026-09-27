@@ -7,6 +7,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.bodeul.ui.navigation.ClientBottomNavigationInsets;
+
 /**
  * 보호자 리포트의 스크롤 콘텐츠와 고정 하단 탭을 시스템 바 안쪽에 배치한다.
  */
@@ -24,11 +26,6 @@ final class GuardianReportInsets {
         int topRight = topBar.getPaddingRight();
         int topBottom = topBar.getPaddingBottom();
         int topHeight = topBar.getLayoutParams().height;
-        int bottomLeft = bottomNavigation.getPaddingLeft();
-        int bottomTop = bottomNavigation.getPaddingTop();
-        int bottomRight = bottomNavigation.getPaddingRight();
-        int bottomBottom = bottomNavigation.getPaddingBottom();
-        int bottomHeight = bottomNavigation.getLayoutParams().height;
 
         ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
             Insets safeInsets = windowInsets.getInsets(
@@ -59,29 +56,8 @@ final class GuardianReportInsets {
             }
             return windowInsets;
         });
-        ViewCompat.setOnApplyWindowInsetsListener(bottomNavigation, (view, windowInsets) -> {
-            Insets bottomInsets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.navigationBars()
-                            | WindowInsetsCompat.Type.displayCutout()
-            );
-            view.setPadding(
-                    bottomLeft + bottomInsets.left,
-                    bottomTop,
-                    bottomRight + bottomInsets.right,
-                    bottomBottom + bottomInsets.bottom
-            );
-            if (bottomHeight > 0) {
-                ViewGroup.LayoutParams params = view.getLayoutParams();
-                int targetHeight = bottomHeight + bottomInsets.bottom;
-                if (params.height != targetHeight) {
-                    params.height = targetHeight;
-                    view.setLayoutParams(params);
-                }
-            }
-            return windowInsets;
-        });
+        ClientBottomNavigationInsets.apply(bottomNavigation);
         ViewCompat.requestApplyInsets(content);
         ViewCompat.requestApplyInsets(topBar);
-        ViewCompat.requestApplyInsets(bottomNavigation);
     }
 }

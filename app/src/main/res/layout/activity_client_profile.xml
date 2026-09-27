@@ -6,6 +6,7 @@
     android:background="@drawable/bg_screen_glow">
 
     <ScrollView
+        android:id="@+id/scrollClientProfile"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">

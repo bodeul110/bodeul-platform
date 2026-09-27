@@ -1,12 +1,13 @@
 package com.example.bodeul.ui.home;
 
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ScrollView;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.bodeul.ui.navigation.ClientBottomNavigationInsets;
 
 /**
  * 환자 홈의 고정 상단·하단 영역과 스크롤 콘텐츠를 시스템 영역 안쪽에 배치한다.
@@ -24,11 +25,6 @@ public final class ClientHomeInsets {
         int topTop = topBar.getPaddingTop();
         int topRight = topBar.getPaddingRight();
         int topBottom = topBar.getPaddingBottom();
-        int bottomLeft = bottomBar.getPaddingLeft();
-        int bottomTop = bottomBar.getPaddingTop();
-        int bottomRight = bottomBar.getPaddingRight();
-        int bottomBottom = bottomBar.getPaddingBottom();
-        int bottomHeight = bottomBar.getLayoutParams().height;
 
         ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
             Insets systemInsets = windowInsets.getInsets(
@@ -56,26 +52,8 @@ public final class ClientHomeInsets {
             );
             return windowInsets;
         });
-        ViewCompat.setOnApplyWindowInsetsListener(bottomBar, (view, windowInsets) -> {
-            Insets systemInsets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.navigationBars()
-                            | WindowInsetsCompat.Type.displayCutout()
-            );
-            view.setPadding(
-                    bottomLeft + systemInsets.left,
-                    bottomTop,
-                    bottomRight + systemInsets.right,
-                    bottomBottom + systemInsets.bottom
-            );
-            if (bottomHeight > 0) {
-                ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
-                layoutParams.height = bottomHeight + systemInsets.bottom;
-                view.setLayoutParams(layoutParams);
-            }
-            return windowInsets;
-        });
+        ClientBottomNavigationInsets.apply(bottomBar);
         ViewCompat.requestApplyInsets(content);
         ViewCompat.requestApplyInsets(topBar);
-        ViewCompat.requestApplyInsets(bottomBar);
     }
 }

@@ -18,6 +18,7 @@ import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.ui.health.HealthInfoActivity;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationBinder;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationInsets;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationRouter;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationVisibility;
@@ -40,6 +41,7 @@ public final class ClientProfileActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_client_profile);
+        ClientBottomNavigationInsets.applyScrollableContent(findViewById(R.id.scrollClientProfile));
 
         authRepository = ServiceLocator.provideAuthRepository(this);
         coordinator = new ClientProfileCoordinator(this);

@@ -4,11 +4,17 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.isCompletelyDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import android.content.Context;
+import android.view.View;
 
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -21,6 +27,30 @@ import org.junit.runner.RunWith;
 /** 로컬 데이터 예약 미리보기가 Figma 단계 구조를 실제 BookingActivity에 표시하는지 확인한다. */
 @RunWith(AndroidJUnit4.class)
 public class BookingFigmaPreviewTest {
+    @Test
+    public void preview_recreationKeepsNavigationAboveRealSystemInsets() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        try (ActivityScenario<BookingFigmaPreviewActivity> scenario = ActivityScenario.launch(
+                BookingFigmaPreviewActivity.createIntent(context))) {
+            assertNavigationHeight(scenario);
+            scenario.recreate();
+            assertNavigationHeight(scenario);
+        }
+    }
+
+    private static void assertNavigationHeight(ActivityScenario<BookingFigmaPreviewActivity> scenario) {
+        onView(withId(R.id.clientBottomNavigation)).check(matches(isCompletelyDisplayed()));
+        scenario.onActivity(activity -> {
+            View navigation = activity.findViewById(R.id.clientBottomNavigation);
+            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(navigation);
+            assertNotNull(insets);
+            int baseHeight = Math.round(84 * activity.getResources().getDisplayMetrics().density);
+            int bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()
+                    | WindowInsetsCompat.Type.displayCutout()).bottom;
+            assertEquals(baseHeight + bottom, navigation.getHeight());
+        });
+    }
+
     @Test
     public void preview_showsFigmaBookingHierarchyWithoutServer() {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();

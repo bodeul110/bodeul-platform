@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="client_bottom_navigation_insets_applied" />
+    <item type="id" name="client_navigation_content_insets_applied" />
+</resources>
