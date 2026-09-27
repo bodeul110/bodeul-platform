@@ -9,14 +9,15 @@ import java.util.UUID;
 
 import com.bodeul.core.auth.AppUserRole;
 
-final class AppointmentCreateFingerprint {
+public final class AppointmentCreateFingerprint {
 
     private static final String CONTRACT_VERSION = "bodeul-appointment-create-v1";
 
     private AppointmentCreateFingerprint() {
     }
 
-    static String from(CreateRequest request) {
+    /** 서버에서 검증·정규화한 생성 본문의 승인 및 재시도 비교값을 만든다. */
+    public static String from(CreateRequest request) {
         MessageDigest digest = sha256();
         add(digest, CONTRACT_VERSION);
         add(digest, request.requesterUserId());
@@ -64,7 +65,7 @@ final class AppointmentCreateFingerprint {
         }
     }
 
-    record CreateRequest(
+    public record CreateRequest(
             UUID requesterUserId,
             AppUserRole requesterRole,
             UUID clientRequestId,

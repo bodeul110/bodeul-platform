@@ -20,7 +20,7 @@
 | 채팅·읽음 | 직접 메시지·읽음·첨부, FCM·Supabase private Broadcast | PostgreSQL 원본. 종료 뒤 신규 입력·매니저 열람 차단, 보호자 동의 범위별 접근 |
 | 위치 | legacy 매니저 위치 API·수집 차단 설정 | 기본 OFF, release·production 고정 OFF. 환자 GPS 1분 공유는 목표이며 자기 위치 확인과 별개 |
 | 파일 | Core API 세션 첨부·증빙 중계, Storage 원본, PostgreSQL 메타데이터 | 업로드·과거 fixture 성공과 운영 보존·파기 검증을 구분 |
-| 무통장입금 | V22 원장·감사, V23 관리자 조회, Android 입금자명, 관리자 수동 전이 | 메인 #394·#397·#405~#407, 웹 #51·#52. 실제 계좌 노출·금전 수취·환불 실행 승인은 아님 |
+| 무통장입금 | V22 원장·감사, V23 관리자 조회, Android 입금자명, 관리자 수동 전이 | 메인 #394·#397·#405~#407, 웹 #51·#52. 기획 목표 2시간 40,000원과 현재 기본 69,000원은 불일치. 합성 API/DB 검증을 실제 수취·환불 승인으로 보지 않음 |
 | 매니저 서류 | JPEG/PNG/WebP 1개·10 MiB 자격 증빙, 관리자 심사 | 메인 #383·웹 #44 병합. Firestore 심사 상태·Storage 원본 유지, legacy 정리는 #313 |
 | 관리자 보안 | PostgreSQL ADMIN·세부 3역할, 감사, MFA·세션 경계 | 최초 운영 개인 SUPER_ADMIN의 TOTP 로그인·대시보드 확인. 전역 MFA 강제·복구·업무별 검증은 별도 |
 | 관리자 환경 표시 | 로그인·MFA·세션 화면과 상단의 개발/운영 표시 | 웹 #64·#65. 실제 Preview·Production 표시 확인은 [9월 21일 기록](../reports/admin-web-environment-display-2026-09-21.md) |
@@ -41,7 +41,7 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 | 작업 | 현재 판단 |
 | --- | --- |
 | Preview API #429 | 9월 24일 종료. 9월 27일 인프라 작업에서 health 200·무인증 401 재확인. 모든 앱 화면의 E2E 성공을 뜻하지 않음 |
-| 보호자 예약 #419 | 정책 채택, 현재 환자 전용 쓰기와의 차이 구현 필요 |
+| 보호자 예약 #419 | 열린 PR #440에 예약 전 생성 승인 판정·본문 결합·재승인 버전 교체와 정책 테스트 45건 준비. 리뷰 지적 수정 후 재검토 대상이며 DB·API·Android 연결과 DB 경합 검증은 미완료. 보호자 쓰기 차단 유지 |
 | 내부 STT #420 | Naver Cloud 연동·녹음 저장 목표. #443 화면은 병합됐지만 실제 녹음·저장·공급자 검증은 미완료. 추가 논의 메모를 기존 내부 개발 철회나 운영 승인으로 해석하지 않음 |
 | 가이드 진입·번호 #422 | 신규·기존 세션, legacy 7단계·13단계 snapshot과 재진입 상태를 구분해 시작 단계·중복 번호 확인 |
 | 메모·리포트 #423 | 종료 전 최신 메모 조합은 반영. 마지막 CTA가 채팅으로 연결된다는 새 보고는 역할·단계·빌드 확인 필요. 종료 후 매니저 접근 회수 유지 |
@@ -52,7 +52,8 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 | 자격 서류 #313 | legacy 파일 정리·접근 검증. 신규 최소수집 코드와 구분 |
 | App Check #190·#192 | release Play Integrity, 인증된 Web VALID, enforce/rollback |
 | 탈퇴 #348·법률 #347 | 실제 삭제, 법정 보존·백업 재적용, 대리권 등 추가 자문 |
-| 운영 #134·#223·결제 #27 | 환경 분리·V23·배포·최초 관리자 로그인 완료. 정상 운영 토큰·Realtime·역할별 업무·rollback·실제 수취와 Go/No-Go는 남음 |
+| 결제 #27 | 40,000원 목표에 맞춘 견적·원장·기한 안내 정합성, 브라우저 MFA·App Check와 실제 수취·환불 운영 게이트 |
+| 운영 #134·#223 | 환경 분리·V23·배포·최초 관리자 로그인 완료. 정상 운영 토큰·Realtime·역할별 업무·rollback·Go/No-Go는 남음 |
 
 카드·간편결제 PG, OCR, AI 자동 리포트, 시스템 이벤트형 채팅, SOS·자동119·사고 전용 상태는 현재 MVP의 필수 미완료 목록에 다시 넣지 않는다. 새 요구가 생기면 별도 변경으로 다룬다.
 
@@ -76,6 +77,8 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 - [Notion MVP·내부테스트 2 대조 기록](../reports/notion-mvp-feedback-triage-2026-09-27.md)
 - [전체 문서 최신화 기록](../reports/document-refresh-2026-09-27.md)
 - [개발·운영 환경 분리 검증](../reports/dev-production-separation-2026-09-27.md)
+- [Notion 브라우저 대조·문서와 이슈 갱신](../reports/notion-browser-alignment-2026-09-26.md)
+- [Notion 접근 확인·이슈 정리와 예약 생성 판정 준비](../reports/issue-sync-2026-09-24.md)
 - [Notion 제품 기준 정합성](../planning/notion-product-alignment.md)
 - [Figma MVP 화면·Android 매핑](../design/figma-mvp-implementation-map-2026-08-29.md)
 - [관리자 웹 환경 표시 검증](../reports/admin-web-environment-display-2026-09-21.md)
