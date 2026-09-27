@@ -879,10 +879,12 @@ export async function auditCloudRun(client, checks, releaseChecks, configuration
     const ports = asArray(primaryContainer.ports);
     const latestTraffic = asArray(service.traffic).some((target) =>
       target.type === "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST" && Number(target.percent) === 100);
-    const revisionReady = service.reconciling === false &&
+    // ProtoJSON 응답은 false 기본값을 생략하므로 완료 조건과 함께 판정한다.
+    const revisionReady = (service.reconciling === undefined || service.reconciling === false) &&
       service.terminalCondition?.state === "CONDITION_SUCCEEDED" &&
       Boolean(service.latestReadyRevision) &&
       service.latestReadyRevision === service.latestCreatedRevision &&
+      Boolean(service.generation) &&
       String(service.observedGeneration ?? "") === String(service.generation ?? "");
     const expectedAppCheckMode = configuration.APP_CHECK_EXPECTED_STATE === "enforced" ? "enforce" : "observe";
     const valid = configuration.CLOUD_RUN_EXPECTED_STATE === "present" &&
