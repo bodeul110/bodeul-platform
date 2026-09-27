@@ -15,6 +15,7 @@
 | 운영 DB 갱신 | [36310121342](https://github.com/bodeul110/bodeul-platform/actions/runs/36310121342) 성공. master `f4b69e5`에서 V16~V23 8개 적용, 계정 삭제 영향도 계약 검증 통과. SQL 재조회 V23·실패 0건·예약/세션/가이드 각각 0건 |
 | 운영 Realtime | 사용자 승인 후 기존 bootstrap `003`, `005`, `006`과 production Firebase 허용 목록을 한 트랜잭션으로 적용. 먼저 같은 SQL의 rollback 검증 성공, 이후 commit 및 새 쿼리로 재조회 |
 | 운영 Realtime 검증 | 허용 Firebase는 `bodeul-prod-110` 한 개. authenticated role에서 잘못된 JSON claims·개발 프로젝트·다른 issuer·존재하지 않는 세션 참여자 거부. 종료 매니저 제한과 보호자 Broadcast 제외 함수 정의, 익명 helper 실행 및 업무 schema·허용 목록 직접 조회 차단 확인 |
+| 운영 보안 진단 | Supabase Security Advisor 재실행 후 Error 0, Warning 0, Info 6. 참고 항목은 관리자 권한·감사·결제 원장 테이블의 `RLS Enabled No Policy`이며, 직접 접근을 거부하고 서버 함수만 허용하는 기존 계약을 유지 |
 | 플랫폼 기반 PR | [#451](https://github.com/bodeul110/bodeul-platform/pull/451) 병합, `f4b69e5`. preflight·Core API CI·migration 계약·CodeQL 성공 |
 | 관리자 웹 기반 PR | [#73](https://github.com/bodeul110/bodeul-admin-web/pull/73) 병합, `8887570`. lint/build·CodeQL·Vercel Preview 성공 |
 | 장기 브랜치 보호 | 두 저장소 `dev` 생성. master와 동일한 PR·필수 CI·삭제/force push 금지 규칙 적용. 출시·동기화용 merge commit 허용 |
