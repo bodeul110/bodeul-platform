@@ -7,6 +7,7 @@ import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE;
+import static androidx.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -103,7 +104,7 @@ public class ManagerGuideRemainingStepsPreviewTest {
             onView(withId(R.id.guideJournalToolbar)).check(matches(isDisplayed()));
             onView(withId(R.id.managerGuideJournalContent)).check(matches(isDisplayed()));
             onView(withId(R.id.cardGuideReportActions))
-                    .perform(scrollTo()).check(matches(isDisplayed()));
+                    .check(matches(withEffectiveVisibility(VISIBLE)));
 
             String overLimit = repeatedKoreanCharacter(320);
             onView(withId(R.id.inputReportSummary))
