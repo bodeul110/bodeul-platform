@@ -21,6 +21,7 @@ public final class AdultPatientGuardianBookingPolicy {
             UUID guardianUserId,
             AppUserRole guardianRole,
             UUID clientRequestId,
+            String requestFingerprint,
             Instant grantedAt,
             Instant expiresAt,
             String policyVersion) {
@@ -32,7 +33,7 @@ public final class AdultPatientGuardianBookingPolicy {
             throw new IllegalArgumentException("보호자 역할 계정만 예약 생성 대상으로 지정할 수 있습니다.");
         }
         return new Grant(
-                UUID.randomUUID(), patientUserId, guardianUserId, clientRequestId,
+                UUID.randomUUID(), patientUserId, guardianUserId, clientRequestId, requestFingerprint,
                 policyVersion, actorUserId, grantedAt, expiresAt, null, null, 0);
     }
 
@@ -49,6 +50,7 @@ public final class AdultPatientGuardianBookingPolicy {
         }
         return new Grant(
                 grant.id(), grant.patientUserId(), grant.guardianUserId(), grant.clientRequestId(),
+                grant.requestFingerprint(),
                 grant.policyVersion(), grant.grantedByUserId(), grant.grantedAt(), grant.expiresAt(),
                 actorUserId, revokedAt, Math.addExact(grant.version(), 1));
     }
@@ -59,6 +61,7 @@ public final class AdultPatientGuardianBookingPolicy {
             AppUserRole requesterRole,
             UUID patientUserId,
             UUID clientRequestId,
+            String currentRequestFingerprint,
             String currentPolicyVersion,
             Instant requestedAt) {
         Objects.requireNonNull(candidate, "예약 생성 승인 조회 결과가 필요합니다.");
@@ -66,6 +69,7 @@ public final class AdultPatientGuardianBookingPolicy {
         Objects.requireNonNull(requesterRole, "요청자 역할이 필요합니다.");
         Objects.requireNonNull(patientUserId, "환자 식별자가 필요합니다.");
         Objects.requireNonNull(clientRequestId, "예약 생성 요청 식별자가 필요합니다.");
+        String requestFingerprint = requireRequestFingerprint(currentRequestFingerprint);
         String policyVersion = normalizePolicyVersion(currentPolicyVersion);
         Objects.requireNonNull(requestedAt, "판정 시각이 필요합니다.");
 
@@ -84,6 +88,10 @@ public final class AdultPatientGuardianBookingPolicy {
         }
         if (!grant.clientRequestId().equals(clientRequestId)) {
             return Decision.denied(DecisionReason.REQUEST_MISMATCH);
+        }
+        // 승인 때 확인한 본문과 최초 INSERT 직전 본문을 비교한다. 요청 ID만으로는 부족하다.
+        if (!grant.requestFingerprint().equals(requestFingerprint)) {
+            return Decision.denied(DecisionReason.REQUEST_CONTENT_MISMATCH);
         }
         if (!grant.policyVersion().equals(policyVersion)) {
             return Decision.denied(DecisionReason.POLICY_VERSION_MISMATCH);
@@ -117,9 +125,16 @@ public final class AdultPatientGuardianBookingPolicy {
         return policyVersion.trim();
     }
 
+    private static String requireRequestFingerprint(String fingerprint) {
+        if (fingerprint == null || !fingerprint.matches("[0-9a-f]{64}")) {
+            throw new IllegalArgumentException("서버가 계산한 예약 생성 본문의 SHA-256 값이 필요합니다.");
+        }
+        return fingerprint;
+    }
+
     public enum DecisionReason {
         ALLOWED, GRANT_MISSING, REQUESTER_NOT_GUARDIAN, PATIENT_MISMATCH,
-        GUARDIAN_MISMATCH, REQUEST_MISMATCH, POLICY_VERSION_MISMATCH,
+        GUARDIAN_MISMATCH, REQUEST_MISMATCH, REQUEST_CONTENT_MISMATCH, POLICY_VERSION_MISMATCH,
         NOT_YET_ACTIVE, EXPIRED, REVOKED
     }
 
@@ -141,6 +156,7 @@ public final class AdultPatientGuardianBookingPolicy {
             UUID patientUserId,
             UUID guardianUserId,
             UUID clientRequestId,
+            String requestFingerprint,
             String policyVersion,
             UUID grantedByUserId,
             Instant grantedAt,
@@ -153,6 +169,7 @@ public final class AdultPatientGuardianBookingPolicy {
             Objects.requireNonNull(patientUserId, "환자 식별자가 필요합니다.");
             Objects.requireNonNull(guardianUserId, "보호자 식별자가 필요합니다.");
             Objects.requireNonNull(clientRequestId, "예약 생성 요청 식별자가 필요합니다.");
+            requestFingerprint = requireRequestFingerprint(requestFingerprint);
             if (patientUserId.equals(guardianUserId)) {
                 throw new IllegalArgumentException("환자 본인을 보호자로 지정할 수 없습니다.");
             }

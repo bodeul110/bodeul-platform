@@ -4,10 +4,13 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.bodeul.core.appointment.AppointmentCreateFingerprint;
 import com.bodeul.core.auth.AppUserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static com.bodeul.core.consent.AdultPatientGuardianBookingPolicy.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,6 +26,8 @@ class AdultPatientGuardianBookingPolicyTests {
     private static final Instant END = START.plusSeconds(3600);
     private static final String POLICY = "booking-test-v1";
 
+    private static final String FINGERPRINT = fingerprint("기준 병원", START, "상태 요약", "복약 요약", "NONE");
+
     @Test
     void patientGrantsCreationForOneRequestWithoutAnExistingAppointment() {
         Grant grant = grant();
@@ -31,6 +36,7 @@ class AdultPatientGuardianBookingPolicyTests {
         assertThat(grant.patientUserId()).isEqualTo(PATIENT);
         assertThat(grant.guardianUserId()).isEqualTo(GUARDIAN);
         assertThat(grant.clientRequestId()).isEqualTo(REQUEST);
+        assertThat(grant.requestFingerprint()).isEqualTo(FINGERPRINT);
         assertThat(grant.grantedByUserId()).isEqualTo(PATIENT);
         assertThat(grant.policyVersion()).isEqualTo(POLICY);
         assertThat(grant.revokedAt()).isNull();
@@ -43,17 +49,17 @@ class AdultPatientGuardianBookingPolicyTests {
     void guardianManagerAndAdminCannotGrantOnBehalfOfPatient(AppUserRole role) {
         assertThatThrownBy(() -> grantByPatient(
                 PATIENT, role, true, PATIENT, GUARDIAN, AppUserRole.GUARDIAN,
-                REQUEST, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
+                REQUEST, FINGERPRINT, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void anotherPatientAndUnconfirmedAdultCannotGrant() {
         assertThatThrownBy(() -> grantByPatient(
                 OTHER, AppUserRole.PATIENT, true, PATIENT, GUARDIAN, AppUserRole.GUARDIAN,
-                REQUEST, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
+                REQUEST, FINGERPRINT, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> grantByPatient(
                 PATIENT, AppUserRole.PATIENT, false, PATIENT, GUARDIAN, AppUserRole.GUARDIAN,
-                REQUEST, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
+                REQUEST, FINGERPRINT, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest
@@ -61,13 +67,13 @@ class AdultPatientGuardianBookingPolicyTests {
     void recipientMustHaveGuardianRole(AppUserRole role) {
         assertThatThrownBy(() -> grantByPatient(
                 PATIENT, AppUserRole.PATIENT, true, PATIENT, GUARDIAN, role,
-                REQUEST, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
+                REQUEST, FINGERPRINT, START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void missingGrantIsDenied() {
         assertThat(evaluateCreation(Optional.empty(), GUARDIAN, AppUserRole.GUARDIAN,
-                PATIENT, REQUEST, POLICY, START))
+                PATIENT, REQUEST, FINGERPRINT, POLICY, START))
                 .isEqualTo(new Decision(false, DecisionReason.GRANT_MISSING));
     }
 
@@ -75,20 +81,20 @@ class AdultPatientGuardianBookingPolicyTests {
     @EnumSource(value = AppUserRole.class, names = "GUARDIAN", mode = EnumSource.Mode.EXCLUDE)
     void roleChangeCannotReuseGrant(AppUserRole role) {
         assertThat(evaluateCreation(Optional.of(grant()), GUARDIAN, role,
-                PATIENT, REQUEST, POLICY, START).reason())
+                PATIENT, REQUEST, FINGERPRINT, POLICY, START).reason())
                 .isEqualTo(DecisionReason.REQUESTER_NOT_GUARDIAN);
     }
 
     @Test
     void anotherPatientGuardianRequestAndPolicyAreDenied() {
         assertThat(evaluateCreation(Optional.of(grant()), GUARDIAN, AppUserRole.GUARDIAN,
-                OTHER, REQUEST, POLICY, START).reason()).isEqualTo(DecisionReason.PATIENT_MISMATCH);
+                OTHER, REQUEST, FINGERPRINT, POLICY, START).reason()).isEqualTo(DecisionReason.PATIENT_MISMATCH);
         assertThat(evaluateCreation(Optional.of(grant()), OTHER, AppUserRole.GUARDIAN,
-                PATIENT, REQUEST, POLICY, START).reason()).isEqualTo(DecisionReason.GUARDIAN_MISMATCH);
+                PATIENT, REQUEST, FINGERPRINT, POLICY, START).reason()).isEqualTo(DecisionReason.GUARDIAN_MISMATCH);
         assertThat(evaluateCreation(Optional.of(grant()), GUARDIAN, AppUserRole.GUARDIAN,
-                PATIENT, OTHER, POLICY, START).reason()).isEqualTo(DecisionReason.REQUEST_MISMATCH);
+                PATIENT, OTHER, FINGERPRINT, POLICY, START).reason()).isEqualTo(DecisionReason.REQUEST_MISMATCH);
         assertThat(evaluateCreation(Optional.of(grant()), GUARDIAN, AppUserRole.GUARDIAN,
-                PATIENT, REQUEST, "booking-test-v2", START).reason())
+                PATIENT, REQUEST, FINGERPRINT, "booking-test-v2", START).reason())
                 .isEqualTo(DecisionReason.POLICY_VERSION_MISMATCH);
     }
 
@@ -101,6 +107,40 @@ class AdultPatientGuardianBookingPolicyTests {
         assertThat(evaluate(grant(), END.plusSeconds(1)).reason()).isEqualTo(DecisionReason.EXPIRED);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"hospital", "time", "health", "medication", "mobility"})
+    void changedBodyNeedsNewApprovalEvenBeforeFirstInsert(String changedField) {
+        String changedFingerprint = fingerprint(
+                changedField.equals("hospital") ? "다른 병원" : "기준 병원",
+                changedField.equals("time") ? START.plusSeconds(3600) : START,
+                changedField.equals("health") ? "변경된 건강 상태" : "상태 요약",
+                changedField.equals("medication") ? "변경된 복약 정보" : "복약 요약",
+                changedField.equals("mobility") ? "WHEELCHAIR" : "NONE");
+
+        assertThat(changedFingerprint).isNotEqualTo(FINGERPRINT);
+        assertThat(evaluateCreation(Optional.of(grant()), GUARDIAN, AppUserRole.GUARDIAN,
+                PATIENT, REQUEST, changedFingerprint, POLICY, START).reason())
+                .isEqualTo(DecisionReason.REQUEST_CONTENT_MISMATCH);
+
+        Grant approvedAgain = grantByPatient(PATIENT, AppUserRole.PATIENT, true,
+                PATIENT, GUARDIAN, AppUserRole.GUARDIAN, REQUEST, changedFingerprint,
+                START, END, POLICY);
+        assertThat(evaluateCreation(Optional.of(approvedAgain), GUARDIAN, AppUserRole.GUARDIAN,
+                PATIENT, REQUEST, changedFingerprint, POLICY, START).allowed()).isTrue();
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", " ", "client-provided-body", "1234"})
+    void invalidFingerprintCannotBeStoredOrEvaluated(String fingerprint) {
+        assertThatThrownBy(() -> grantByPatient(PATIENT, AppUserRole.PATIENT, true,
+                PATIENT, GUARDIAN, AppUserRole.GUARDIAN, REQUEST, fingerprint,
+                START, END, POLICY)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> evaluateCreation(Optional.of(grant()), GUARDIAN,
+                AppUserRole.GUARDIAN, PATIENT, REQUEST, fingerprint, POLICY, START))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Test
     void patientRevocationIsIdempotentAndRejectsEvenBackdatedCreation() {
         Grant original = grant();
@@ -108,6 +148,7 @@ class AdultPatientGuardianBookingPolicyTests {
 
         assertThat(revoked.id()).isEqualTo(original.id());
         assertThat(revoked.clientRequestId()).isEqualTo(REQUEST);
+        assertThat(revoked.requestFingerprint()).isEqualTo(original.requestFingerprint());
         assertThat(revoked.revokedByUserId()).isEqualTo(PATIENT);
         assertThat(revoked.version()).isEqualTo(1);
         assertThat(evaluate(revoked, START).reason()).isEqualTo(DecisionReason.REVOKED);
@@ -136,7 +177,7 @@ class AdultPatientGuardianBookingPolicyTests {
     void malformedStoredGrantIsRejected() {
         assertThatThrownBy(() -> stored(PATIENT, null, null, END, 0, POLICY))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Grant(UUID.randomUUID(), PATIENT, GUARDIAN, REQUEST,
+        assertThatThrownBy(() -> new Grant(UUID.randomUUID(), PATIENT, GUARDIAN, REQUEST, FINGERPRINT,
                 POLICY, OTHER, START, END, null, null, 0)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> stored(GUARDIAN, PATIENT, null, END, 0, POLICY))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -158,12 +199,12 @@ class AdultPatientGuardianBookingPolicyTests {
 
     @Test
     void absentRequestIdentityOrCurrentPolicyCannotAllowCreation() {
-        assertThatThrownBy(() -> new Grant(UUID.randomUUID(), PATIENT, GUARDIAN, null,
+        assertThatThrownBy(() -> new Grant(UUID.randomUUID(), PATIENT, GUARDIAN, null, FINGERPRINT,
                 POLICY, PATIENT, START, END, null, null, 0)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> evaluateCreation(Optional.of(grant()), GUARDIAN, AppUserRole.GUARDIAN,
-                PATIENT, null, POLICY, START)).isInstanceOf(NullPointerException.class);
+                PATIENT, null, FINGERPRINT, POLICY, START)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> evaluateCreation(Optional.of(grant()), GUARDIAN, AppUserRole.GUARDIAN,
-                PATIENT, REQUEST, " ", START)).isInstanceOf(IllegalArgumentException.class);
+                PATIENT, REQUEST, FINGERPRINT, " ", START)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -176,17 +217,26 @@ class AdultPatientGuardianBookingPolicyTests {
 
     private static Grant grant() {
         return grantByPatient(PATIENT, AppUserRole.PATIENT, true, PATIENT, GUARDIAN,
-                AppUserRole.GUARDIAN, REQUEST, START, END, " " + POLICY + " ");
+                AppUserRole.GUARDIAN, REQUEST, FINGERPRINT, START, END, " " + POLICY + " ");
+    }
+
+    private static String fingerprint(String hospital, Instant appointmentAt,
+            String health, String medication, String mobility) {
+        return AppointmentCreateFingerprint.from(new AppointmentCreateFingerprint.CreateRequest(
+                GUARDIAN, AppUserRole.GUARDIAN, REQUEST,
+                "대상 환자", "01000000000", null, health, medication,
+                hospital, "내과", 37.5, 127.0, appointmentAt,
+                "병원 입구", "주의 사항", mobility, "ROUND_TRIP", "ANY", "BANK_TRANSFER", null));
     }
 
     private static Decision evaluate(Grant grant, Instant at) {
         return evaluateCreation(Optional.of(grant), GUARDIAN, AppUserRole.GUARDIAN,
-                PATIENT, REQUEST, POLICY, at);
+                PATIENT, REQUEST, FINGERPRINT, POLICY, at);
     }
 
     private static Grant stored(UUID guardian, UUID revokedBy, Instant revokedAt,
             Instant expiresAt, long version, String policyVersion) {
-        return new Grant(UUID.randomUUID(), PATIENT, guardian, REQUEST, policyVersion,
+        return new Grant(UUID.randomUUID(), PATIENT, guardian, REQUEST, FINGERPRINT, policyVersion,
                 PATIENT, START, expiresAt, revokedBy, revokedAt, version);
     }
 }
