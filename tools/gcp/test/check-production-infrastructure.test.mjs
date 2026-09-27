@@ -302,6 +302,30 @@ test("운영 workflow의 세션 플래그와 실제 런타임 감사 계약이 �
   assert.equal((await checkCloudRun(legacy))[0].status, STATUS.DRIFT);
 });
 
+test("Cloud Run이 false 기본값을 생략해도 완료된 revision은 통과한다", async () => {
+  const service = productionCloudRunService();
+  delete service.reconciling;
+  const result = await checkCloudRun(service);
+  assert.ok(result.every((entry) => entry.status === STATUS.PASS));
+});
+
+test("Cloud Run의 미완료 및 불명확한 revision은 통과하지 않는다", async () => {
+  const changes = [
+    {reconciling: true},
+    {reconciling: "false"},
+    {reconciling: null},
+    {reconciling: undefined, terminalCondition: {state: "CONDITION_FAILED"}},
+    {reconciling: undefined, latestReadyRevision: "revision-0"},
+    {reconciling: undefined, latestReadyRevision: undefined, latestCreatedRevision: undefined},
+    {reconciling: undefined, observedGeneration: "0"},
+    {reconciling: undefined, observedGeneration: undefined, generation: undefined},
+  ];
+  for (const change of changes) {
+    const result = await checkCloudRun({...productionCloudRunService(), ...change});
+    assert.equal(result.find((entry) => entry.id === "cloud-run.configuration").status, STATUS.DRIFT);
+  }
+});
+
 test("운영 런타임의 환경변수 누락과 중복 및 알 수 없는 설정을 거부한다", async () => {
   const missing = productionCloudRunService();
   missing.template.containers[0].env.pop();

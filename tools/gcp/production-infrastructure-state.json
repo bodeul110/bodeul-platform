@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "cloudRun": "absent",
+  "cloudRun": "present",
   "kakaoSecret": "enabled",
   "firestorePitr": "enabled",
   "firebaseStorageUbla": "deferred",
