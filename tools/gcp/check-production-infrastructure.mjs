@@ -827,7 +827,7 @@ async function auditSecrets(client, checks, releaseChecks, env) {
   }
 }
 
-async function auditCloudRun(client, checks, releaseChecks, configuration) {
+export async function auditCloudRun(client, checks, releaseChecks, configuration) {
   const url = `https://run.googleapis.com/v2/projects/${FIXED.projectId}/locations/${FIXED.region}/services/${FIXED.cloudRunService}`;
   try {
     const service = await client.get(url);
@@ -845,9 +845,12 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
     let secretRefsValid = true;
     for (const [name, expectedSecret] of Object.entries(expectedSecretBindings)) {
       const ref = runtimeEnv.get(name)?.valueSource?.secretKeyRef;
-      const actualSecret = String(ref?.secret ?? "").split("/").at(-1);
+      const actualSecret = String(ref?.secret ?? "");
+      const allowedSecretNames = [expectedSecret,
+        `projects/${FIXED.projectId}/secrets/${expectedSecret}`,
+        `projects/${FIXED.projectNumber}/secrets/${expectedSecret}`];
       const version = String(ref?.version ?? "");
-      if (actualSecret !== expectedSecret || !/^\d+$/.test(version)) {
+      if (!allowedSecretNames.includes(actualSecret) || !/^\d+$/.test(version)) {
         secretRefsValid = false;
         continue;
       }
@@ -862,9 +865,13 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
       "FIREBASE_PROJECT_ID",
       "FIREBASE_PROJECT_NUMBER",
       "BODEUL_APP_CHECK_MODE",
+      "BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT",
+      "BODEUL_SESSION_COMPLETION_ENFORCEMENT",
+      "BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED",
       ...Object.keys(expectedSecretBindings),
     ];
-    const envNamesValid = exactStringSet([...runtimeEnv.keys()], expectedEnvNames);
+    const envNamesValid = exactStringSet([...runtimeEnv.keys()], expectedEnvNames) &&
+      runtimeEnv.size === asArray(primaryContainer.env).length;
     const vpc = template.vpcAccess ?? {};
     const dynamicOutbound = !vpc.connector && asArray(vpc.networkInterfaces).length === 0;
     const labels = service.labels ?? {};
@@ -892,6 +899,9 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
       runtimeEnv.get("SPRING_PROFILES_ACTIVE")?.value === "production" && runtimeEnv.get("CORE_DB_POOL_MAX")?.value === "2" &&
       runtimeEnv.get("FIREBASE_PROJECT_ID")?.value === FIXED.projectId &&
       runtimeEnv.get("FIREBASE_PROJECT_NUMBER")?.value === FIXED.projectNumber &&
+      ["false", "true"].includes(runtimeEnv.get("BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT")?.value) &&
+      ["false", "true"].includes(runtimeEnv.get("BODEUL_SESSION_COMPLETION_ENFORCEMENT")?.value) &&
+      runtimeEnv.get("BODEUL_SESSION_LEGACY_MANAGER_LOCATION_ENABLED")?.value === "false" &&
       runtimeEnv.get("BODEUL_APP_CHECK_MODE")?.value === expectedAppCheckMode && envNamesValid && secretRefsValid && dynamicOutbound;
     checks.push(makeCheck({
       id: "cloud-run.configuration",
@@ -907,17 +917,18 @@ async function auditCloudRun(client, checks, releaseChecks, configuration) {
     }));
     try {
       const policy = await client.get(`${url}:getIamPolicy?options.requestedPolicyVersion=3`);
-      const publiclyInvokable = exactIamPolicy(policy, [{
-        role: "roles/run.invoker",
-        members: ["allUsers"],
-      }]);
+      // 공식 조직의 도메인 제한을 풀지 않고 서비스 수준의 공개 호출을 허용한다.
+      const publiclyInvokable = service.invokerIamDisabled === true
+        ? exactIamPolicy(policy, [])
+        : (service.invokerIamDisabled === undefined || service.invokerIamDisabled === false)
+          && exactIamPolicy(policy, [{role: "roles/run.invoker", members: ["allUsers"]}]);
       releaseChecks.push(makeCheck({
         id: "release.cloud-run-invoker",
         area: "출시 준비",
         status: publiclyInvokable ? STATUS.PASS : STATUS.EXPECTED_BLOCKER,
         message: publiclyInvokable ?
-          "Core API 공개 호출 IAM이 기준과 일치합니다." :
-          "첫 배포 뒤 공개 호출 IAM을 최소 권한 기준으로 구성해야 합니다.",
+          "Core API 공개 호출 설정이 기준과 일치합니다. 업무 요청의 Firebase 인증은 별도 smoke test로 확인합니다." :
+          "첫 배포 뒤 서비스 수준의 공개 호출 설정을 최소 권한 기준으로 구성해야 합니다.",
       }));
     } catch (error) {
       releaseChecks.push(checkFromError("release.cloud-run-invoker", "출시 준비", error));

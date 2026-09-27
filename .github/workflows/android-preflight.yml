@@ -211,6 +211,10 @@ jobs:
         if: steps.scope.outputs.android == 'true'
         run: ./gradlew :app:verifyReleaseAppCheckClasspath --console=plain
 
+      - name: Android 개발·운영 설정 혼합 차단 검사
+        if: steps.scope.outputs.android == 'true'
+        run: node tools/android/check-environment-boundary.mjs
+
       - name: 인프라 감사 도구 단위 테스트
         if: steps.scope.outputs.firebase_tools == 'true'
         run: node --test tools/gcp/test/*.test.mjs

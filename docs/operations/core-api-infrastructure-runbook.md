@@ -369,17 +369,18 @@ gcloud run services add-iam-policy-binding bodeul-core-api-preview `
   --role=roles/run.invoker
 ```
 
-production 서비스도 같은 인증 경계를 사용하므로 서비스가 처음 생성된 뒤 프로젝트 소유자가 한 번만 실행한다.
+production 서비스도 같은 인증 경계를 사용한다. 공식 조직의 도메인 제한에서는 새 `allUsers` binding이 거부되므로 조직 정책을 완화하지 않는다. 첫 비공개 image 배포 뒤 권한 있는 운영자가 해당 서비스의 Invoker IAM 검사만 해제한다. 이는 Cloud Run 서비스 설정이며 Firebase ID token·PostgreSQL 역할 검사와 App Check 설정은 유지한다.
 
 ```powershell
-gcloud run services add-iam-policy-binding bodeul-core-api `
-  --project=<production-project-id> `
+gcloud run services update bodeul-core-api `
+  --project=bodeul-prod-110 `
   --region=asia-northeast1 `
-  --member=allUsers `
-  --role=roles/run.invoker
+  --no-invoker-iam-check
 ```
 
-배포 서비스 계정에는 IAM policy 변경 권한을 주지 않는다. 최초 workflow가 서비스를 만든 뒤 공개 binding 전 smoke test에서 403으로 실패할 수 있으며, 이 경우 위 binding을 적용한 뒤 같은 `master` commit으로 다시 실행한다. custom domain이나 사용자 트래픽을 연결하기 전 단계이므로 이 최초 실패를 production 검증 완료로 기록하지 않는다.
+배포 서비스 계정에는 IAM policy 변경 권한을 주지 않는다. 최초 workflow가 서비스를 만든 뒤 공개 호출 설정 전 smoke test에서 403으로 실패할 수 있다. 먼저 IAM 인증 요청으로 `/health`와 업무 API의 Firebase 무인증 거부를 확인하고, 위 서비스 설정을 적용한 뒤 같은 `master` commit으로 workflow를 다시 실행한다. custom domain이나 사용자 트래픽을 연결하기 전 단계이므로 최초 실패나 비공개 확인만으로 production 검증 완료를 기록하지 않는다.
+
+공개 설정을 되돌릴 때에는 같은 서비스에 `--invoker-iam-check`를 적용한다. 신규 조직 전체의 도메인 제한을 풀거나 배포 계정에 상시 Cloud Run Admin을 추가하는 방식은 사용하지 않는다. [Google Cloud 공개 호출 문서](https://docs.cloud.google.com/run/docs/authenticating/public)의 도메인 제한 대응 기준을 따른다.
 
 배포 workflow는 Cloud Run IAM policy를 변경하지 않는다. 공개 호출을 허용하더라도 `/api/auth/me` 무인증 요청은 Spring에서 401을 반환해야 한다.
 
