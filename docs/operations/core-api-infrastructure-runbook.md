@@ -1,6 +1,6 @@
 # Spring Core API Cloud Run 인프라 런북
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 이 문서는 `core-api/`를 Google Cloud Run에 배포하고 Supabase PostgreSQL, Firebase Auth, Kakao 서버 API를 연결하는 개발 환경 기준을 정한다. 실제 secret 값은 저장소와 공개 GitHub 대화에 남기지 않는다.
 
@@ -17,7 +17,7 @@ Cloud Run은 현재 Spring 애플리케이션을 컨테이너로 유지하고, �
 
 ## 현재 코드와 과거 검증 기록
 
-소스 migration은 V1~V23이다. 아래 run·revision은 당시 증적이며 최신 서비스 상태가 아니다. Preview 오류 재확인 #429와 운영 DB 일시정지(9월 21일)를 별도로 확인한다. [Migration 목록](../architecture/database-migration-catalog.md)과 [관리자 웹 환경](admin-web-environments.md)을 함께 본다.
+소스와 양쪽 DB는 9월 27일 V23·실패 이력 0건으로 대조했다. 운영 Core `bodeul-core-api-00002-2s6` 배포와 health 200·무인증 401, 전용 DB·Kakao Secret 참조를 확인했다. 정상 Firebase 인증·Kakao 응답과 교차 환경 거부는 별도다. 아래 초기 전환 run·revision은 당시 증거이며 최신 결과는 [실행 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다.
 
 - Java 21, Spring Boot 3.5.16, `/health`, `preview` DB profile이 구현돼 있다.
 - Firebase ID token 검증과 PostgreSQL `app_users.role` 인가가 구현돼 있다.
@@ -30,7 +30,7 @@ Cloud Run은 현재 Spring 애플리케이션을 컨테이너로 유지하고, �
 - Kakao Local REST Secret 버전 `1`과 인증된 장소 검색 실호출은 Issue #158 검증 기록에서 확인했다.
 - Android App Check header 전달과 Spring `off/observe/enforce` 검증을 구현했다. preview는 Android 실기기 `valid`를 확인했지만 release Play Integrity와 rollback 검증 전까지 `observe`로 운용한다.
 - 채팅·읽음·위치 Core API와 Supabase private Realtime 전환을 배포했다. 당시 리비전 `bodeul-core-api-preview-00014-wnr`에서 실제 세션, FCM 실기기 알림과 10개 동시 연결을 검증했다.
-- production Google Cloud/Firebase `bodeul-prod-110`과 Supabase `bodeul-prod`를 생성했다. Artifact Registry, WIF, deploy/runtime 서비스 계정과 DB Secret Manager version을 준비했다. 2026-08-26 Supabase project를 재개하고 Flyway V15, 읽기 전용 상태 점검과 migration 전후 격리 복원을 완료했다. Cloud Run 서비스는 Kakao production Secret version을 기다리는 첫 승인 배포 전 상태다.
+- production Google Cloud/Firebase `bodeul-prod-110`과 Supabase `bodeul-db-prod`를 사용한다. 9월 27일 운영 V23 적용·격리 복원과 첫 Core 배포를 완료했다. 기존 Kakao REST 키를 승인에 따라 운영 전용 Secret에 등록했으며 키 자체의 쿼터·폐기 영향은 개발과 공유한다.
 
 실제 revision, image digest, 응답과 로그 검사 결과는 [Issue 156 Cloud Run preview 검증 기록](../reports/issue-156-core-api-cloud-run-preview-2026-07-16.md)에 정리한다.
 
@@ -167,7 +167,7 @@ Cloud Run 환경변수는 `latest` 대신 숫자 version을 참조한다. 회전
 
 같은 날 Kakao Local REST 키를 `bodeul-core-api-preview-kakao-local-rest-api-key` 버전 `1`로 등록하고 런타임 서비스 계정에 accessor 권한만 부여했다. Cloud Run 리비전 `bodeul-core-api-preview-00006-hdk`가 이 버전을 참조한다.
 
-production에서는 개발 secret을 복사하지 않고 다음 ID를 사용한다.
+production DB 자격 증명은 개발과 분리한다. Kakao REST 키만 사용자 승인에 따라 같은 키를 별도 운영 Secret에 등록했다. 다음 ID를 사용한다.
 
 | Secret Manager ID | Cloud Run 환경변수 |
 | --- | --- |
@@ -176,7 +176,7 @@ production에서는 개발 secret을 복사하지 않고 다음 ID를 사용한�
 | `bodeul-core-api-production-db-password` | `CORE_DB_PASSWORD` |
 | `bodeul-core-api-production-kakao-local-rest-api-key` | `KAKAO_LOCAL_REST_API_KEY` |
 
-네 secret 리소스는 생성했다. DB URL·사용자명·비밀번호는 version `1`을 등록했고 Kakao production key는 아직 version이 없다. `core-api/deploy/cloud-run/set-production-secrets.ps1 -ProjectId bodeul-prod-110`으로 version을 추가하며, 이 스크립트는 `bodeul-dev`와 허용 목록 밖 secret을 거부하고 project ID 재입력을 요구한다.
+네 secret 모두 version을 등록했으며 9월 27일 운영 배포는 Kakao Secret version `1`을 사용한다. 회전은 `core-api/deploy/cloud-run/set-production-secrets.ps1 -ProjectId bodeul-prod-110`으로 수행한다. 이 스크립트는 `bodeul-dev`와 허용 목록 밖 secret을 거부하고 project ID 재입력을 요구한다.
 
 ## Google Cloud 최초 설정
 
@@ -207,7 +207,7 @@ gcloud iam workload-identity-pools providers create-oidc bodeul-core-api-preview
   --location=global `
   --issuer-uri="https://token.actions.githubusercontent.com" `
   --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner,attribute.ref=assertion.ref,attribute.environment=assertion.environment,attribute.actor=assertion.actor,attribute.workflow=assertion.workflow" `
-  --attribute-condition="assertion.repository_id == '1209358990' && assertion.repository == 'bodeul110/bodeul-platform' && assertion.ref == 'refs/heads/master' && assertion.environment == 'core-api-preview'"
+  --attribute-condition="assertion.repository_id == '1209358990' && assertion.repository_owner_id == '275679915' && assertion.repository == 'bodeul110/bodeul-platform' && assertion.ref == 'refs/heads/dev' && assertion.environment == 'core-api-preview' && assertion.workflow_ref == 'bodeul110/bodeul-platform/.github/workflows/core-api-preview-deploy.yml@refs/heads/dev' && assertion.event_name in ['push', 'workflow_dispatch']"
 ```
 
 이미 존재하는 리소스의 create 명령은 다시 실행하지 않는다. `describe` 또는 Google Cloud Console에서 현재 상태를 먼저 확인한다.
@@ -216,7 +216,7 @@ gcloud iam workload-identity-pools providers create-oidc bodeul-core-api-preview
 
 ```powershell
 $ProjectNumber = gcloud projects describe $ProjectId --format="value(projectNumber)"
-$WifMember = "principalSet://iam.googleapis.com/projects/$ProjectNumber/locations/global/workloadIdentityPools/github-actions/attribute.environment/core-api-preview"
+$WifMember = "principal://iam.googleapis.com/projects/$ProjectNumber/locations/global/workloadIdentityPools/github-actions/subject/repo:bodeul110@275679915/bodeul-platform@1209358990:environment:core-api-preview"
 
 gcloud projects add-iam-policy-binding $ProjectId `
   --member="serviceAccount:$DeployAccount" `
@@ -236,7 +236,7 @@ gcloud iam service-accounts add-iam-policy-binding $DeployAccount `
   --role="roles/iam.workloadIdentityUser"
 ```
 
-관리자 Firebase Hosting 종료에 따라 기존 `bodeul-repo` provider와 관리자 배포 서비스 계정은 2026-07-17에 삭제했다. 현재 GitHub Actions용 provider는 `bodeul-core-api-preview`만 유지하며 저장소, `master` ref, `core-api-preview` environment를 모두 조건으로 고정한다. 서비스 계정 key JSON은 발급하지 않는다.
+관리자 Firebase Hosting 종료에 따라 기존 `bodeul-repo` provider와 관리자 배포 서비스 계정은 2026-07-17에 삭제했다. 개발 Core의 `bodeul-core-api-preview` provider는 불변 repository/owner ID·정확한 `dev` ref·workflow·Environment·event를 검증한다. 운영 배포·백업·감사 provider는 각 `master` workflow 경계를 유지한다. 9월 27일 실제 GitHub immutable subject에 맞춰 서비스 계정 binding을 복구했고 임시 IAM은 즉시 회수했다. 서비스 계정 key JSON은 발급하지 않는다.
 
 ### Secret 생성과 권한
 
@@ -369,17 +369,18 @@ gcloud run services add-iam-policy-binding bodeul-core-api-preview `
   --role=roles/run.invoker
 ```
 
-production 서비스도 같은 인증 경계를 사용하므로 서비스가 처음 생성된 뒤 프로젝트 소유자가 한 번만 실행한다.
+production 서비스도 같은 인증 경계를 사용한다. 공식 조직의 도메인 제한에서는 새 `allUsers` binding이 거부되므로 조직 정책을 완화하지 않는다. 첫 비공개 image 배포 뒤 권한 있는 운영자가 해당 서비스의 Invoker IAM 검사만 해제한다. 이는 Cloud Run 서비스 설정이며 Firebase ID token·PostgreSQL 역할 검사와 App Check 설정은 유지한다.
 
 ```powershell
-gcloud run services add-iam-policy-binding bodeul-core-api `
-  --project=<production-project-id> `
+gcloud run services update bodeul-core-api `
+  --project=bodeul-prod-110 `
   --region=asia-northeast1 `
-  --member=allUsers `
-  --role=roles/run.invoker
+  --no-invoker-iam-check
 ```
 
-배포 서비스 계정에는 IAM policy 변경 권한을 주지 않는다. 최초 workflow가 서비스를 만든 뒤 공개 binding 전 smoke test에서 403으로 실패할 수 있으며, 이 경우 위 binding을 적용한 뒤 같은 `master` commit으로 다시 실행한다. custom domain이나 사용자 트래픽을 연결하기 전 단계이므로 이 최초 실패를 production 검증 완료로 기록하지 않는다.
+배포 서비스 계정에는 IAM policy 변경 권한을 주지 않는다. 최초 workflow가 서비스를 만든 뒤 공개 호출 설정 전 smoke test에서 403으로 실패할 수 있다. 먼저 IAM 인증 요청으로 `/health`와 업무 API의 Firebase 무인증 거부를 확인하고, 위 서비스 설정을 적용한 뒤 같은 `master` commit으로 workflow를 다시 실행한다. custom domain이나 사용자 트래픽을 연결하기 전 단계이므로 최초 실패나 비공개 확인만으로 production 검증 완료를 기록하지 않는다.
+
+공개 설정을 되돌릴 때에는 같은 서비스에 `--invoker-iam-check`를 적용한다. 신규 조직 전체의 도메인 제한을 풀거나 배포 계정에 상시 Cloud Run Admin을 추가하는 방식은 사용하지 않는다. [Google Cloud 공개 호출 문서](https://docs.cloud.google.com/run/docs/authenticating/public)의 도메인 제한 대응 기준을 따른다.
 
 배포 workflow는 Cloud Run IAM policy를 변경하지 않는다. 공개 호출을 허용하더라도 `/api/auth/me` 무인증 요청은 Spring에서 401을 반환해야 한다.
 

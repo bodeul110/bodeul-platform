@@ -1,13 +1,13 @@
 # Firebase 설정
 
-기준일: 2026-09-21 (설정 안내 대조, 과거 스키마 예시 포함)
+기준일: 2026-09-27 (개발·운영 설정 분리, 과거 스키마 예시 포함)
 
 현재 업무 원본은 PostgreSQL이다. 아래 Firestore 예약·세션·리포트 예시와 예약 알림 Functions 흐름은 legacy 비교·운영 도구 설명이며 신규 Core 예약 경로가 아니다. 현재 권한은 [Rules 경계](../../security/firebase-rules-validation.md), 업무 계약은 [예약 Core API](../../architecture/appointment-core-api.md), DB 버전은 [migration 목록](../../architecture/database-migration-catalog.md)을 우선한다. 개발·운영 리소스에 배포·seed·reset을 실행하는 것은 별도 승인 작업이다.
 
 ## 현재 프로젝트 상태
 
 - Android 패키지명: `com.example.bodeul`
-- Firebase 설정 파일 위치: `app/google-services.json`
+- Firebase 설정 파일: 개발은 `app/src/debug/google-services.json`, 운영은 `app/src/release/google-services.json`. 기존 `app/google-services.json`은 개발용 호환 경로다.
 - 인증: Firebase Authentication
 - 업무 데이터 저장소: Supabase PostgreSQL
 - Firebase 데이터 범위: 인증·FCM 토큰, Storage, 전환 기간 legacy 읽기 자료
@@ -25,14 +25,16 @@ naverClientId=발급받은_클라이언트_ID
 naverClientName=보들
 kakaoNativeAppKey=발급받은_네이티브_앱_키
 # 다른 개발 서버가 필요할 때만 Debug 기본 주소를 덮어쓴다.
-bodeulCoreApiBaseUrl=https://다른_개발_Core_API_주소
-bodeulSupabaseUrl=https://개발_Supabase_프로젝트.supabase.co
-bodeulSupabasePublishableKey=개발_Supabase_publishable_key
+bodeulCoreApiBaseUrl=http://10.0.2.2:8080
+bodeulSupabaseDebugUrl=https://parpdzttloacinyvhwmx.supabase.co
+bodeulSupabaseDebugPublishableKey=개발_Supabase_publishable_key
 ```
 
 - Debug 빌드는 별도 설정이 없어도 `https://bodeul-core-api-preview-cyvvxy3kia-an.a.run.app`을 사용한다. 이 공개 서비스 주소에는 비밀값이 없다.
-- `bodeulCoreApiBaseUrl`을 `local.properties` 또는 Gradle `-P`로 지정하면 Debug 기본 주소를 덮어쓴다.
-- Release 빌드는 Debug 기본 주소를 사용하지 않는다. 운영 Core API 주소를 `bodeulCoreApiBaseUrl`로 명시해야 한다.
+- `bodeulCoreApiBaseUrl`은 Debug 전용 호환 속성이다. 개발 Cloud Run 또는 `localhost`·`127.0.0.1`·에뮬레이터 `10.0.2.2`만 허용하며 운영 주소를 넣으면 빌드를 중단한다.
+- Release는 공통/Debug 값을 상속하지 않는다. `bodeulCoreApiReleaseBaseUrl=https://bodeul-core-api-649312328770.asia-northeast1.run.app`, `bodeulSupabaseReleaseUrl=https://aoijbzgozbopsxzrasbb.supabase.co`, `bodeulSupabaseReleasePublishableKey`를 별도로 지정한다. 이 URL의 설정 가능 여부와 실제 운영 서비스 배포 완료는 구분한다.
+- Release 설정은 각각 `BODEUL_CORE_API_RELEASE_BASE_URL`, `BODEUL_SUPABASE_RELEASE_URL`, `BODEUL_SUPABASE_RELEASE_PUBLISHABLE_KEY` 환경변수로도 주입할 수 있다.
+- 빌드 전 Firebase 프로젝트 번호·Storage와 Core API·Realtime 환경을 검사한다. 운영은 별도 Firebase 파일과 Realtime 설정을 필수로 요구하며, Firebase 파일이 없는 Debug/CI의 Mock 컴파일은 유지한다. 서버용 Supabase secret/service-role key는 앱에 넣지 않는다.
 - 네이버 클라이언트 시크릿은 Android 앱에 포함하지 않는다.
 - 현재 앱의 네이버 로그인 버튼은 `naver_login_enabled=false`로 숨겨져 있으며, 서버 중계형 OAuth 흐름이 확정될 때 다시 연다.
 - `kakaoNativeAppKey`에는 Kakao Developers에서 `com.example.bodeul` 패키지명과 현재 서명 키 해시를 연결한 Android 플랫폼 전용 네이티브 앱 키를 사용한다. 추적되는 `gradle.properties`에는 실제 키를 넣지 않는다.
@@ -44,7 +46,7 @@ bodeulSupabasePublishableKey=개발_Supabase_publishable_key
 1. Firebase 프로젝트 생성
 2. Android 앱 등록
 3. `com.example.bodeul` 패키지명으로 SHA-1, SHA-256 등록
-4. `app/google-services.json` 배치
+4. 개발·운영 프로젝트의 설정을 각각 `app/src/debug/google-services.json`, `app/src/release/google-services.json`에 배치
 5. Authentication의 `Email/Password` 활성화
 6. Firestore 생성
 7. `firestore.rules`, `firestore.indexes.json` 배포
@@ -535,7 +537,7 @@ npm run seed:manager-docs:dry-run
 - Debug 빌드는 저장소에 기록된 개발 Core API Preview 주소를 기본으로 사용한다. 다른 서버를 사용할 때만 `local.properties`에서 덮어쓴다.
 
 ```properties
-bodeulCoreApiBaseUrl=https://다른_개발_Core_API_주소
+bodeulCoreApiBaseUrl=http://10.0.2.2:8080
 ```
 
 - Android는 Firebase ID token과 발급된 App Check token으로 `GET /api/places/search`를 호출하고, Core API가 Kakao Local REST API key를 사용한다.

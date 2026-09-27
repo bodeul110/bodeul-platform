@@ -15,6 +15,7 @@
 .cxx
 local.properties
 app/google-services.json
+app/src/**/google-services.json
 # Android 릴리스 서명 자료는 저장소 밖에서 관리한다.
 *.jks
 *.keystore

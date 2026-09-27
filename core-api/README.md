@@ -38,6 +38,8 @@
 
 Android, Firebase 도구, 공통 데이터 계약과 함께 변경 내용을 검토하기 위해 메인 저장소 안에서 관리한다. 배포는 저장소 구조와 별개로 Cloud Run 서비스와 `core-api-preview` 또는 `core-api-production` GitHub Environment를 사용한다.
 
+개발 배포는 `dev`, 운영 배포는 `master`로 분리한다. 개발은 CI 통과 후 push 배포와 수동 배포를 지원하고, 운영은 기존 SHA·서비스명 확인과 승인을 유지한다. DB migration은 자동 배포에 포함하지 않는다. [환경 분리 기준과 실행 기록](../docs/operations/dev-production-branch-transition-plan.md)을 함께 확인한다.
+
 ## 로컬 검증
 
 ```powershell
@@ -107,7 +109,7 @@ Cloud Run에서는 전용 runtime 서비스 계정의 Application Default Creden
 $env:KAKAO_LOCAL_REST_API_KEY = "<Kakao REST API key>"
 ```
 
-Cloud Run preview에서는 `bodeul-core-api-preview-kakao-local-rest-api-key`, production에서는 `bodeul-core-api-production-kakao-local-rest-api-key` Secret Manager secret을 사용한다. 키 값과 Kakao 원본 오류 본문은 응답이나 로그에 남기지 않는다. 자세한 계약과 확장 조건은 [Kakao Local Core API 경계](../docs/architecture/kakao-local-core-api.md)를 따른다.
+Cloud Run preview에서는 `bodeul-core-api-preview-kakao-local-rest-api-key`, production에서는 `bodeul-core-api-production-kakao-local-rest-api-key` Secret Manager secret을 사용한다. 현재 키 자체는 사용자 승인에 따라 공유하므로 쿼터와 폐기 영향도 공유한다. DB 자격 증명은 환경별로 분리한다. 키 값과 Kakao 원본 오류 본문은 응답이나 로그에 남기지 않는다. 자세한 계약과 확장 조건은 [Kakao Local Core API 경계](../docs/architecture/kakao-local-core-api.md)를 따른다.
 
 ## 예약 API
 
@@ -140,7 +142,7 @@ V19는 예약에 `BD-` + 영문 대문자·숫자 6자리의 `publicCode`를 추
 - Cloud Run은 IPv4가 가능한 Supabase Supavisor session mode의 5432 포트를 우선 사용한다.
 - Vercel 관리자 서버는 Supavisor transaction mode의 6543 포트를 사용한다.
 - migration 계정과 runtime 계정을 분리한다.
-- application pool은 최대 5개 연결로 시작한다.
+- application pool의 로컬 기본값은 최대 5개이며 운영 Cloud Run은 인스턴스당 2개·최대 인스턴스 2개로 제한한다. 실제 배포 설정은 인프라 런북을 따른다.
 - Firebase ID token 검증 후 PostgreSQL role과 리소스 소유권을 확인한다.
 - Kakao Local REST와 알림톡처럼 서버 key가 필요한 연동은 이 API 뒤에 둔다.
 
@@ -181,7 +183,7 @@ V15 이후 migration workflow는 Flyway 적용 뒤 `verifyAccountDeletionInvento
 
 채팅·읽음·legacy 위치 endpoint, private Broadcast와 Android 저장소 전환 코드는 이미 반영됐다. 다음 작업은 다음과 같이 구분한다.
 
-1. [#429](https://github.com/bodeul110/bodeul-platform/issues/429): Preview 500/503 관찰의 현재 상태와 서버·DB 연결 확인. 과거 성공 기록으로 복구를 단정하지 않는다.
+1. 개발·운영 분리 기반과 V23 적용은 [9월 27일 기록](../docs/reports/dev-production-separation-2026-09-27.md)에서 확인한다. #429는 종료됐으며 정상 운영 token·환경 교차 거부·Kakao·Realtime 실제 구독 검증은 남아 있다.
 2. [#419](https://github.com/bodeul110/bodeul-platform/issues/419): 보호자 예약 생성. 현재 정보공유 동의만으로 예약 쓰기를 허용하지 않는다.
 3. [#420](https://github.com/bodeul110/bodeul-platform/issues/420): 비식별 테스트 데이터로 Naver Cloud STT 내부 연동. OCR·AI 리포트 자동 생성은 제외한다.
 4. [#222](https://github.com/bodeul110/bodeul-platform/issues/222), [#348](https://github.com/bodeul110/bodeul-platform/issues/348): production 파기 검증, 탈퇴·법정 보존 분리. 실제 apply는 별도 승인 경계다.

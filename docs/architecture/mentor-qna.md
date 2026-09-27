@@ -1,6 +1,6 @@
 # 멘토 Q&A 준비
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 초기에는 빠른 구현을 우선했기 때문에 모든 선택 근거가 사전에 정리되지는 않았다.
 현재는 구현된 구조를 기준으로 선택 이유, 대안, 단점, 전환 조건을 정리하고 있다.
@@ -23,7 +23,7 @@
 
 Firestore 백업을 PostgreSQL로 import하고 row count, 외래키, 주요 필드와 역할별 권한 비교가 통과한 도메인부터 source of truth를 옮긴다. 개발 환경은 이 절차로 예약·매칭·동행·리포트·후속 처리·채팅·읽음·위치를 전환했고, production은 별도 백업·검증·전환 승인을 거쳐 같은 절차를 반복한다. 연말은 초기 목표이며 실제 운영 전환일은 확정하지 않았다.
 
-2026-09-21 코드에는 V1~V23 migration이 있다. 개발 결제 검증은 V23까지 진행된 기록이 있지만, 운영 DB는 9월 21일 일시정지 상태로 확인되어 재개하지 않았다. 소스에 migration이 있다는 사실과 환경별 적용 완료는 다르다. 이전 실기기·Realtime 검증 기록과 현재 Preview API 오류 재확인 이슈 #429도 구분한다. [Migration 목록](database-migration-catalog.md)과 [운영·개발 환경](../operations/admin-web-environments.md)을 기준으로 설명한다.
+9월 27일 개발·운영 DB는 모두 V23이며 운영 logical backup·격리 복원·외부 보관을 검증했다. 두 브랜치와 서버·DB·인증 설정을 분리하고 운영 Core 배포 및 최초 개인 관리자 MFA 로그인까지 확인했다. 정상 사용자 업무, 실제 Realtime 소켓, 교차 환경 token 거부와 출시 전 보안 검증은 아직 남아 있다. [Migration 목록](database-migration-catalog.md)과 [환경 분리 실행 기록](../reports/dev-production-separation-2026-09-27.md)을 기준으로 완료 범위를 설명한다.
 
 ### 멘토 피드백 이후에는 어떻게 전환하나?
 
@@ -87,7 +87,7 @@ Next.js 서버가 Firebase ID token, PostgreSQL `app_users.ADMIN`과 활성 `SUP
 
 ### 백업/복원은 실제로 테스트했나?
 
-Firestore는 emulator에서 백업 apply와 복원 후 diff를 검증했고, production PostgreSQL은 격리된 PostgreSQL 17에 logical dump를 복원해 schema, row 수, owner, ACL, RLS, 인덱스와 제약 일치를 확인했다. 실제 사용자 데이터 전에는 Supabase Pro 백업을 켜고 분기별 복원을 반복한다.
+Firestore는 emulator에서 백업 apply와 복원 후 diff를 검증했다. 9월 27일 production V23 logical dump를 격리 PostgreSQL 17에 복원하고 manifest·외부 보관 checksum을 대조했다. Supabase 조직 Pro 전환은 완료됐으며 제공자 백업의 실제 복구 지점·보존과 Storage 파일 복원은 별도로 확인한다. 운영 DB 자체에 복원한 결과는 아니다.
 
 ### API Key는 어디에 두나?
 

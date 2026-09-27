@@ -1,6 +1,6 @@
 # Kakao Local Core API 경계
 
-기준일: 2026-08-26
+기준일: 2026-09-27
 
 ## 작업 목적
 
@@ -89,6 +89,17 @@ X-Firebase-AppCheck: <App Check token>
 현재 MVP 규모에서는 Cloud Run 1개 preview 인스턴스와 짧은 서버 캐시만으로 키 비노출, 중복 호출 감소, 사용자별 제한을 함께 검증할 수 있다. 별도 Redis나 API Gateway를 먼저 도입하면 운영 대상만 늘어나므로 실제 트래픽이 확인되기 전에는 추가하지 않는다.
 
 ## 호출 허용 IP와 outbound 결정
+
+### 개발·운영 키 관리
+
+2026-09-27 사용자 승인에 따라 현재 MVP의 개발·운영 Core API는 기존 Kakao Local REST 키를 함께 사용한다. 새 카카오 앱이나 키를 만드는 대신 각 Google Cloud 프로젝트의 preview/production Secret Manager 항목으로 나누어 보관하고 런타임은 자기 프로젝트의 숫자 version만 참조한다. 등록·배포 완료 여부는 [환경 분리 실행 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다.
+
+- 작업 목적: 서버·DB의 개발/운영 분리를 유지하면서 장소 검색 연결을 준비한다.
+- 대안: 별도 카카오 앱 또는 환경별 키로 회전 영향 범위를 분리할 수 있으나 관리·설정 대상이 늘어난다.
+- 선택 이유: 현재 MVP에서는 기존 앱을 유지하고 서버 인증·캐시·호출 제한과 환경별 secret 접근 권한을 사용하는 편이 운영 부담이 작다.
+- 리스크: 카카오 쿼터는 앱 기준으로 합산된다. 동일 키 유출·폐기는 양쪽 환경에 영향을 주므로 교체 시 각 secret version 등록과 재배포를 함께 관리한다. 개발 호출량이나 키 접근 인원이 늘면 분리를 다시 검토한다.
+
+### 네트워크 경계
 
 - preview와 초기 production Cloud Run은 기본 동적 outbound IP를 사용한다.
 - Kakao REST API 키의 호출 허용 IP는 비워 두며, 현재 MVP에서는 VPC와 Cloud NAT를 만들지 않는다.
