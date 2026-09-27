@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -97,10 +98,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private boolean exitConfirmationShowing;
     private ManagerGuidePrimaryAction currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
     private String currentStepCode = "";
+    private String lastRenderedSessionId = "";
+    private String lastRenderedStepCode = "";
+    private boolean hasRenderedGuideScreen;
 
     private View managerGuideStatePanel;
     private View managerGuideContentContainer;
     private View managerGuideBottomAction;
+    private ScrollView managerGuideScroll;
     private TextInputEditText inputGuideLocationSummary;
     private TextInputEditText inputGuardianUpdate;
     private TextInputEditText inputGuidePhotoNote;
@@ -197,6 +202,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         managerGuideStatePanel = findViewById(R.id.managerGuideStatePanel);
         managerGuideContentContainer = findViewById(R.id.managerGuideContentContainer);
         managerGuideBottomAction = findViewById(R.id.managerGuideBottomAction);
+        managerGuideScroll = (ScrollView) findViewById(R.id.guideScrollContent).getParent();
         configureBottomActionInsets();
         inputGuideLocationSummary = findViewById(R.id.inputGuideLocationSummary);
         inputGuardianUpdate = findViewById(R.id.inputGuardianUpdate);
@@ -510,6 +516,14 @@ public class ManagerGuideActivity extends AppCompatActivity {
         } else {
             StatePanelHelper.hide(managerGuideStatePanel);
             if (state.screenModel != null) {
+                String nextStepCode = state.screenModel.getCurrentStepCode();
+                String sessionId = state.dashboard == null
+                        || state.dashboard.getSession() == null
+                        ? ""
+                        : state.dashboard.getSession().getId();
+                boolean guideScreenChanged = hasRenderedGuideScreen
+                        && (!TextUtils.equals(lastRenderedSessionId, sessionId)
+                        || !TextUtils.equals(lastRenderedStepCode, nextStepCode));
                 managerGuideContentContainer.setVisibility(View.VISIBLE);
                 managerGuideBottomAction.setVisibility(View.VISIBLE);
                 currentDashboard = state.dashboard;
@@ -525,10 +539,6 @@ public class ManagerGuideActivity extends AppCompatActivity {
                             viewModel.getVitalsDraft(state.dashboard.getSession().getId()));
                     managerGuidePrescriptionBinder.bind(
                             state.screenModel, state.dashboard, mutationInFlight);
-                    String sessionId = state.dashboard == null
-                            || state.dashboard.getSession() == null
-                            ? ""
-                            : state.dashboard.getSession().getId();
                     managerGuideConsultationBinder.bind(
                             state.screenModel,
                             state.dashboard,
@@ -539,7 +549,13 @@ public class ManagerGuideActivity extends AppCompatActivity {
                     bindingPreConsultationConfirmation = false;
                 }
                 currentPrimaryAction = state.screenModel.getPrimaryAction();
-                currentStepCode = state.screenModel.getCurrentStepCode();
+                currentStepCode = nextStepCode;
+                lastRenderedSessionId = sessionId;
+                lastRenderedStepCode = nextStepCode;
+                hasRenderedGuideScreen = true;
+                if (guideScreenChanged) {
+                    managerGuideScroll.post(() -> managerGuideScroll.scrollTo(0, 0));
+                }
                 clearCurrentLocationMarkerOutsideMeetingStep();
                 bindSessionArtifactSection(state.screenModel.isInputsEnabled());
                 if (mutationInFlight) {

@@ -13,22 +13,29 @@ import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.os.Parcelable;
 import android.util.SparseArray;
 import android.view.View;
+import android.widget.ScrollView;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
 
 import com.example.bodeul.R;
 import com.google.android.material.textfield.TextInputEditText;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** 서버 권한이나 실제 음성 저장 없이 진료 보조 전용 화면의 로컬 미리보기를 검증한다. */
 @RunWith(AndroidJUnit4.class)
@@ -76,11 +83,18 @@ public class ManagerGuideConsultationPreviewTest {
     }
 
     @Test
-    public void unsavedBackDiscard_finishesPreviewActivity() {
+    public void unsavedBackDiscard_finishesPreviewActivity() throws InterruptedException {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        CountDownLatch destroyed = new CountDownLatch(1);
 
         try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
                 ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUPPORT"))) {
+            scenario.onActivity(activity -> activity.getLifecycle().addObserver(
+                    (LifecycleEventObserver) (source, event) -> {
+                        if (event == Lifecycle.Event.ON_DESTROY && activity.isFinishing()) {
+                            destroyed.countDown();
+                        }
+                    }));
             onView(withId(R.id.inputGuideConsultationGuardian))
                     .perform(scrollTo(), replaceText("저장하지 않고 버릴 입력"));
             closeSoftKeyboard();
@@ -89,9 +103,9 @@ public class ManagerGuideConsultationPreviewTest {
             onView(withText(R.string.guide_consultation_exit_title))
                     .check(matches(isDisplayed()));
             onView(withText(R.string.guide_consultation_exit_discard)).perform(click());
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
 
-            assertEquals(Lifecycle.State.DESTROYED, scenario.getState());
+            assertTrue("미리보기 화면이 종료되지 않았습니다.",
+                    destroyed.await(5, TimeUnit.SECONDS));
         }
     }
 
@@ -135,17 +149,27 @@ public class ManagerGuideConsultationPreviewTest {
             onView(withId(R.id.inputGuideConsultationGuardian))
                     .check(matches(withText("보호자 공유 진료 진행")));
 
-            onView(withId(R.id.buttonGuideConsultationSaveGuardian))
-                    .perform(scrollTo(), click());
+            onView(withId(R.id.buttonGuideConsultationSaveGuardian)).perform(scrollTo());
+            AtomicInteger sameStepScrollY = new AtomicInteger();
+            scenario.onActivity(activity -> sameStepScrollY.set(guideScrollY(activity)));
+
+            onView(withId(R.id.buttonGuideConsultationSaveGuardian)).perform(click());
+            scenario.onActivity(activity -> assertEquals(
+                    sameStepScrollY.get(), guideScrollY(activity)));
 
             onView(withId(R.id.buttonGuideConsultationSaveFieldNote))
                     .perform(scrollTo(), click());
 
+            AtomicInteger previousStepScrollY = new AtomicInteger();
+            scenario.onActivity(activity -> previousStepScrollY.set(guideScrollY(activity)));
+            assertTrue("단계 전환 전 스크롤 검증 위치가 필요합니다.",
+                    previousStepScrollY.get() > 0);
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
+            scenario.onActivity(activity -> assertEquals(0, guideScrollY(activity)));
             onView(withId(R.id.guideDefaultToolbar)).check(matches(isDisplayed()));
             onView(withId(R.id.textGuideTitle))
-                    .check(matches(withText("Step 7. 진료 요약")));
+                    .check(matches(withText("Step 07. 진료 요약")));
             onView(withId(R.id.managerGuideConsultationContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -164,5 +188,10 @@ public class ManagerGuideConsultationPreviewTest {
 
     private static String valueOf(TextInputEditText input) {
         return input.getText() == null ? "" : input.getText().toString();
+    }
+
+    private static int guideScrollY(ManagerGuidePreviewActivity activity) {
+        View content = activity.findViewById(R.id.guideScrollContent);
+        return ((ScrollView) content.getParent()).getScrollY();
     }
 }
