@@ -27,11 +27,15 @@
 | 관리자 웹 개발 배포 | `a1801e9`의 Vercel Preview가 `READY`, Functions 리전 `hnd1`. [dev 고정 주소](https://bodeul-admin-web-git-dev-bodeul110.vercel.app) 연결 확인. Production으로 승격하지 않음 |
 | 개발 Realtime | 기존 `006_companion_completion_realtime_authorization.sql`의 동행 종료 권한 제한 적용. 개발 Firebase 허용 목록과 V18 이상 스키마를 확인한 뒤 함수만 변경. 업무 데이터 쓰기 없음 |
 | 개발 Realtime 검증 | 허용 Firebase는 `bodeul-dev` 한 개. 종료 조건과 보호자 직접 접근 제외를 read-back 확인. 잘못된 JWT·운영 프로젝트·다른 issuer 거부. helper는 authenticated만 실행 가능하고 업무 schema·허용 목록 직접 읽기는 계속 차단 |
-| 운영 배포 사전 점검 | `core-api-production`의 GCP 리전·프로젝트·배포/실행 계정·WIF·DB Secret version 확인. Kakao 등록 후 `KAKAO_LOCAL_REST_API_KEY_SECRET_VERSION=1` 추가 및 재조회. 운영 Cloud Run 서비스는 아직 미생성 |
+| 운영 배포 사전 점검 | `core-api-production`의 GCP 리전·프로젝트·배포/실행 계정·WIF·DB Secret version 확인. Kakao 등록 후 `KAKAO_LOCAL_REST_API_KEY_SECRET_VERSION=1` 추가 및 재조회. 필수 Secret 4개 모두 숫자 version 1 사용 |
 | Kakao 키 등록 | 사용자 승인에 따라 개발 서비스가 참조하는 REST 키의 version 1을 운영 전용 Secret에 메모리로만 전달. 기존 등록 스크립트의 프로젝트·허용 목록 검사를 거쳐 운영 version 1 `ENABLED` 확인. 새 키 발급·키 값 출력·파일 저장 없음 |
 | Kakao 임시 권한 회수 | 공식 관리자의 읽기 권한을 개발 Kakao Secret version 1과 최대 10분으로 제한. 등록 후 즉시 회수하고 작업 전후 프로젝트 IAM binding 동일 확인. GitHub에는 비밀값이 아닌 숫자 version만 등록 |
-| 최초 공개 호출 절차 | 공식 조직의 도메인 제한은 유지하고 서비스 단위 Invoker IAM 검사 해제 방식을 문서화. `run.managed.requireInvokerIam`의 유효 정책은 강제 상태가 아님을 조회. 실제 서비스 설정 변경은 아직 실행하지 않음 |
-| 운영 감사 도구 보완 | 배포 workflow의 세션 플래그와 서비스 단위 공개 설정을 감사 계약에 반영. 환경변수 누락/중복/추가 및 타 프로젝트 Secret 참조 거부 포함 단위 테스트 31건 통과. 원격 운영 점검 완료와는 구분 |
+| 최초 운영 Core API 배포 | [#457](https://github.com/bodeul110/bodeul-platform/pull/457)의 dev → master merge commit `493cacc056d5359d4b20bc1528f47082b6bb13b4`에서 기존 수동 workflow·Environment 승인을 거쳐 배포. [36312471495](https://github.com/bodeul110/bodeul-platform/actions/runs/36312471495)는 서비스 생성까지 성공했지만 초기 비공개 설정 때문에 무인증 smoke가 403으로 실패 |
+| 최초 공개 호출 설정 | 먼저 IAM 인증 헤더를 별도로 전달해 비공개 서비스의 `/health` 200 `UP`과 업무 API의 Firebase 무인증 401을 확인. 이후 해당 서비스만 Invoker IAM 검사를 해제. 조직 도메인 제한·기존 서비스 IAM·배포 계정 역할은 유지하고 `allUsers` binding이나 상시 권한을 추가하지 않음 |
+| 운영 Core API 재배포 | 같은 master SHA로 [36312927138](https://github.com/bodeul110/bodeul-platform/actions/runs/36312927138) 성공. 정상 revision `bodeul-core-api-00002-2s6`, 최신 revision에 트래픽 100%. 앱 배포에 DB migration을 포함하지 않음 |
+| 운영 Core API HTTP 검증 | `https://bodeul-core-api-s4vqtcl6ka-an.a.run.app`의 `/health` 200 `UP`, 무인증 `/api/auth/me`·`/api/places/search` 401 `missing_authorization`. 실제 Kakao 검색 성공이나 정상 Firebase 로그인까지 검증한 것으로 보지 않음 |
+| 운영 감사 도구 보완 | 배포 workflow의 세션 플래그·공개 설정·ProtoJSON의 false 기본값 생략을 감사 계약에 반영. 미완료 revision, 환경변수 누락/중복/추가, 타 프로젝트 Secret 참조 거부 포함 단위 테스트 33건 통과 |
+| 운영 Core API 설정 재조회 | Cloud Run v2와 Secret version 메타데이터를 읽어 서비스 준비 상태·운영 설정·공개 호출 3개 검사 모두 PASS. 실제 서버 생성에 맞춰 `cloudRun=present`로 기준 변경. 전체 인프라 감사의 GitHub 실행과는 구분 |
 
 ## 운영 적용 근거
 
@@ -52,10 +56,20 @@
 
 Realtime 검사에는 SQL 세션의 claims를 사용했다. 실제 서명된 Firebase 토큰의 교차 환경 검증, 정상 참여자의 소켓 구독 및 메시지 수신은 별도 실연결 검증 범위다. 실제 환자 데이터나 테스트 예약은 생성하지 않았다.
 
+### 최초 서버 연결 판단
+
+- 작업 목적: 운영 전용 DB와 인증 설정으로 Core API를 기동하고 요청의 서버 인증 경계를 확인한다.
+- 선택한 방식: 검증된 master SHA를 수동 workflow로 배포한다. 최초 서비스는 IAM 인증으로 먼저 점검하고, 조직 정책을 유지한 채 서비스 단위 공개 호출만 활성화한다.
+- 대안: 조직의 도메인 제한 해제나 배포 계정의 상시 Run 관리자 권한 추가는 필요하지 않아 제외했다.
+- 선택 이유: 현재 MVP 규모에서는 기존 Spring Firebase 인증을 유지하면서 최초 공개 설정만 분리하는 편이 권한 범위와 운영 부담이 작다.
+- 리스크: 공개 health와 무인증 거부는 정상 사용자 로그인·권한별 업무·Kakao 응답 검증을 대체하지 않는다. Kakao 키는 환경별 Secret에 보관하되 쿼터와 폐기 영향은 공유한다.
+
+Cloud Run API의 `reconciling`은 boolean이고 ProtoJSON은 false 기본값을 생략할 수 있다. 감사 도구는 생략과 명시적 false만 허용하면서 성공 상태, 최신 revision 일치, 유효한 generation 일치를 계속 요구한다. [Cloud Run API](https://docs.cloud.google.com/run/docs/reference/rest/v2/projects.locations.services), [ProtoJSON 기본값](https://protobuf.dev/programming-guides/json/#presence-and-default-values).
+
 ## 남은 범위
 
 - 운영 관리자 DB 로그인과 Production `ADMIN_DATABASE_URL`을 준비한다. 현재 관리자 DB role은 `NOLOGIN`, 해당 Vercel 환경변수는 미등록이다.
-- 운영 Core API의 필수 Secret version 4개가 준비됐다. 검증된 `master` commit의 수동 workflow로 첫 배포하고 비공개 상태의 DB 연결·Firebase 인증 거부를 확인한 뒤 공개 호출 설정과 전체 smoke test를 마친다. 공유 쿼터와 키 폐기 영향은 [키 관리 결정](../architecture/kakao-local-core-api.md#개발운영-키-관리)을 따른다.
+- 운영 Core API의 실제 서명된 Firebase 토큰, 개발 토큰 거부 및 인증 후 Kakao 검색을 검증한다. 공유 쿼터와 키 폐기 영향은 [키 관리 결정](../architecture/kakao-local-core-api.md#개발운영-키-관리)을 따른다.
 - 웹 변경의 `dev → master` 출시와 실제 관리자 인증·DB 업무 연결, Android Release 설정 및 환경 간 정상 토큰 거부를 검증한다. 웹 Preview의 일반 HTTP 접근은 Vercel 로그인으로 전환되므로, 이를 앱 API의 200 성공으로 계산하지 않았다.
 
-개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정까지 반영했다. 운영 Core API 배포와 관리자 웹의 운영 DB 업무 연결은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
+개발·운영의 브랜치·배포 경계, 앱/웹 연결 검사, 자동화 인증 복구, 양쪽 DB V23 및 Realtime 인가 설정과 운영 Core API 배포·HTTP 기본 검증까지 반영했다. 관리자 웹의 운영 DB 업무 연결과 정상 로그인 후 환경 간 경계 검증은 아직 완료하지 않았다. 기존 로컬 변경과 팀원 기능 PR은 건드리지 않았으며 운영 DB 복원이나 개발 데이터 복사는 하지 않았다. 실기기 검증은 요청에 따라 제외한다.
