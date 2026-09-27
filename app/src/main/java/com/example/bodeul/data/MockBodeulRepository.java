@@ -2104,7 +2104,7 @@ public class MockBodeulRepository implements BodeulRepository {
                 "request-1",
                 "patient-1",
                 "guardian-1",
-                "서울내과병원",
+                "서울대학교병원",
                 "신경과",
                 "2026-04-15 10:30",
                 "본관 1층 안내 데스크",
@@ -2128,26 +2128,26 @@ public class MockBodeulRepository implements BodeulRepository {
                 2,
                 SessionStatus.MEETING,
                 "환자분과 만나 접수를 진행하고 있습니다.",
-                "서울내과병원 본관 1층 안내 데스크 근처입니다.",
+                "서울대학교병원 본관 1층 안내 데스크 근처입니다.",
                 "접수 번호표와 진료 안내를 확인했습니다.",
                 "복용 중인 약이 있습니다.",
                 "",
                 false,
-                37.56650,
-                126.97800,
+                37.579617,
+                126.999016,
                 1760503200000L,
                 false,
                 0L,
                 Arrays.asList(
                         new CompanionLocationHistoryEntry(
-                                37.56591,
-                                126.97795,
-                                "서울내과병원 앞에 도착했습니다.",
+                                37.579250,
+                                126.998750,
+                                "서울대학교병원 앞에 도착했습니다.",
                                 1760502600000L
                         ),
                         new CompanionLocationHistoryEntry(
-                                37.56650,
-                                126.97800,
+                                37.579617,
+                                126.999016,
                                 "본관 1층 안내 데스크로 이동했습니다.",
                                 1760503200000L
                         )
@@ -2163,7 +2163,7 @@ public class MockBodeulRepository implements BodeulRepository {
     private void seedHospitalGuides() {
         hospitalGuides.add(new HospitalGuide(
                 "guide-1",
-                "서울내과병원",
+                "서울대학교병원",
                 "신경과",
                 Arrays.asList(
                         new GuideStep(1, "환자 접촉", "환자분 도착 여부를 확인하고 보호자에게 출발 상황을 공유합니다."),

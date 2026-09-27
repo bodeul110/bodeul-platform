@@ -289,6 +289,27 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public void saveConsultationSummaryNote(
+            String managerUserId,
+            String expectedSessionId,
+            String expectedStepCode,
+            String note,
+            RepositoryCallback<ManagerDashboard> callback
+    ) {
+        withDashboard(managerUserId, callback, dashboard -> {
+            CompanionSession session = dashboard.getSession();
+            if (!ManagerRepository.matchesConsultationSummaryExpectation(
+                    session, expectedSessionId, expectedStepCode)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_GUIDE_STEP);
+                return;
+            }
+            sessionClient.updateText(
+                    session.getId(), "fieldPhotoNote", note, expectedStepCode,
+                    refreshCallback(managerUserId, callback));
+        });
+    }
+
+    @Override
     public void saveVitalsNote(
             String managerUserId,
             String expectedSessionId,

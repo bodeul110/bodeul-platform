@@ -210,7 +210,7 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
     }
 
     private static final class PreviewDataRepository extends MockBodeulRepository {
-        private static final String HOSPITAL_NAME = "서울내과병원";
+        private static final String HOSPITAL_NAME = "서울대학교병원";
         private static final String DEPARTMENT_NAME = "신경과";
 
         private final HospitalGuide previewGuide = new HospitalGuide(

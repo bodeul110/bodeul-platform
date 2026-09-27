@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="guardian_final_report_badge_surface">#FFF1C7</color>
+    <color name="guardian_final_report_badge_text">#5C4300</color>
+    <color name="guardian_final_report_summary_surface">#EEF1F5</color>
+    <color name="guardian_final_report_manager_surface">#EAF0FA</color>
+    <color name="guardian_final_report_verified">#1C7C54</color>
+    <color name="guardian_final_report_section_blue">#356DCC</color>
+    <color name="guardian_final_report_section_purple">#7766C5</color>
+    <color name="guardian_final_report_section_orange">#E39B32</color>
+</resources>

@@ -182,6 +182,7 @@ public final class ManagerGuideCoordinator {
         String hospitalName = dashboard.getAppointmentRequest().getHospitalName();
         String departmentName = dashboard.getAppointmentRequest().getDepartmentName();
         String meetingPlace = resolveMeetingPlace(dashboard);
+        String fallbackQuery = buildExternalMapFallbackQuery(hospitalName);
         CompanionSession session = dashboard.getSession();
 
         double hospitalLat = dashboard.getAppointmentRequest().getHospitalLatitude();
@@ -197,7 +198,7 @@ public final class ManagerGuideCoordinator {
                     context.getString(R.string.guide_map_action_meeting_title),
                     context.getString(R.string.guide_map_action_meeting_body, meetingPlace),
                     context.getString(R.string.guide_meeting_map_action),
-                    hospitalName + " " + meetingPlace,
+                    fallbackQuery,
                     meetingMapUrl
             ));
             return actions;
@@ -209,9 +210,7 @@ public final class ManagerGuideCoordinator {
                     context.getString(R.string.guide_map_action_shared_title),
                     buildSharedLocationBody(session, meetingPlace),
                     context.getString(R.string.guide_map_action_shared_button),
-                    TextUtils.isEmpty(session.getLocationSummary())
-                            ? hospitalName + " " + meetingPlace
-                            : session.getLocationSummary(),
+                    fallbackQuery,
                     buildSharedLocationDirectUrl(session)
             ));
         }
@@ -224,7 +223,7 @@ public final class ManagerGuideCoordinator {
                 context.getString(R.string.guide_map_action_hospital_title),
                 context.getString(R.string.guide_map_action_hospital_body, hospitalName, departmentName),
                 context.getString(R.string.guide_map_action_hospital_button),
-                hospitalName + " " + departmentName + " 안내 지도",
+                fallbackQuery,
                 hospitalMapUrl
         ));
 
@@ -232,7 +231,7 @@ public final class ManagerGuideCoordinator {
                 context.getString(R.string.guide_map_action_meeting_title),
                 context.getString(R.string.guide_map_action_meeting_body, meetingPlace),
                 context.getString(R.string.guide_map_action_meeting_button),
-                hospitalName + " " + meetingPlace,
+                fallbackQuery,
                 meetingMapUrl
         ));
 
@@ -244,6 +243,10 @@ public final class ManagerGuideCoordinator {
             ));
         }
         return actions;
+    }
+
+    static String buildExternalMapFallbackQuery(String hospitalName) {
+        return hospitalName == null ? "" : hospitalName.trim();
     }
 
     private String buildToolbarTitle(GuideStep focusStep) {

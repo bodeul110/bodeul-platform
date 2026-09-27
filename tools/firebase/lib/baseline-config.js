@@ -57,7 +57,7 @@ const BASELINE_USERS = Object.freeze([
 const BASELINE_GUIDES = Object.freeze([
   {
     id: "guide-seed-seoul-internal-medicine",
-    hospitalName: "서울내과병원",
+    hospitalName: "서울대학교병원",
     departmentName: "내과",
     steps: [
       {

@@ -74,6 +74,10 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
                 startActivity(new Intent(this, BookingActivity.class))
         );
         bottomNavigation = findViewById(R.id.clientBottomNavigation);
+        ClientBookingHistoryInsets.apply(
+                findViewById(R.id.clientBookingHistoryScrollContent),
+                bottomNavigation
+        );
         bottomNavigation.setVisibility(View.GONE);
         ClientBottomNavigationBinder.bind(
                 bottomNavigation,

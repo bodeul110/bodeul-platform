@@ -1,314 +1,313 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_screen_glow"
-    android:fillViewport="true">
+    android:background="@color/figma_mvp_background">
 
-    <LinearLayout
+    <ScrollView
+        android:id="@+id/scrollBooking"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="24dp"
-        android:paddingTop="24dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="28dp">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingTop="88dp"
+        android:paddingBottom="116dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:layout_width="94dp"
-                android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:contentDescription="@string/app_name"
-                android:src="@drawable/bodeul_logo_full" />
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="36dp">
 
             <TextView
-                android:id="@+id/buttonBackBooking"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_surface_pill"
-                android:paddingStart="14dp"
-                android:paddingTop="9dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="9dp"
-                android:text="@string/guide_back"
-                android:textColor="@color/bodeul_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/textBookingMode"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_surface_pill"
-            android:paddingStart="14dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="8dp"
-            android:textColor="@color/bodeul_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="@string/feature_booking_title"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="32sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:lineSpacingExtra="4dp"
-            android:text="@string/booking_subtitle"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="14sp" />
-
-        <include
-            android:id="@+id/bookingStatePanel"
-            layout="@layout/include_state_panel" />
-
-        <LinearLayout
-            android:id="@+id/bookingContentContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="@color/bodeul_surface"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:strokeColor="@color/bodeul_outline"
-                app:strokeWidth="1dp">
+                android:fontFamily="@font/pretendard_medium"
+                android:includeFontPadding="false"
+                android:lineSpacingExtra="2dp"
+                android:text="@string/booking_main_heading"
+                android:textColor="@color/figma_mvp_text_primary"
+                android:textSize="30sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:fontFamily="@font/pretendard_regular"
+                android:lineSpacingExtra="3dp"
+                android:text="@string/booking_main_heading_helper"
+                android:textColor="@color/figma_mvp_text_secondary"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/textBookingMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_surface_pill"
+                android:fontFamily="@font/pretendard_semibold"
+                android:paddingStart="12dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="7dp"
+                android:textColor="@color/figma_mvp_primary"
+                android:textSize="11sp"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/bookingStatePanel"
+                layout="@layout/include_state_panel" />
+
+            <LinearLayout
+                android:id="@+id/bookingContentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp">
+                    android:layout_marginTop="22dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
                     <TextView
+                        android:id="@+id/textBookingFormTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/pretendard_semibold"
+                        android:text="@string/booking_form_section"
+                        android:textColor="@color/figma_mvp_text_primary"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/textBookingFormBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_badge_blue"
+                        android:fontFamily="@font/pretendard_semibold"
                         android:paddingStart="10dp"
                         android:paddingTop="5dp"
                         android:paddingEnd="10dp"
                         android:paddingBottom="5dp"
-                        android:text="@string/booking_requester_section"
-                        android:textColor="@color/bodeul_primary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textBookingRequesterName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:background="@drawable/bg_surface_pill"
-                        android:paddingStart="16dp"
-                        android:paddingTop="12dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="12dp"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textBookingRequesterRole"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_surface_pill"
-                        android:paddingStart="16dp"
-                        android:paddingTop="12dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="12dp"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:id="@+id/textBookingRequesterPhone"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_surface_pill"
-                        android:paddingStart="16dp"
-                        android:paddingTop="12dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="12dp"
-                        android:textColor="@color/bodeul_text_secondary"
-                        android:textSize="13sp" />
+                        android:text="@string/booking_form_badge"
+                        android:textColor="@color/figma_mvp_primary"
+                        android:textSize="11sp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBookingLatest"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/bodeul_surface"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:strokeColor="@color/bodeul_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/textBookingFormHelper"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp">
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/booking_form_helper"
+                    android:textColor="@color/figma_mvp_text_tertiary"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/booking_latest_section"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                <include layout="@layout/include_booking_form_visit" />
 
-                    <TextView
-                        android:id="@+id/textBookingLatestStatus"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_surface_pill"
-                        android:paddingStart="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="8dp"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
+                <include layout="@layout/include_booking_form_health_linked" />
 
-                    <TextView
-                        android:id="@+id/textBookingLatestTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
+                <include layout="@layout/include_booking_form_options_payment" />
 
-                    <TextView
-                        android:id="@+id/textBookingLatestBody"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:lineSpacingExtra="4dp"
-                        android:textColor="@color/bodeul_text_secondary"
-                        android:textSize="14sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                <include layout="@layout/include_booking_form_notes_actions" />
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="@color/bodeul_surface"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:strokeColor="@color/bodeul_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp">
+                    android:layout_marginTop="28dp"
+                    app:cardBackgroundColor="@color/figma_mvp_surface"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/figma_mvp_card_outline"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="vertical"
+                        android:padding="20dp">
 
                         <TextView
-                            android:id="@+id/textBookingFormTitle"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/booking_form_section"
-                            android:textColor="@color/bodeul_text_primary"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:text="@string/booking_main_requester_title"
+                            android:textColor="@color/figma_mvp_text_primary"
+                            android:textSize="16sp" />
 
                         <TextView
-                            android:id="@+id/textBookingFormBadge"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/textBookingRequesterName"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/bg_badge_green"
-                            android:paddingStart="10dp"
-                            android:paddingTop="5dp"
-                            android:paddingEnd="10dp"
-                            android:paddingBottom="5dp"
-                            android:text="@string/booking_form_badge"
-                            android:textColor="@color/bodeul_success"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
+                            android:layout_marginTop="14dp"
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:textColor="@color/figma_mvp_text_primary"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/textBookingRequesterRole"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="7dp"
+                            android:fontFamily="@font/pretendard_regular"
+                            android:textColor="@color/figma_mvp_text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/textBookingRequesterPhone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="7dp"
+                            android:fontFamily="@font/pretendard_regular"
+                            android:textColor="@color/figma_mvp_text_tertiary"
+                            android:textSize="13sp" />
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                    <TextView
-                        android:id="@+id/textBookingFormHelper"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardBookingLatest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    app:cardBackgroundColor="@color/figma_mvp_surface"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/figma_mvp_card_outline"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:lineSpacingExtra="4dp"
-                        android:text="@string/booking_form_helper"
-                        android:textColor="@color/bodeul_text_secondary"
-                        android:textSize="13sp" />
-                    <include layout="@layout/include_booking_form_health_linked" />
+                        android:orientation="vertical"
+                        android:padding="20dp">
 
-                    <include layout="@layout/include_booking_form_visit" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:text="@string/booking_latest_section"
+                            android:textColor="@color/figma_mvp_text_primary"
+                            android:textSize="16sp" />
 
-                    <include layout="@layout/include_booking_form_options_payment" />
+                        <TextView
+                            android:id="@+id/textBookingLatestStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_surface_pill"
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:paddingStart="10dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="6dp"
+                            android:textSize="11sp" />
 
-                    <include layout="@layout/include_booking_form_notes_actions" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        <TextView
+                            android:id="@+id/textBookingLatestTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:fontFamily="@font/pretendard_semibold"
+                            android:textColor="@color/figma_mvp_text_primary"
+                            android:textSize="17sp" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:text="@string/booking_requests_section"
-                android:textColor="@color/bodeul_text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/textBookingLatestBody"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:fontFamily="@font/pretendard_regular"
+                            android:lineSpacingExtra="3dp"
+                            android:textColor="@color/figma_mvp_text_secondary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/booking_requests_helper"
-                android:textColor="@color/bodeul_text_secondary"
-                android:textSize="13sp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="28dp"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:text="@string/booking_main_existing_requests_title"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="20sp" />
 
-            <LinearLayout
-                android:id="@+id/bookingRequestsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:orientation="vertical" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="@font/pretendard_regular"
+                    android:text="@string/booking_requests_helper"
+                    android:textColor="@color/figma_mvp_text_tertiary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:id="@+id/bookingRequestsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
         </LinearLayout>
+    </ScrollView>
 
+    <LinearLayout
+        android:id="@+id/layoutBookingTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="@color/figma_mvp_surface"
+        android:elevation="3dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <ImageButton
+                android:id="@+id/buttonBackBooking"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/guide_back"
+                android:padding="12dp"
+                android:src="@drawable/ic_figma_hospital_search_back"
+                app:tint="@color/figma_mvp_primary" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="@font/pretendard_semibold"
+                android:gravity="center"
+                android:text="@string/booking_main_app_bar_title"
+                android:textColor="@color/figma_mvp_primary"
+                android:textSize="18sp" />
+
+            <ImageButton
+                android:id="@+id/buttonCloseBooking"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/booking_main_close"
+                android:padding="13dp"
+                android:src="@drawable/ic_figma_booking_health_close"
+                app:tint="@color/figma_mvp_primary" />
+        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+
+    <include layout="@layout/include_client_bottom_navigation" />
+</FrameLayout>
