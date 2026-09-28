@@ -971,6 +971,7 @@
     <string name="booking_coupon_family">가족 1만원</string>
     <string name="booking_price_section">예상 비용 요약</string>
     <string name="booking_price_mvp_policy">신규 예약은 기본 2시간 40,000원이며 추가요금·쿠폰 할인은 적용하지 않습니다. 기존 예약은 접수 시 금액을 유지합니다.</string>
+    <string name="booking_price_server_unavailable">예약 요금 업데이트를 준비 중입니다. 예약 목록에서 접수 여부를 확인한 뒤 잠시 후 다시 시도해 주세요.</string>
     <string name="booking_price_value_format">%1$s원</string>
     <string name="booking_price_base_line">기본 동행 요금 · %1$s</string>
     <string name="booking_price_option_line">옵션 추가 · %1$s / %2$s · %3$s</string>
