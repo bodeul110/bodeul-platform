@@ -108,7 +108,7 @@ final class AppointmentException extends RuntimeException {
         return new AppointmentException(
                 HttpStatus.CONFLICT,
                 "bank_transfer_terms_conflict",
-                "무통장입금 예약의 결제수단과 입금액은 생성 후 변경할 수 없습니다.");
+                "무통장입금 예약의 결제수단·이동 조건·쿠폰·입금액은 생성 후 변경할 수 없습니다.");
     }
 
     static AppointmentException paymentOperationConflict() {

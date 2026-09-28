@@ -88,13 +88,122 @@ class DefaultAppointmentServiceTests {
         assertThat(created.guardianUserId()).isEqualTo(GUARDIAN_ID);
         assertThat(created.patientName()).isEqualTo("환자 사용자");
         assertThat(created.guardianName()).isEqualTo("보호자 사용자");
-        assertThat(created.basePrice()).isEqualTo(69_000);
-        assertThat(created.optionSurchargePrice()).isEqualTo(37_000);
-        assertThat(created.couponDiscountPrice()).isEqualTo(10_000);
-        assertThat(created.finalPrice()).isEqualTo(96_000);
+        assertThat(created.basePrice()).isEqualTo(40_000);
+        assertThat(created.optionSurchargePrice()).isZero();
+        assertThat(created.couponDiscountPrice()).isZero();
+        assertThat(created.finalPrice()).isEqualTo(40_000);
         assertThat(created.paymentStatusCode()).isEqualTo("PENDING");
         assertThat(created.status()).isEqualTo("REQUESTED");
         assertThat(created.publicCode()).matches("^BD-[A-Z0-9]{6}$");
+    }
+
+    @Test
+    void newBookingsKeepTheSamePriceForEveryMobilityAndTripSelection() {
+        for (String mobility : List.of("INDEPENDENT", "WALKING_AID", "WHEELCHAIR")) {
+            for (String trip : List.of("ONE_WAY", "ROUND_TRIP")) {
+                var created = service.createAppointment(patient(),
+                        new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(),
+                                draftWithOptions(draft(), mobility, trip, "NONE")));
+                assertThat(created.finalPrice()).isEqualTo(40_000);
+                assertThat(created.optionSurchargePrice()).isZero();
+                assertThat(created.couponDiscountPrice()).isZero();
+            }
+        }
+    }
+
+    @Test
+    void newBookingRejectsLegacyCouponsInsteadOfSilentlyDiscounting() {
+        for (String coupon : List.of("FIRST_VISIT", "FAMILY")) {
+            assertThatThrownBy(() -> service.createAppointment(patient(),
+                    new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(),
+                            draftWithOptions(draft(), "INDEPENDENT", "ONE_WAY", coupon))))
+                    .isInstanceOf(AppointmentException.class)
+                    .hasMessage("현재 신규 예약에는 쿠폰을 적용할 수 없습니다.");
+        }
+        assertThat(appointmentRepository.insertCount).isZero();
+    }
+
+    @Test
+    void legacyAppointmentEditKeepsItsOriginalPriceAndCoupon() {
+        appointmentRepository.current = Optional.of(
+                existingAppointment("REQUESTED", 0, null, "CARD", "FAMILY"));
+        var updated = service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(0,
+                        draftWithOptions(draftWithMeetingPlace("별관 2층"),
+                                "INDEPENDENT", "ONE_WAY", "FAMILY")));
+        assertThat(updated.basePrice()).isEqualTo(69_000);
+        assertThat(updated.optionSurchargePrice()).isEqualTo(37_000);
+        assertThat(updated.couponDiscountPrice()).isEqualTo(10_000);
+        assertThat(updated.finalPrice()).isEqualTo(96_000);
+        assertThat(updated.couponCode()).isEqualTo("FAMILY");
+        assertThat(updated.meetingPlace()).isEqualTo("별관 2층");
+    }
+
+    @Test
+    void exactCreateRetryReturnsSavedLegacyPriceInsteadOfNewTariff() {
+        UUID clientRequestId = UUID.randomUUID();
+        var command = new AppointmentService.CreateAppointmentCommand(clientRequestId, draft());
+        service.createAppointment(patient(), command);
+        appointmentRepository.putLegacyClientRequest(clientRequestId,
+                existingAppointment("REQUESTED", 0));
+
+        var retried = service.createAppointment(patient(), command);
+
+        assertThat(retried.finalPrice()).isEqualTo(69_000);
+        assertThat(appointmentRepository.insertCount).isEqualTo(1);
+    }
+
+    @Test
+    void legacyCouponCreateRetryRemainsValidAfterNewCouponsAreDisabled() {
+        UUID clientRequestId = UUID.randomUUID();
+        var legacyDraft = draftWithOptions(draft(), "WHEELCHAIR", "ROUND_TRIP", "FAMILY");
+        appointmentRepository.putLegacyClientRequest(clientRequestId,
+                existingAppointment("REQUESTED", 0, null, "CARD", "FAMILY"));
+        // 이전 계약으로 정규화·저장된 지문을 사용한다. 신규 생성은 호출하지 않는다.
+        appointmentRepository.createRequestFingerprints.put(APPOINTMENT_ID,
+                AppointmentCreateFingerprint.from(new AppointmentCreateFingerprint.CreateRequest(
+                        PATIENT_ID, AppUserRole.PATIENT, clientRequestId,
+                        legacyDraft.linkedParticipantName(), "010-9876-5432",
+                        "guardian@example.com", legacyDraft.patientConditionSummary(),
+                        legacyDraft.medicationSummary(), legacyDraft.hospitalName(), legacyDraft.departmentName(),
+                        legacyDraft.hospitalLatitude(), legacyDraft.hospitalLongitude(),
+                        Instant.parse("2026-12-20T01:30:00Z"), legacyDraft.meetingPlace(),
+                        legacyDraft.specialNotes(), "WHEELCHAIR", "ROUND_TRIP", "ANY", "CARD", "FAMILY")));
+
+        var retried = service.createAppointment(patient(),
+                new AppointmentService.CreateAppointmentCommand(clientRequestId, legacyDraft));
+
+        assertThat(retried.finalPrice()).isEqualTo(96_000);
+        assertThat(retried.couponCode()).isEqualTo("FAMILY");
+        assertThat(appointmentRepository.insertCount).isZero();
+    }
+
+    @Test
+    void legacyBankTransferEditKeepsPriceWhileTermChangesAreRejected() {
+        appointmentRepository.current = Optional.of(
+                existingAppointment("REQUESTED", 0, null, "BANK_TRANSFER", "NONE"));
+        var unchangedTerms = draftWithOptions(draftWithPaymentMethod("BANK_TRANSFER"),
+                "INDEPENDENT", "ONE_WAY", "NONE");
+        var updated = service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(0, unchangedTerms));
+        assertThat(updated.finalPrice()).isEqualTo(69_000);
+        assertThat(updated.paymentMethodCode()).isEqualTo("BANK_TRANSFER");
+        assertThatThrownBy(() -> service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(updated.version(),
+                        draftWithOptions(unchangedTerms, "WHEELCHAIR", "ONE_WAY", "NONE"))))
+                .isInstanceOf(AppointmentException.class)
+                .hasMessage("무통장입금 예약의 결제수단·이동 조건·쿠폰·입금액은 생성 후 변경할 수 없습니다.");
+        assertThat(appointmentRepository.current.orElseThrow().finalPrice()).isEqualTo(69_000);
+    }
+
+    @Test
+    void existingAppointmentCannotApplyAnotherCoupon() {
+        appointmentRepository.current = Optional.of(existingAppointment("REQUESTED", 0));
+        assertThatThrownBy(() -> service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(0,
+                        draftWithOptions(draft(), "INDEPENDENT", "ONE_WAY", "FIRST_VISIT"))))
+                .isInstanceOf(AppointmentException.class)
+                .hasMessage("접수된 예약의 쿠폰은 변경할 수 없습니다.");
     }
 
     @Test
@@ -286,7 +395,7 @@ class DefaultAppointmentServiceTests {
                 created.id(),
                 new AppointmentService.UpdateAppointmentCommand(created.version(), draft())))
                 .isInstanceOf(AppointmentException.class)
-                .hasMessage("무통장입금 예약의 결제수단과 입금액은 생성 후 변경할 수 없습니다.");
+                .hasMessage("무통장입금 예약의 결제수단·이동 조건·쿠폰·입금액은 생성 후 변경할 수 없습니다.");
     }
 
     @Test
@@ -848,7 +957,17 @@ class DefaultAppointmentServiceTests {
                 "ROUND_TRIP",
                 "ANY",
                 "CARD",
-                "FAMILY");
+                "NONE");
+    }
+
+    private AppointmentService.AppointmentDraft draftWithOptions(
+            AppointmentService.AppointmentDraft source, String mobility, String trip, String coupon) {
+        return new AppointmentService.AppointmentDraft(
+                source.linkedParticipantName(), source.linkedParticipantPhone(), source.linkedParticipantEmail(),
+                source.patientConditionSummary(), source.medicationSummary(), source.hospitalName(),
+                source.departmentName(), source.hospitalLatitude(), source.hospitalLongitude(),
+                source.appointmentAt(), source.meetingPlace(), source.specialNotes(), mobility, trip,
+                source.managerGenderPreferenceCode(), source.paymentMethodCode(), coupon);
     }
 
     private AppointmentService.AppointmentDraft draftWithPaymentMethod(String paymentMethodCode) {
@@ -925,6 +1044,11 @@ class DefaultAppointmentServiceTests {
     }
 
     private AppointmentRecord existingAppointment(String status, long version, UUID managerUserId) {
+        return existingAppointment(status, version, managerUserId, "CARD", "NONE");
+    }
+
+    private AppointmentRecord existingAppointment(
+            String status, long version, UUID managerUserId, String paymentMethod, String coupon) {
         return new AppointmentRecord(
                 APPOINTMENT_ID,
                 "legacy-firestore-id",
@@ -952,11 +1076,11 @@ class DefaultAppointmentServiceTests {
                 "ANY",
                 status,
                 69_000,
-                0,
-                0,
-                69_000,
-                "CARD",
-                "NONE",
+                "FAMILY".equals(coupon) ? 37_000 : 0,
+                "FAMILY".equals(coupon) ? 10_000 : 0,
+                "FAMILY".equals(coupon) ? 96_000 : 69_000,
+                paymentMethod,
+                coupon,
                 "PENDING",
                 "",
                 null,

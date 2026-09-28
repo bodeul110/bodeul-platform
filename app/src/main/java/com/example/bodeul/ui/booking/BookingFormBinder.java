@@ -251,14 +251,13 @@ public final class BookingFormBinder {
     public void bindEditMode(User currentUser, AppointmentRequest request) {
         BookingPaymentMethod paymentMethod = BookingPaymentMethod.fromValue(request.getPaymentMethodCode());
         bankTransferTermsLocked = BookingPaymentSelectionPolicy.arePaymentTermsLockedForEdit(paymentMethod);
-        lockedPaymentPriceSummary = bankTransferTermsLocked
-                ? new BookingPriceSummary(
-                        request.getBasePrice(),
-                        request.getOptionSurchargePrice(),
-                        request.getCouponDiscountPrice(),
-                        request.getFinalPrice()
-                )
-                : null;
+        // 요금 정책이 바뀌어도 일정·전달 내용 수정으로 기존 금액을 재계산하지 않는다.
+        lockedPaymentPriceSummary = new BookingPriceSummary(
+                request.getBasePrice(),
+                request.getOptionSurchargePrice(),
+                request.getCouponDiscountPrice(),
+                request.getFinalPrice()
+        );
         buttonPaymentBankTransfer.setVisibility(
                 BookingPaymentSelectionPolicy.isBankTransferVisibleForEdit(paymentMethod)
                         ? View.VISIBLE
@@ -468,7 +467,10 @@ public final class BookingFormBinder {
                 R.string.booking_price_base_line,
                 formatter.formatPrice(summary.getBasePrice())
         ));
-        textEstimateOption.setText(context.getString(
+        textEstimateOption.setText(lockedPaymentPriceSummary != null
+                ? context.getString(R.string.booking_price_saved_option_line,
+                        formatter.formatPrice(summary.getOptionSurchargePrice()))
+                : context.getString(
                 R.string.booking_price_option_line,
                 formatter.toTripTypeLabel(tripTypeGroupBinder.getSelection().name()),
                 formatter.toMobilityLabel(mobilityGroupBinder.getSelection().name()),
@@ -618,7 +620,7 @@ public final class BookingFormBinder {
         mobilityGroupBinder.setEnabled(enabled);
         tripTypeGroupBinder.setEnabled(enabled);
         paymentMethodGroupBinder.setEnabled(enabled);
-        couponTypeGroupBinder.setEnabled(enabled);
+        couponTypeGroupBinder.setEnabled(false);
     }
 
     private BookingPriceSummary resolvePriceSummary() {
