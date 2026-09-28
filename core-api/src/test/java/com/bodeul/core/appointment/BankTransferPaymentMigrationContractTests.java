@@ -21,6 +21,8 @@ class BankTransferPaymentMigrationContractTests {
                 .contains("new.final_price")
                 .doesNotContain("69000", "69_000", "40000", "40_000");
         assertThat(sql).contains("if new.final_price is distinct from old.final_price then");
+        assertThat(fileText("db/verification/018_bank_transfer_payment_checks.sql"))
+                .contains("\\ir 023_mvp_booking_price_checks.sql");
     }
 
     @Test
