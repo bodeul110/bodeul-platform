@@ -6,25 +6,17 @@ import com.example.bodeul.domain.model.BookingPriceSummary;
 import com.example.bodeul.domain.model.BookingTripType;
 
 /**
- * 예약 화면의 예상 비용을 단순 규칙으로 계산한다.
+ * 신규 예약의 MVP 기본 2시간 견적을 계산한다. 기존 예약은 저장된 금액을 표시한다.
  */
 public final class BookingPriceEstimator {
-    private static final int BASE_PRICE = 69000;
+    private static final int BASE_PRICE = 40_000;
 
     public BookingPriceSummary estimate(
             BookingTripType tripType,
             BookingMobilitySupport mobilitySupport,
             BookingCouponType couponType
     ) {
-        int optionSurchargePrice = tripType.getSurchargePrice() + mobilitySupport.getSurchargePrice();
-        int subtotal = BASE_PRICE + optionSurchargePrice;
-        int couponDiscountPrice = Math.min(subtotal, couponType.getDiscountPrice());
-        int finalPrice = subtotal - couponDiscountPrice;
-        return new BookingPriceSummary(
-                BASE_PRICE,
-                optionSurchargePrice,
-                couponDiscountPrice,
-                finalPrice
-        );
+        // 이동 조건은 준비 정보로 유지하며 미확정 추가요금·쿠폰은 계산하지 않는다.
+        return new BookingPriceSummary(BASE_PRICE, 0, 0, BASE_PRICE);
     }
 }

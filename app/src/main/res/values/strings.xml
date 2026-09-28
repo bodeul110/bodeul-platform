@@ -375,7 +375,7 @@
     <string name="bank_transfer_payment_summary_title">입금 요약</string>
     <string name="bank_transfer_payment_expected_amount_label">확인 예정 금액</string>
     <string name="bank_transfer_payment_due_label">입금 확인 기한</string>
-    <string name="bank_transfer_payment_due_unknown">기한이 아직 지정되지 않았습니다.</string>
+    <string name="bank_transfer_payment_due_unknown">개별 기한은 아직 지정되지 않았습니다. 입금 안내 원칙은 신청 후 24시간 이내이며, 임박 예약은 운영자 확인이 필요합니다. 실제 계좌 안내 전에는 송금하지 마세요.</string>
     <string name="bank_transfer_payment_record_title">처리 기록</string>
     <string name="bank_transfer_payment_received_amount_label">운영자 확인 금액</string>
     <string name="bank_transfer_payment_confirmed_at_label">입금 확인 시각</string>
@@ -950,7 +950,7 @@
     <string name="booking_visit_section">방문 일정</string>
     <string name="booking_visit_helper">병원명과 진료과, 만남 장소를 함께 적어두면 접수 이후에도 같은 정보로 연결됩니다.</string>
     <string name="booking_option_section">서비스 옵션</string>
-    <string name="booking_option_helper">이동 범위와 희망 매니저 조건을 미리 선택하면 예상 비용이 함께 계산됩니다.</string>
+    <string name="booking_option_helper">이동 범위와 희망 매니저 조건을 선택해 주세요. 신규 예약의 기본 2시간 요금은 동일합니다.</string>
     <string name="booking_trip_section">동행 범위</string>
     <string name="booking_trip_one_way">편도 동행</string>
     <string name="booking_trip_round_trip">왕복 동행</string>
@@ -958,7 +958,7 @@
     <string name="booking_manager_gender_any">성별 무관</string>
     <string name="booking_manager_gender_female">여성 선호</string>
     <string name="booking_manager_gender_male">남성 선호</string>
-    <string name="booking_payment_section">결제 및 쿠폰</string>
+    <string name="booking_payment_section">결제 안내</string>
     <string name="booking_payment_section_helper">MVP에서는 실제 결제 없이 결제 화면과 예상 금액만 확인합니다.</string>
     <string name="booking_payment_method_section">결제 수단</string>
     <string name="booking_payment_bank_transfer">무통장입금</string>
@@ -970,9 +970,11 @@
     <string name="booking_coupon_first_visit">신규 5천원</string>
     <string name="booking_coupon_family">가족 1만원</string>
     <string name="booking_price_section">예상 비용 요약</string>
+    <string name="booking_price_mvp_policy">신규 예약은 기본 2시간 40,000원이며 추가요금·쿠폰 할인은 적용하지 않습니다. 기존 예약은 접수 시 금액을 유지합니다.</string>
     <string name="booking_price_value_format">%1$s원</string>
     <string name="booking_price_base_line">기본 동행 요금 · %1$s</string>
     <string name="booking_price_option_line">옵션 추가 · %1$s / %2$s · %3$s</string>
+    <string name="booking_price_saved_option_line">접수 시 옵션 추가요금 · %1$s</string>
     <string name="booking_price_discount_line">쿠폰 할인 · %1$s · %2$s</string>
     <string name="booking_price_final_line">예상 결제 금액 · %1$s</string>
     <string name="booking_payment_helper_format">%1$s 기준으로 접수되며, %2$s 요청이 함께 전달됩니다.</string>

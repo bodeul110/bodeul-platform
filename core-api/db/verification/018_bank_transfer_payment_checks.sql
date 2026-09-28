@@ -586,6 +586,7 @@ begin
 end;
 $$;
 
+\ir 023_mvp_booking_price_checks.sql
 \ir 022_admin_bank_transfer_payment_read_checks.sql
 
 rollback;
