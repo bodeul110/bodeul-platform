@@ -40,6 +40,7 @@ class DefaultAppointmentService implements AppointmentService {
             .ofPattern("uuuu-MM-dd HH:mm", Locale.KOREA)
             .withResolverStyle(ResolverStyle.STRICT);
     private static final int BASE_PRICE = 40_000;
+    private static final String PRICE_POLICY_VERSION = "mvp-fixed-40000-v1";
     private static final int PUBLIC_CODE_MAX_ATTEMPTS = 5;
     private static final Set<String> REVIEW_RATINGS = Set.of(
             "excellent", "good", "ok", "disappointing", "need_help");
@@ -143,6 +144,12 @@ class DefaultAppointmentService implements AppointmentService {
             return toViewForReader(appUser, existing.get());
         }
 
+        // 과거 요청의 재시도는 저장된 견적을 반환하고, 새 예약만 현재 가격 계약을 요구한다.
+        if (!PRICE_POLICY_VERSION.equals(command.pricePolicyVersion())
+                || command.expectedFinalPrice() == null
+                || command.expectedFinalPrice() != BASE_PRICE) {
+            throw AppointmentException.priceConfirmationRequired();
+        }
         requireFutureAppointment(draft);
         if (!"NONE".equals(draft.couponCode())) {
             throw AppointmentException.invalidRequest("현재 신규 예약에는 쿠폰을 적용할 수 없습니다.");

@@ -36,7 +36,8 @@ Firestore `appointmentRequests`에 직접 쓰던 예약 기본 흐름을 Spring 
 | --- | --- | --- | ---: |
 | `GET` | `/api/appointments` | 환자·배정 매니저 예약 목록. 보호자는 유효한 `APPOINTMENT` 동의가 있는 예약만 포함 | 200 |
 | `GET` | `/api/appointments/{id}` | 예약 상세. 보호자는 `APPOINTMENT` 동의 필수 | 200 |
-| `POST` | `/api/appointments` | 환자 예약 생성. 보호자 신규 생성은 환자 프로필 조회 전에 거부 | 201 / 403 |
+| `POST` | `/api/appointments/price-confirmed` | 새 앱의 환자 예약 생성. 현재 가격 계약·확인 금액 필수. 보호자 신규 생성은 거부 | 201 / 403 / 409 |
+| `POST` | `/api/appointments` | 기존 앱 호환 경로. 저장된 동일 요청 재시도는 허용하되 가격 계약 없는 신규 생성은 거부 | 201 / 403 / 409 |
 | `PUT` | `/api/appointments/{id}` | 환자 본인의 `REQUESTED` 예약 수정. 보호자 쓰기는 거부 | 200 / 403 |
 | `POST` | `/api/appointments/{id}/cancel` | 환자 본인의 `REQUESTED`, `MATCHED` 예약 취소. 보호자 쓰기는 거부 | 200 / 403 |
 | `GET` | `/api/appointments/{id}/guardian-sharing-consent` | 해당 환자·지정 보호자의 동의 상태 조회 | 200 |
@@ -47,13 +48,17 @@ Firestore `appointmentRequests`에 직접 쓰던 예약 기본 흐름을 Spring 
 
 모든 경로는 Firebase ID token이 필요하며 응답에 `Cache-Control: no-store`를 사용한다. 타인 예약은 403, 없는 예약은 404, 허용되지 않은 상태 전이와 오래된 `version`은 409를 반환한다.
 
+신규 생성은 `pricePolicyVersion: "mvp-fixed-40000-v1"`, `expectedFinalPrice: 40000`을 기존 입력에 추가한다. 금액은 JSON 정수만 허용하고 문자열·소수·정수 범위 초과는 400으로 거부한다. 정책 버전·금액 누락 또는 불일치는 409 `appointment_price_confirmation_required`로 거부하며 DB에 예약을 생성하지 않는다. 서버가 원장 금액을 결정하고 클라이언트 값은 사용자가 확인한 요금과의 일치 검사에만 사용한다.
+
+새 Android는 별도 `price-confirmed` 경로만 사용한다. 구형 서버의 404/405나 통신 오류에도 `/api/appointments` 생성으로 돌아가지 않으므로 서버 롤백 중 다른 요금으로 저장되는 것을 막는다. [배포 순서 판단](../design/mvp-booking-price.md#앱서버-배포-순서-보호)을 따른다. 이 경로는 앱 버전별 인증을 제공하는 것이 아니며 기존 Firebase·App Check·참여자 인가를 대체하지 않는다.
+
 ## 서버 소유 값
 
 - 신규 예약의 기본 2시간 가격은 40,000원이다. 왕복·이동 보조는 서비스 준비 정보로 보존하지만 추가요금은 계산하지 않는다.
 - 신규 예약은 쿠폰 `NONE`만 허용한다. 옵션 추가요금과 쿠폰 할인은 모두 0원이다.
 - 기존 예약을 수정할 때는 결제 수단과 무관하게 저장된 기본요금·추가요금·할인·최종금액을 그대로 유지한다. 과거 69,000원·96,000원 등을 새 요금으로 소급 재계산하지 않으며 쿠폰 변경도 거부한다.
 - 무통장입금 예약은 저장된 금액 외에도 결제 수단·이동 보조·편도/왕복·쿠폰 조건을 잠근다. 신규 고정요금 때문에 조건 변경이 금액 비교를 통과하지 않도록 명시적으로 검사한다.
-- 같은 생성 요청 ID와 지문으로 재시도하면 기존 예약을 반환한다. 이 처리는 신규 쿠폰 제한보다 먼저 수행해 과거 요청의 안전한 재시도를 유지한다.
+- 같은 생성 요청 ID와 지문으로 재시도하면 기존 예약을 반환한다. 이 처리는 신규 가격 확인·쿠폰 제한보다 먼저 수행해 구형 앱의 과거 요청 재시도를 유지한다. 가격 확인 필드는 과거 지문에 소급 추가하지 않는다.
 - 예약 최초 상태는 `REQUESTED`다.
 - 무통장입금 예약은 서버가 `AWAITING_DEPOSIT`으로 시작한다. 클라이언트가 전달한 결제 상태는 사용하지 않는다.
 - 입금 상태는 `AWAITING_DEPOSIT`, `DEPOSIT_CONFIRMED`, `REVIEW_REQUIRED`, `REFUND_REQUESTED`, `REFUNDED`, `CANCELED`만 서버가 전이한다.

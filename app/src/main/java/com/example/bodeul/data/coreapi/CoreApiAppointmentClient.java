@@ -4,10 +4,12 @@ import android.content.Context;
 
 import androidx.annotation.Nullable;
 
+import com.example.bodeul.R;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.domain.model.BookingPaymentMethod;
+import com.example.bodeul.domain.model.BookingPricePolicy;
 import com.example.bodeul.domain.model.BookingRequestDraft;
 
 import org.json.JSONArray;
@@ -26,11 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 final class CoreApiAppointmentClient {
     private final CoreApiAuthenticatedClient authenticatedClient;
+    private final String priceServerUnavailableMessage;
     private final Map<String, AppointmentReference> references = new ConcurrentHashMap<>();
     private final Map<String, UUID> pendingCreateRequestIds = new ConcurrentHashMap<>();
 
     CoreApiAppointmentClient(Context context) {
         authenticatedClient = new CoreApiAuthenticatedClient(context);
+        priceServerUnavailableMessage = context.getString(R.string.booking_price_server_unavailable);
     }
 
     void getAppointments(RepositoryCallback<List<AppointmentRequest>> callback) {
@@ -92,7 +96,7 @@ final class CoreApiAppointmentClient {
     ) {
         String draftPayload;
         try {
-            draftPayload = buildDraftBody(draft).toString();
+            draftPayload = buildCreateDraftBody(draft).toString();
         } catch (JSONException exception) {
             postError(callback, "예약 입력값을 확인해 주세요.");
             return;
@@ -104,22 +108,10 @@ final class CoreApiAppointmentClient {
                 (idToken, appCheckToken) -> {
                     JSONObject body = new JSONObject(draftPayload);
                     body.put("clientRequestId", clientRequestId.toString());
-                    JSONObject response;
-                    try {
-                        response = requestJson(
-                                "POST",
-                                "/api/appointments",
-                                body,
-                                idToken,
-                                appCheckToken);
-                    } catch (IOException firstFailure) {
-                        response = requestJson(
-                                "POST",
-                                "/api/appointments",
-                                body,
-                                idToken,
-                                appCheckToken);
-                    }
+                    JSONObject response = requestCreateWithRetry(
+                            body,
+                            (path, request) -> requestJson("POST", path, request, idToken, appCheckToken),
+                            priceServerUnavailableMessage);
                     return parseAndRemember(response).request;
                 },
                 new RepositoryCallback<AppointmentRequest>() {
@@ -293,7 +285,40 @@ final class CoreApiAppointmentClient {
         });
     }
 
-    private JSONObject buildDraftBody(BookingRequestDraft draft) throws JSONException {
+    static JSONObject buildCreateDraftBody(BookingRequestDraft draft) throws JSONException {
+        JSONObject body = buildDraftBody(draft);
+        body.put("pricePolicyVersion", BookingPricePolicy.VERSION);
+        body.put("expectedFinalPrice", draft.getPriceSummary().getFinalPrice());
+        return body;
+    }
+
+    static JSONObject requestCreateWithRetry(
+            JSONObject body,
+            CreateRequestSender sender,
+            String priceServerUnavailableMessage
+    ) throws Exception {
+        // 구형 서버는 새 경로를 모른다. 실패해도 기존 생성 경로로 우회하지 않는다.
+        String path = "/api/appointments/price-confirmed";
+        try {
+            try {
+                return sender.send(path, body);
+            } catch (IOException firstFailure) {
+                return sender.send(path, body);
+            }
+        } catch (CoreApiAuthenticatedClient.ApiException exception) {
+            if (exception.getStatusCode() == 404 || exception.getStatusCode() == 405) {
+                throw new CoreApiAuthenticatedClient.ApiException(
+                        exception.getStatusCode(), priceServerUnavailableMessage);
+            }
+            throw exception;
+        }
+    }
+
+    interface CreateRequestSender {
+        JSONObject send(String path, JSONObject body) throws Exception;
+    }
+
+    static JSONObject buildDraftBody(BookingRequestDraft draft) throws JSONException {
         if (draft == null) {
             throw new JSONException("예약 입력값이 없습니다.");
         }
