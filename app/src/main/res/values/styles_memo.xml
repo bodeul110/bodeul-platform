@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 메모 표면은 주야간 모두 밝으므로 테마의 흰 글자·비활성 투명도를 상속하지 않는다. -->
+    <style name="BodeulMemoFilledInput" parent="BodeulFilledInput">
+        <item name="boxBackgroundColor">@color/memo_surface</item>
+        <item name="android:textColorHint">@color/memo_hint_text</item>
+        <item name="hintTextColor">@color/memo_hint_text</item>
+        <item name="helperTextTextColor">@color/figma_mvp_text_hint</item>
+    </style>
+    <style name="BodeulFigmaMemoFilledInput" parent="BodeulFigmaFilledInput">
+        <item name="boxBackgroundColor">@color/memo_figma_surface</item>
+        <item name="android:textColorHint">@color/memo_hint_text</item>
+        <item name="hintTextColor">@color/memo_hint_text</item>
+        <item name="helperTextTextColor">@color/figma_mvp_text_hint</item>
+    </style>
+    <style name="BodeulMemoEditText" parent="Widget.MaterialComponents.TextInputEditText.FilledBox">
+        <item name="android:textColor">@color/memo_text</item>
+        <item name="android:textColorHint">@color/memo_hint_text</item>
+    </style>
+</resources>
