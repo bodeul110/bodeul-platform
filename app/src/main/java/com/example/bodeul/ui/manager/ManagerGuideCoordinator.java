@@ -47,6 +47,8 @@ public final class ManagerGuideCoordinator {
         SessionReport report = dashboard.getSessionReport();
         List<ManagerGuideStageModel> stages = buildStages(dashboard);
         GuideStep focusStep = findFocusStep(dashboard);
+        String presentationStepCode = ManagerGuidePresentationStepResolver.resolve(
+                focusStep.getCode());
         ManagerGuideProgressPolicy.Decision advanceDecision =
                 ManagerGuideProgressPolicy.resolve(
                         session,
@@ -79,6 +81,7 @@ public final class ManagerGuideCoordinator {
                 sectionVisibility,
                 buildMemoSummary(session),
                 focusStep.getCode(),
+                presentationStepCode,
                 legacyManagerLocationEnabled
                         ? CompanionLocationDisplayHelper.buildLiveSharingStatus(context, session)
                         : "",
@@ -145,6 +148,7 @@ public final class ManagerGuideCoordinator {
                 ),
                 ManagerGuideSectionVisibility.hidden(),
                 Collections.emptyList(),
+                "",
                 "",
                 context.getString(R.string.live_location_status_inactive_empty),
                 context.getString(R.string.live_location_history_empty),
@@ -272,9 +276,8 @@ public final class ManagerGuideCoordinator {
     }
 
     private boolean isMeetingStep(GuideStep step) {
-        return step != null && "MEETING_CONFIRMATION".equals(
-                step.getCode() == null ? "" : step.getCode().trim()
-        );
+        return step != null && ManagerGuidePresentationStepResolver.matches(
+                step.getCode(), "MEETING_CONFIRMATION");
     }
 
     private String valueOrFallback(String value) {
@@ -367,8 +370,10 @@ public final class ManagerGuideCoordinator {
             CompanionSession session,
             ManagerGuideProgressPolicy.Decision advanceDecision
     ) {
+        GuideStep presentationStep =
+                ManagerGuidePresentationStepResolver.toPresentationStep(focusStep);
         ManagerGuideVideoGuidancePolicy.Result videoGuidance =
-                ManagerGuideVideoGuidancePolicy.resolve(focusStep);
+                ManagerGuideVideoGuidancePolicy.resolve(presentationStep);
         String videoGuidanceBody = videoGuidance.getFallbackText().isEmpty()
                 ? context.getString(R.string.guide_video_fallback_default)
                 : videoGuidance.getFallbackText();
@@ -395,8 +400,8 @@ public final class ManagerGuideCoordinator {
                 context.getString(R.string.guide_focus_preview_label),
                 shouldShowBlockedGuidance(advanceDecision)
                         ? buildBlockedGuidance(advanceDecision)
-                        : formatter.buildFocusPreviewBody(focusStep, session),
-                formatter.resolveFocusPreviewBackground(focusStep),
+                        : formatter.buildFocusPreviewBody(presentationStep, session),
+                formatter.resolveFocusPreviewBackground(presentationStep),
                 videoGuidance.isVisible(),
                 videoGuidanceTitle,
                 videoGuidanceBody
@@ -497,8 +502,10 @@ public final class ManagerGuideCoordinator {
             GuideStep focusStep,
             ManagerGuidePrimaryAction primaryAction
     ) {
+        GuideStep presentationStep =
+                ManagerGuidePresentationStepResolver.toPresentationStep(focusStep);
         ManagerGuideSectionVisibility visibility =
-                ManagerGuideSectionVisibility.forStep(focusStep);
+                ManagerGuideSectionVisibility.forStep(presentationStep);
         if (primaryAction == ManagerGuidePrimaryAction.SUBMIT_REPORT) {
             return visibility.withReportSection();
         }
@@ -517,7 +524,9 @@ public final class ManagerGuideCoordinator {
     }
 
     private String buildStepActionLabel(GuideStep step) {
-        String code = step == null || step.getCode() == null ? "" : step.getCode().trim();
+        String code = step == null
+                ? ""
+                : ManagerGuidePresentationStepResolver.resolve(step.getCode());
         switch (code) {
             case "MEETING_CONFIRMATION":
                 return context.getString(R.string.guide_action_meeting_complete);

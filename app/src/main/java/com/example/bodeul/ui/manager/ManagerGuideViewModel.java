@@ -778,7 +778,7 @@ public class ManagerGuideViewModel extends ViewModel {
         String activeSessionId = dashboard.getSession().getId();
         String activeStepCode = dashboard.getSession().getCurrentStepCode();
         if (!consultationDraftSessionId.equals(activeSessionId)
-                || !"CONSULTATION_SUPPORT".equals(activeStepCode)) {
+                || !isConsultationDraftStep(activeStepCode)) {
             clearConsultationDraft(consultationDraftSessionId);
         }
     }
@@ -807,6 +807,11 @@ public class ManagerGuideViewModel extends ViewModel {
                 dashboard.getSession(), summaryDraftSessionId, "CONSULTATION_SUMMARY")) {
             clearSummaryDraft(summaryDraftSessionId);
         }
+    }
+
+    static boolean isConsultationDraftStep(String stepCode) {
+        return ManagerGuidePresentationStepResolver.matches(
+                stepCode, "CONSULTATION_SUPPORT");
     }
 
     public void replaceSessionArtifacts(
@@ -902,9 +907,14 @@ public class ManagerGuideViewModel extends ViewModel {
         String activeSessionId = dashboard.getSession().getId();
         String activeStepCode = dashboard.getSession().getCurrentStepCode();
         if (!savedSessionId.equals(activeSessionId)
-                || !"PAYMENT_EVIDENCE".equals(activeStepCode)) {
+                || !isPaymentDraftStep(activeStepCode)) {
             clearPaymentDraft(savedStateHandle, savedSessionId);
         }
+    }
+
+    static boolean isPaymentDraftStep(String stepCode) {
+        return ManagerGuidePresentationStepResolver.matches(
+                stepCode, "PAYMENT_EVIDENCE");
     }
 
     static void savePaymentDraft(

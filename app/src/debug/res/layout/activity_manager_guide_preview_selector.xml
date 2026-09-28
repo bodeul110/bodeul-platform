@@ -11,6 +11,7 @@
     android:paddingBottom="20dp">
 
     <TextView
+        android:id="@+id/textManagerGuidePreviewSelectorTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="@font/pretendard_bold"
@@ -19,6 +20,7 @@
         android:textSize="24sp" />
 
     <TextView
+        android:id="@+id/textManagerGuidePreviewSelectorBody"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"

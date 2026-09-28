@@ -64,7 +64,8 @@ final class ManagerGuideCareCompletionBinder {
     }
 
     void bind(ManagerGuideScreenModel model, ManagerDashboard dashboard) {
-        boolean completionStep = "CARE_COMPLETION".equals(model.getCurrentStepCode());
+        boolean completionStep = "CARE_COMPLETION".equals(
+                model.getPresentationStepCode());
         content.setVisibility(completionStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(completionStep ? View.VISIBLE : View.GONE);
         if (!completionStep) {

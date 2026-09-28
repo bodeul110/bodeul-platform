@@ -92,6 +92,9 @@ public class ManagerGuideVideoGuidancePolicyTest {
         assertTrue(ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
                 ManagerGuidePrimaryAction.ADVANCE,
                 "PHARMACY_ROUTE"));
+        assertTrue(ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
+                ManagerGuidePrimaryAction.ADVANCE,
+                "LEGACY_CORE_RECEPTION_PREPARATION"));
         assertFalse(ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
                 ManagerGuidePrimaryAction.NONE,
                 "HOSPITAL_ROUTE"));
@@ -108,6 +111,12 @@ public class ManagerGuideVideoGuidancePolicyTest {
                 "HOSPITAL_ROUTE",
                 "session-1",
                 " HOSPITAL_ROUTE "));
+        assertTrue(ManagerGuideAdvanceConfirmationPolicy.canApplyConfirmation(
+                ManagerGuidePrimaryAction.ADVANCE,
+                "session-1",
+                "LEGACY_CORE_RECEPTION_PREPARATION",
+                "session-1",
+                "LEGACY_CORE_RECEPTION_PREPARATION"));
         assertFalse(ManagerGuideAdvanceConfirmationPolicy.canApplyConfirmation(
                 ManagerGuidePrimaryAction.ADVANCE,
                 "session-1",

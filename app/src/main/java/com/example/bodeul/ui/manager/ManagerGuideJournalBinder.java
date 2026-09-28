@@ -86,7 +86,8 @@ final class ManagerGuideJournalBinder {
             ManagerDashboard dashboard,
             boolean mutationInFlight
     ) {
-        boolean journalStep = "MANAGER_JOURNAL".equals(model.getCurrentStepCode());
+        boolean journalStep = "MANAGER_JOURNAL".equals(
+                model.getPresentationStepCode());
         content.setVisibility(journalStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(journalStep ? View.VISIBLE : View.GONE);
         if (!journalStep) {

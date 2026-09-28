@@ -72,6 +72,30 @@ public class ManagerRepositoryTest {
                 session,
                 "session-1",
                 "PRESCRIPTION_DOCUMENTS"));
+
+        session.applyServerGuideProgress(
+                "LEGACY_CORE_PHARMACY", true, true, "");
+        assertTrue(ManagerRepository.matchesMedicationExpectation(
+                session,
+                "session-1",
+                "LEGACY_CORE_PHARMACY"));
+        assertFalse(ManagerRepository.matchesMedicationExpectation(
+                session,
+                "session-1",
+                "MEDICATION_CONFIRMATION"));
+        assertFalse(ManagerRepository.matchesMedicationExpectation(
+                session,
+                "session-2",
+                "LEGACY_CORE_PHARMACY"));
+        assertFalse(ManagerRepository.matchesArtifactExpectation(
+                session,
+                "session-1",
+                "LEGACY_CORE_PHARMACY",
+                CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE));
+        assertFalse(ManagerRepository.matchesVitalsExpectation(
+                session,
+                "session-1",
+                "LEGACY_CORE_PHARMACY"));
     }
 
     @Test
@@ -116,5 +140,41 @@ public class ManagerRepositoryTest {
                 CompanionSessionArtifactUploadPolicy.PRESCRIPTION_IMAGE));
         assertFalse(ManagerRepository.matchesPaymentExpectation(
                 session, "session-1", "PRESCRIPTION_DOCUMENTS"));
+
+        session.applyServerGuideProgress("LEGACY_CORE_PAYMENT", true, true, "");
+        assertTrue(ManagerRepository.matchesPaymentExpectation(
+                session, "session-1", "LEGACY_CORE_PAYMENT"));
+        assertFalse(ManagerRepository.matchesPaymentExpectation(
+                session, "session-1", "PAYMENT_EVIDENCE"));
+        assertFalse(ManagerRepository.matchesPaymentExpectation(
+                session, "session-2", "LEGACY_CORE_PAYMENT"));
+        assertFalse(ManagerRepository.matchesArtifactExpectation(
+                session,
+                "session-1",
+                "LEGACY_CORE_PAYMENT",
+                CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE));
+    }
+
+    @Test
+    public void matchesConsultationExpectation_acceptsLegacyAliasButKeepsRawIdentity() {
+        CompanionSession session = new CompanionSession(
+                "session-1",
+                "appointment-1",
+                "manager-1",
+                4,
+                SessionStatus.IN_TREATMENT,
+                "",
+                "",
+                "",
+                "",
+                "",
+                false);
+        session.applyServerGuideProgress(
+                "LEGACY_CORE_CONSULTATION", true, true, "");
+
+        assertTrue(ManagerRepository.matchesConsultationExpectation(
+                session, "session-1", "LEGACY_CORE_CONSULTATION"));
+        assertFalse(ManagerRepository.matchesConsultationExpectation(
+                session, "session-1", "CONSULTATION_SUPPORT"));
     }
 }

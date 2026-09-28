@@ -16,6 +16,7 @@
     <string name="guide_payment_select_helper">JPEG, PNG, PDF · 1개 · 최대 10MiB</string>
     <string name="guide_payment_status_empty">미등록 · 파일 없이도 다음 단계로 이동할 수 있습니다.</string>
     <string name="guide_payment_status_registered">1개 등록됨</string>
+    <string name="guide_payment_evidence_legacy_unavailable">현재 7단계 운영 흐름에서는 결제 증빙 등록을 지원하지 않습니다. 현장 메모는 아래에서 저장할 수 있습니다.</string>
     <string name="guide_payment_file_format">%1$s · %2$s</string>
     <string name="guide_payment_file_size_unknown">크기 정보 없음</string>
     <string name="guide_payment_file_size_kib">%1$.1f KiB</string>

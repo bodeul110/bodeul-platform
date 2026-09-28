@@ -113,6 +113,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private boolean exitConfirmationShowing;
     private ManagerGuidePrimaryAction currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
     private String currentStepCode = "";
+    private String currentPresentationStepCode = "";
     private String lastRenderedSessionId = "";
     private String lastRenderedStepCode = "";
     private boolean hasRenderedGuideScreen;
@@ -394,7 +395,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             }
         });
         findViewById(R.id.buttonGuideReceptionShare).setOnClickListener(view -> {
-            if (!"RECEPTION_QUEUE".equals(currentStepCode) || mutationInFlight) {
+            if (!isPresentationStep("RECEPTION_QUEUE") || mutationInFlight) {
                 return;
             }
             String message = managerGuideReceptionBinder.buildGuardianUpdate();
@@ -409,7 +410,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.navGuideProfile).setOnClickListener(view -> attemptExit(() ->
                 startActivity(new Intent(this, ManagerProfileActivity.class))));
         findViewById(R.id.buttonGuidePreConsultationComplete).setOnClickListener(view -> {
-            if ("PRE_CONSULTATION".equals(currentStepCode)
+            if (isPresentationStep("PRE_CONSULTATION")
                     && !managerGuidePreConsultationBinder.isConfirmed()) {
                 if (managerGuidePreConsultationBinder.canConfirm() && !mutationInFlight) {
                     viewModel.updatePreConsultationConfirmed(true);
@@ -423,19 +424,19 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonSaveGuardianUpdate).setOnClickListener(view -> viewModel.saveGuardianUpdate(valueOf(inputGuardianUpdate)));
         findViewById(R.id.buttonSaveGuidePhotoNote).setOnClickListener(view -> viewModel.saveFieldPhotoNote(valueOf(inputGuidePhotoNote)));
         findViewById(R.id.buttonGuideConsultationSaveGuardian).setOnClickListener(view -> {
-            if ("CONSULTATION_SUPPORT".equals(currentStepCode) && !mutationInFlight) {
+            if (isPresentationStep("CONSULTATION_SUPPORT") && !mutationInFlight) {
                 viewModel.saveConsultationGuardianUpdate(
                         managerGuideConsultationBinder.guardianUpdate());
             }
         });
         findViewById(R.id.buttonGuideConsultationSaveFieldNote).setOnClickListener(view -> {
-            if ("CONSULTATION_SUPPORT".equals(currentStepCode) && !mutationInFlight) {
+            if (isPresentationStep("CONSULTATION_SUPPORT") && !mutationInFlight) {
                 viewModel.saveConsultationFieldNote(
                         managerGuideConsultationBinder.fieldNote());
             }
         });
         findViewById(R.id.buttonGuideSummarySaveNote).setOnClickListener(view -> {
-            if ("CONSULTATION_SUMMARY".equals(currentStepCode) && !mutationInFlight) {
+            if (isPresentationStep("CONSULTATION_SUMMARY") && !mutationInFlight) {
                 viewModel.saveConsultationSummaryNote(
                         managerGuideConsultationSummaryBinder.note());
             }
@@ -451,7 +452,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.buttonGuidePaymentClear).setOnClickListener(
                 view -> clearCurrentStepArtifact());
         findViewById(R.id.buttonGuidePaymentSaveNote).setOnClickListener(view -> {
-            if ("PAYMENT_EVIDENCE".equals(currentStepCode) && !mutationInFlight) {
+            if (isPresentationStep("PAYMENT_EVIDENCE") && !mutationInFlight) {
                 viewModel.savePaymentEvidenceNote(managerGuidePaymentBinder.note());
             }
         });
@@ -618,6 +619,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             managerGuideJournalBinder.hideForState();
             currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
             currentStepCode = "";
+            currentPresentationStepCode = "";
             clearCurrentLocationMarkerOutsideMeetingStep();
             managerGuideContentContainer.setVisibility(View.GONE);
             managerGuideBottomAction.setVisibility(View.GONE);
@@ -642,6 +644,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
             StatePanelHelper.hide(managerGuideStatePanel);
             if (state.screenModel != null) {
                 String nextStepCode = state.screenModel.getCurrentStepCode();
+                String nextPresentationStepCode =
+                        state.screenModel.getPresentationStepCode();
                 String sessionId = state.dashboard == null
                         || state.dashboard.getSession() == null
                         ? ""
@@ -691,6 +695,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 }
                 currentPrimaryAction = state.screenModel.getPrimaryAction();
                 currentStepCode = nextStepCode;
+                currentPresentationStepCode = nextPresentationStepCode;
                 lastRenderedSessionId = sessionId;
                 lastRenderedStepCode = nextStepCode;
                 hasRenderedGuideScreen = true;
@@ -717,6 +722,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 managerGuideJournalBinder.hideForState();
                 currentPrimaryAction = ManagerGuidePrimaryAction.NONE;
                 currentStepCode = "";
+                currentPresentationStepCode = "";
                 clearCurrentLocationMarkerOutsideMeetingStep();
                 managerGuideContentContainer.setVisibility(View.GONE);
                 managerGuideBottomAction.setVisibility(View.GONE);
@@ -795,15 +801,15 @@ public class ManagerGuideActivity extends AppCompatActivity {
             return;
         }
         if (currentPrimaryAction == ManagerGuidePrimaryAction.ADVANCE) {
-            if ("CONSULTATION_SUMMARY".equals(currentStepCode)
+            if (isPresentationStep("CONSULTATION_SUMMARY")
                     && managerGuideConsultationSummaryBinder.showUnsavedInputError()) {
                 return;
             }
-            if ("CONSULTATION_SUPPORT".equals(currentStepCode)
+            if (isPresentationStep("CONSULTATION_SUPPORT")
                     && managerGuideConsultationBinder.showUnsavedInputError()) {
                 return;
             }
-            if ("PAYMENT_EVIDENCE".equals(currentStepCode)
+            if (isPresentationStep("PAYMENT_EVIDENCE")
                     && managerGuidePaymentBinder.hasUnsavedInput()) {
                 Toast.makeText(
                         this,
@@ -811,7 +817,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
                 return;
             }
-            if ("MEDICATION_CONFIRMATION".equals(currentStepCode)
+            if (isPresentationStep("MEDICATION_CONFIRMATION")
                     && managerGuideMedicationBinder.hasUnsavedInput()) {
                 Toast.makeText(
                         this,
@@ -819,7 +825,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                         Toast.LENGTH_SHORT).show();
                 return;
             }
-            if ("VITALS_CHECK".equals(currentStepCode)) {
+            if (isPresentationStep("VITALS_CHECK")) {
                 String note = managerGuideVitalsBinder.buildNote();
                 if (note != null) {
                     viewModel.saveVitalsAndAdvance(note);
@@ -828,7 +834,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             }
             if (ManagerGuideAdvanceConfirmationPolicy.requiresConfirmation(
                     currentPrimaryAction,
-                    currentStepCode)) {
+                    currentPresentationStepCode)) {
                 showRouteCompletionConfirmation();
                 return;
             }
@@ -841,11 +847,15 @@ public class ManagerGuideActivity extends AppCompatActivity {
     }
 
     private boolean isMedicationMutationAvailable() {
-        return "MEDICATION_CONFIRMATION".equals(currentStepCode) && !mutationInFlight;
+        return isPresentationStep("MEDICATION_CONFIRMATION") && !mutationInFlight;
+    }
+
+    private boolean isPresentationStep(String stepCode) {
+        return stepCode != null && stepCode.equals(currentPresentationStepCode);
     }
 
     private void attemptExit(Runnable exitAction) {
-        boolean summaryMayStillBeActive = "CONSULTATION_SUMMARY".equals(currentStepCode)
+        boolean summaryMayStillBeActive = isPresentationStep("CONSULTATION_SUMMARY")
                 || TextUtils.isEmpty(currentStepCode);
         if (summaryMayStillBeActive && mutationInFlight) {
             Toast.makeText(this, R.string.guide_consultation_save_in_progress,
@@ -855,17 +865,17 @@ public class ManagerGuideActivity extends AppCompatActivity {
         boolean hasUnsavedSummary = summaryMayStillBeActive
                 && managerGuideConsultationSummaryBinder != null
                 && managerGuideConsultationSummaryBinder.hasUnsavedInput();
-        boolean consultationMayStillBeActive = "CONSULTATION_SUPPORT".equals(currentStepCode)
+        boolean consultationMayStillBeActive = isPresentationStep("CONSULTATION_SUPPORT")
                 || TextUtils.isEmpty(currentStepCode);
         boolean hasUnsavedConsultation = consultationMayStillBeActive
                 && managerGuideConsultationBinder != null
                 && managerGuideConsultationBinder.hasUnsavedInput();
-        boolean medicationMayStillBeActive = "MEDICATION_CONFIRMATION".equals(currentStepCode)
+        boolean medicationMayStillBeActive = isPresentationStep("MEDICATION_CONFIRMATION")
                 || TextUtils.isEmpty(currentStepCode);
         boolean hasUnsavedMedication = medicationMayStillBeActive
                 && managerGuideMedicationBinder != null
                 && managerGuideMedicationBinder.hasUnsavedInput();
-        boolean paymentMayStillBeActive = "PAYMENT_EVIDENCE".equals(currentStepCode)
+        boolean paymentMayStillBeActive = isPresentationStep("PAYMENT_EVIDENCE")
                 || TextUtils.isEmpty(currentStepCode);
         boolean hasUnsavedPayment = paymentMayStillBeActive
                 && managerGuidePaymentBinder != null
@@ -1337,7 +1347,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     }
 
     private void showCurrentLocationOnMap() {
-        if (!ManagerGuideCurrentLocationPolicy.isAvailableFor(currentStepCode)
+        if (!ManagerGuideCurrentLocationPolicy.isAvailableFor(currentPresentationStepCode)
                 || currentLocationReadInFlight) {
             return;
         }
@@ -1357,7 +1367,8 @@ public class ManagerGuideActivity extends AppCompatActivity {
             public void onSuccess(@androidx.annotation.NonNull Location location) {
                 finishCurrentLocationRead();
                 if (isFinishing() || isDestroyed()
-                        || !ManagerGuideCurrentLocationPolicy.isAvailableFor(currentStepCode)
+                        || !ManagerGuideCurrentLocationPolicy.isAvailableFor(
+                        currentPresentationStepCode)
                         || kakaoMap == null) {
                     return;
                 }
@@ -1423,7 +1434,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     }
 
     private void clearCurrentLocationMarkerOutsideMeetingStep() {
-        if (ManagerGuideCurrentLocationPolicy.isAvailableFor(currentStepCode)
+        if (ManagerGuideCurrentLocationPolicy.isAvailableFor(currentPresentationStepCode)
                 || currentLocationMarker == null) {
             return;
         }

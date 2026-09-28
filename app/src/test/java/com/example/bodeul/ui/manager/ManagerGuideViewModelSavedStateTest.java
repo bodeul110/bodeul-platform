@@ -14,6 +14,22 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ManagerGuideViewModelSavedStateTest {
+    @Test
+    public void draftRetention_acceptsCanonicalAndLegacyMeaningSteps() {
+        assertTrue(ManagerGuideViewModel.isConsultationDraftStep(
+                "CONSULTATION_SUPPORT"));
+        assertTrue(ManagerGuideViewModel.isConsultationDraftStep(
+                "LEGACY_CORE_CONSULTATION"));
+        assertFalse(ManagerGuideViewModel.isConsultationDraftStep(
+                "LEGACY_CORE_PAYMENT"));
+
+        assertTrue(ManagerGuideViewModel.isPaymentDraftStep(
+                "PAYMENT_EVIDENCE"));
+        assertTrue(ManagerGuideViewModel.isPaymentDraftStep(
+                "LEGACY_CORE_PAYMENT"));
+        assertFalse(ManagerGuideViewModel.isPaymentDraftStep(
+                "LEGACY_CORE_CONSULTATION"));
+    }
 
     @Test
     public void reportDraftSurvivesViewModelRecreationState() {

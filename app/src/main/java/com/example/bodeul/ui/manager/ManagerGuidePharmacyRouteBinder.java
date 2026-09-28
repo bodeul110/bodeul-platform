@@ -69,7 +69,8 @@ final class ManagerGuidePharmacyRouteBinder {
             ManagerDashboard dashboard,
             boolean mutationInFlight
     ) {
-        boolean pharmacyStep = "PHARMACY_ROUTE".equals(model.getCurrentStepCode());
+        boolean pharmacyStep = "PHARMACY_ROUTE".equals(
+                model.getPresentationStepCode());
         content.setVisibility(pharmacyStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(pharmacyStep ? View.VISIBLE : View.GONE);
         if (!pharmacyStep) {

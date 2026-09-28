@@ -65,6 +65,11 @@ public final class FigmaScreenPreviewSelectorActivity extends AppCompatActivity 
                         "매니저 가이드 전체 1~13단계",
                         "기존 전체 단계 선택기 열기",
                         destinationIntent(this, 6)
+                ),
+                new PreviewDestination(
+                        "매니저 운영 7단계 흐름",
+                        "실제 fallback 코드로 최신 화면 연결 확인",
+                        destinationIntent(this, 7)
                 )
         );
 
@@ -90,7 +95,9 @@ public final class FigmaScreenPreviewSelectorActivity extends AppCompatActivity 
             case 5:
                 return GuardianReportFigmaPreviewActivity.createIntent(context);
             case 6:
-                return new Intent(context, ManagerGuidePreviewSelectorActivity.class);
+                return ManagerGuidePreviewSelectorActivity.createIntent(context, false);
+            case 7:
+                return ManagerGuidePreviewSelectorActivity.createIntent(context, true);
             default:
                 throw new IllegalArgumentException("Unknown preview position: " + position);
         }

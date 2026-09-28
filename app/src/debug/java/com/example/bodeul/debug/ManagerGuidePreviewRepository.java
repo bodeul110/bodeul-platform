@@ -1,5 +1,7 @@
 package com.example.bodeul.debug;
 
+import androidx.annotation.Nullable;
+
 import com.example.bodeul.data.MockBodeulRepository;
 import com.example.bodeul.data.CompanionSessionArtifactUploadPolicy;
 import com.example.bodeul.data.RepositoryCallback;
@@ -16,28 +18,43 @@ import com.example.bodeul.domain.model.SessionStatus;
 import java.util.Collections;
 import java.util.List;
 
-/** 서버 쓰기 없이 13단계 화면과 로컬 상태 변경만 제공한다. */
+/** 서버 쓰기 없이 최신 13단계와 운영 7단계 화면의 로컬 상태 변경을 제공한다. */
 final class ManagerGuidePreviewRepository extends MockManagerRepository {
     static final String MANAGER_ID = "manager-1";
 
     private final PreviewDataRepository dataRepository;
+    private final List<GuideStep> previewSteps;
 
     ManagerGuidePreviewRepository(String initialStepCode) {
         this(initialStepCode, false);
     }
 
     ManagerGuidePreviewRepository(String initialStepCode, boolean seedPaymentEvidence) {
-        this(new PreviewDataRepository(), initialStepCode, seedPaymentEvidence);
+        this(initialStepCode, seedPaymentEvidence, false);
+    }
+
+    ManagerGuidePreviewRepository(
+            String initialStepCode,
+            boolean seedPaymentEvidence,
+            boolean legacyMode
+    ) {
+        this(
+                new PreviewDataRepository(stepsFor(legacyMode)),
+                initialStepCode,
+                seedPaymentEvidence,
+                stepsFor(legacyMode));
     }
 
     private ManagerGuidePreviewRepository(
             PreviewDataRepository dataRepository,
             String initialStepCode,
-            boolean seedPaymentEvidence
+            boolean seedPaymentEvidence,
+            List<GuideStep> previewSteps
     ) {
         super(dataRepository);
         this.dataRepository = dataRepository;
-        GuideStep initialStep = ManagerGuidePreviewCatalog.resolve(initialStepCode);
+        this.previewSteps = previewSteps;
+        GuideStep initialStep = resolveStep(previewSteps, initialStepCode);
         CompanionSession session = requirePreviewSession();
         session.setCurrentStepOrder(initialStep.getOrder());
         applyPreviewProgress(session);
@@ -167,10 +184,9 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
     }
 
     private void applyPreviewProgress(CompanionSession session) {
-        GuideStep currentStep = ManagerGuidePreviewCatalog.findByOrder(
-                session.getCurrentStepOrder());
+        GuideStep currentStep = findByOrder(previewSteps, session.getCurrentStepOrder());
         if (currentStep == null) {
-            currentStep = ManagerGuidePreviewCatalog.steps().get(0);
+            currentStep = previewSteps.get(0);
             session.setCurrentStepOrder(currentStep.getOrder());
         }
         session.setCurrentStepCode(currentStep.getCode());
@@ -182,12 +198,14 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
                     true,
                     false,
                     "STEP_INPUT_REQUIRED");
-        } else if (currentStep.getOrder() == ManagerGuidePreviewCatalog.steps().size()) {
+        } else if (currentStep.getOrder() == previewSteps.size()) {
             session.applyServerGuideProgress(
                     currentStep.getCode(),
                     true,
                     false,
-                    "CARE_ENDED_PENDING_COMPLETION");
+                    previewSteps.size() == 7
+                            ? "LAST_STEP_REACHED"
+                            : "CARE_ENDED_PENDING_COMPLETION");
         } else {
             session.applyServerGuideProgress(currentStep.getCode(), true, true, "");
         }
@@ -209,16 +227,46 @@ final class ManagerGuidePreviewRepository extends MockManagerRepository {
         return SessionStatus.CARE_ENDED;
     }
 
+    private static List<GuideStep> stepsFor(boolean legacyMode) {
+        return legacyMode
+                ? ManagerGuideLegacyPreviewCatalog.steps()
+                : ManagerGuidePreviewCatalog.steps();
+    }
+
+    private static GuideStep resolveStep(List<GuideStep> steps, String rawCode) {
+        String code = rawCode == null ? "" : rawCode.trim();
+        for (GuideStep step : steps) {
+            if (step.getCode().equals(code)) {
+                return step;
+            }
+        }
+        return steps.get(0);
+    }
+
+    @Nullable
+    private static GuideStep findByOrder(List<GuideStep> steps, int order) {
+        for (GuideStep step : steps) {
+            if (step.getOrder() == order) {
+                return step;
+            }
+        }
+        return null;
+    }
+
     private static final class PreviewDataRepository extends MockBodeulRepository {
         private static final String HOSPITAL_NAME = "서울대학교병원";
         private static final String DEPARTMENT_NAME = "신경과";
 
-        private final HospitalGuide previewGuide = new HospitalGuide(
-                "debug-guide-preview",
-                1L,
-                HOSPITAL_NAME,
-                DEPARTMENT_NAME,
-                ManagerGuidePreviewCatalog.steps());
+        private final HospitalGuide previewGuide;
+
+        PreviewDataRepository(List<GuideStep> steps) {
+            previewGuide = new HospitalGuide(
+                    "debug-guide-preview",
+                    1L,
+                    HOSPITAL_NAME,
+                    DEPARTMENT_NAME,
+                    steps);
+        }
 
         @Override
         public synchronized HospitalGuide getHospitalGuide(

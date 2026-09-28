@@ -25,7 +25,12 @@ final class ManagerGuideStepRegistry {
     }
 
     static boolean isHospitalRoute(@Nullable String rawCode) {
-        return rawCode != null && "HOSPITAL_ROUTE".equals(rawCode.trim());
+        if (rawCode == null) {
+            return false;
+        }
+        String code = rawCode.trim();
+        return "HOSPITAL_ROUTE".equals(code)
+                || "LEGACY_CORE_RECEPTION_PREPARATION".equals(code);
     }
 
     static PresentationType resolve(@Nullable String rawCode) {

@@ -101,7 +101,7 @@ Android가 단계 제목이나 순번으로 13개 화면을 추정하거나, 서
 
 ### 리스크
 
-현재 registry는 13개 전용 입력 UI가 아니라 기존 공통 가이드 화면의 표시 유형만 선택한다. 코드 없는 legacy snapshot은 일반 표시가 가능하더라도 서버가 `STEP_CONTRACT_MISMATCH`로 진행을 막는다. 개발 DB와 Core API에서는 legacy 7단계 snapshot의 진행, 화면 재진입, 앱 프로세스 재시작 복구를 실기기로 확인했으며, 운영 환경도 V14와 Core API 배포 순서를 지킨 뒤 같은 검증을 반복해야 한다.
+현재 registry와 presentation resolver는 canonical 13단계와 `LEGACY_CORE_*` 7단계를 의미에 맞는 최신 전용 화면으로 선택하되, 각 서버 계약이 허용하는 입력만 노출한다. 코드 없는 legacy snapshot은 일반 표시가 가능하더라도 서버가 `STEP_CONTRACT_MISMATCH`로 진행을 막는다. 개발 DB와 Core API에서는 legacy 7단계 snapshot의 진행, 화면 재진입, 앱 프로세스 재시작 복구를 실기기로 확인했으며, 운영 환경도 V14와 Core API 배포 순서를 지킨 뒤 같은 검증을 반복해야 한다.
 
 ## 계약 원칙
 
@@ -264,7 +264,7 @@ Android는 `canAdvance=false`를 우회해 순서를 올리지 않고, 서버에
 | --- | --- | --- |
 | 가이드 없음 또는 0단계 | Core API는 빈 `steps`, `canAdvance=false`, `GUIDE_NOT_READY`를 반환한다. Android는 `가이드 준비 중`을 표시하고 advance 요청을 보내지 않는다. | 운영 가이드 준비 상태의 담당자 안내와 재시도 UX는 별도 운영 정책으로 보완한다. |
 | 1단계 | Core API는 진입 전 order 0에서 진행을 허용하고 order 1에서 `LAST_STEP_REACHED`를 반환한다. | 한 단계의 전용 CTA와 종료·리포트 전이는 별도 상태 계약으로 연결한다. |
-| 7단계 | `LEGACY_CORE_7_V1` snapshot의 7개 코드·제목·설명을 Android까지 그대로 보존한다. 코드 없는 `LEGACY_HOSPITAL_GUIDE_V0`는 자동 추정하지 않고 차단한다. | 전용 입력 화면은 만들지 않고 기존 공통 화면을 유지한다. |
+| 7단계 | `LEGACY_CORE_7_V1` snapshot의 7개 코드·제목·설명과 진행 검증에는 원본 코드를 그대로 사용하고, Android 화면 선택에만 같은 의미의 최신 전용 화면을 연결한다. Firebase 설정이 없는 일반 debug 앱의 기본 Mock 가이드도 같은 코드를 사용한다. 코드 없는 `LEGACY_HOSPITAL_GUIDE_V0`는 자동 추정하지 않고 차단한다. | 13단계의 기초 측정·진료 전 확인·진료 요약·약국 이동·처방 자료·동행 종료는 독립 단계로 복원하지 않는다. Legacy 서버가 허용하지 않는 결제 증빙과 `/care-end`도 노출하지 않는다. |
 | 13단계 | Core API와 Android가 13개 상세 단계를 자르지 않고 표시하며 알려진 코드를 공통 표시 유형에 연결한다. 가이드 8·10의 선택 첨부, 12의 동행 종료, 13의 선택 일지·완료 재시도 계약은 V18 코드로 준비했다. | 나머지 코드별 입력은 각 단계의 제품 요구가 확정될 때 별도 계약으로 추가한다. |
 | 13단계 초과 | 전체 배열을 보존하고 추가 코드는 일반 제목·설명 화면으로 표시하며 `canAdvance`를 따른다. | 서버가 새 코드를 정식 제품 코드로 확정하면 registry 표시 유형을 추가한다. |
 | 알 수 없는 `stepCode` 또는 순서 | 유효한 unknown code는 일반 화면으로 보존한다. order 불연속·중복 code·현재 순번 범위 오류는 `STEP_CONTRACT_MISMATCH` 안내와 함께 진행을 차단한다. | unknown 코드에는 코드 전용 입력을 노출하지 않는다. |
