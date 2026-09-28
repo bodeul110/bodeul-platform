@@ -13,6 +13,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BankTransferPaymentMigrationContractTests {
 
     @Test
+    void ledgerSnapshotsServerPriceAndRejectsRepricingWithoutHardcodedTariff() throws IOException {
+        String sql = fileText("src/main/resources/db/migration/V22__add_bank_transfer_payment_contract.sql");
+        int start = sql.indexOf("create function bodeul.initialize_bank_transfer_payment()");
+        int end = sql.indexOf("alter function bodeul.initialize_bank_transfer_payment()", start);
+        assertThat(sql.substring(start, end))
+                .contains("new.final_price")
+                .doesNotContain("69000", "69_000", "40000", "40_000");
+        assertThat(sql).contains("if new.final_price is distinct from old.final_price then");
+    }
+
+    @Test
     void migrationSeparatesPrivateLedgerAndRuntimeFunctions() throws IOException {
         String sql = fileText("src/main/resources/db/migration/V22__add_bank_transfer_payment_contract.sql");
 
