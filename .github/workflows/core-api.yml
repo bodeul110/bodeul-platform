@@ -166,3 +166,8 @@ jobs:
         env:
           PGPASSWORD: postgres
         run: bash db/verification/verify_bank_transfer_payment_migration.sh
+
+      - name: 보호자 예약 승인 V24 저장, 동시성, 권한과 안전 rollback 검증
+        env:
+          PGPASSWORD: postgres
+        run: bash db/verification/verify_guardian_booking_approval_migration.sh

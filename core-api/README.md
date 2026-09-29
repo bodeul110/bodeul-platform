@@ -34,7 +34,7 @@
 | 동행 증빙 | `/api/companion-sessions/{id}/artifacts` | PostgreSQL 메타데이터와 Firebase Storage 원본 분리 |
 | 기존 매니저 위치 | `/api/companion-sessions/{id}/locations` | 기본 OFF, production 고정 OFF. 환자 GPS 1분 공유 구현과 별개 |
 
-위 경로의 축약된 접미사는 같은 예약 또는 세션 base path를 사용한다. 정확한 HTTP 메서드는 Controller와 각 계약 문서를 따른다. Flyway 소스는 [V1~V23 목록](../docs/architecture/database-migration-catalog.md)에서 확인한다.
+위 경로의 축약된 접미사는 같은 예약 또는 세션 base path를 사용한다. 정확한 HTTP 메서드는 Controller와 각 계약 문서를 따른다. Flyway 소스는 [V1~V24 목록](../docs/architecture/database-migration-catalog.md)에서 확인한다. V24 보호자 예약 승인 저장은 실제 DB 미적용이며 예약 API의 보호자 생성 차단을 바꾸지 않는다.
 
 Android, Firebase 도구, 공통 데이터 계약과 함께 변경 내용을 검토하기 위해 메인 저장소 안에서 관리한다. 배포는 저장소 구조와 별개로 Cloud Run 서비스와 `core-api-preview` 또는 `core-api-production` GitHub Environment를 사용한다.
 
