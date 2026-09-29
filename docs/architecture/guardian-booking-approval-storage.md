@@ -22,4 +22,8 @@
 
 환자 승인 API의 인증·활성 역할 재확인, 서버의 본문 fingerprint·정책 버전·시각 결정, 승인 잠금부터 실제 예약 INSERT까지 동일 트랜잭션 유지, 재시도 응답의 정보공유 제한, Android 승인 화면과 DEV 종단 검증이 남아 있다. API를 켜기 전에 새 감사 데이터의 계정 삭제 영향도 집계와 보관 경계도 연결한다.
 
+## 검증 결과
+
+로컬 Core API 일반 테스트 474건과 CI의 PostgreSQL 17 저장·경합·권한·안전 rollback 검증이 통과했다. PostgreSQL 시각은 저장 정밀도로 반환되므로 후속 판정에는 메모리의 저장 전 후보가 아닌 Repository의 반환·재조회 상태를 사용한다. 실행 증적과 실제 환경 미적용 범위는 [검증 기록](../reports/issue-419-booking-approval-storage-2026-09-29.md)을 따른다.
+
 정책 계약은 [성인 환자·보호자 예약 생성 승인](adult-patient-guardian-booking-authorization.md)을 따른다. 행 잠금의 트랜잭션 수명은 [PostgreSQL 17 문서](https://www.postgresql.org/docs/17/explicit-locking.html#LOCKING-ROWS)를 기준으로 검증한다.

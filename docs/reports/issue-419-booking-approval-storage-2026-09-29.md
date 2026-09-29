@@ -13,7 +13,9 @@
 
 - 로컬 `core-api check`: 474건, 실패·오류·건너뜀 0건. 별도 태그의 PostgreSQL 테스트는 이 수에 포함하지 않는다.
 - `yq e '.' .github/workflows/core-api.yml`, Bash 구문 검사, `git diff --check` 통과.
-- 로컬 Docker engine에 연결할 수 없어 실제 PostgreSQL 경합 검증은 CI의 PostgreSQL 17 격리 DB에서 실행한다. 결과 확인 전에는 통과로 표시하지 않는다.
+- 로컬 Docker engine에 연결할 수 없어 실제 PostgreSQL 검증은 GitHub CI의 PostgreSQL 17 격리 DB에서 실행했다. `3de30b8`의 [Core API CI](https://github.com/bodeul110/bodeul-platform/actions/runs/36560272413)에서 check·컨테이너 빌드·Firestore emulator·migration-contract가 통과했다.
+- 격리 DB에서 Flyway V1~V24 적용, JDBC 저장·동시 최초 승인·재승인/철회 경합·양방향 잠금 대기·감사 실패와 호출자 rollback·역할 권한 거부를 확인했다. 이력이 있으면 V24 rollback을 거부하고, 합성 데이터만 비운 뒤에는 V24 객체만 제거되는 것도 통과했다.
+- PostgreSQL 태그 테스트와 기존 일반 테스트는 별도 실행이다. 실제 테스트 결과가 CI 로그에 남도록 전용 태스크의 개별 성공·실패·건너뜀 출력을 켰다. 후속 커밋의 최종 CI는 [PR #476](https://github.com/bodeul110/bodeul-platform/pull/476)의 head별 결과로 확인한다.
 - 새 `guardianBookingApprovalPostgresTest`는 localhost/127.0.0.1의 고정 테스트 DB만 허용한다. CI는 DB를 새로 만들고 기존 DB가 있으면 중단한다.
 - 잘못된 외부 주소를 테스트 설정에 넣으면 DB 접속 전에 태스크가 거부되는 것을 확인했다. 이는 의도한 실패 검증이며 실제 DB 접속 실패가 아니다.
 

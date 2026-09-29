@@ -53,6 +53,9 @@ tasks.register<Test>("guardianBookingApprovalPostgresTest") {
 	useJUnitPlatform {
 		includeTags("postgres-booking-approval")
 	}
+	testLogging {
+		events("passed", "failed", "skipped")
+	}
 	doFirst {
 		val url = System.getenv("BOOKING_TEST_DB_URL") ?: ""
 		if (!Regex("^jdbc:postgresql://(localhost|127\\.0\\.0\\.1):[0-9]{1,5}/bodeul_guardian_booking_test$").matches(url)) {
