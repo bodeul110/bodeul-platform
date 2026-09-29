@@ -35,7 +35,7 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 - Android는 Java/XML, Activity·Coordinator·Binder·Repository 경계를 유지한다. Codex/CLI로 개발하며 Android Studio는 필수가 아니다.
 - ServiceLocator는 실제 인증 설정이 있으면 Core API와 Firebase 잔존 기능을 조합한다. Firebase 미설정 데모는 Mock이며 API 실패를 Firestore 쓰기로 우회하지 않는다.
 - 사용자·매니저는 Spring Core API, 관리자는 별도 Next.js 서버로 같은 환경의 PostgreSQL을 사용한다. 서버 사이 proxy는 없다.
-- DDL은 메인 core-api의 Flyway V1~V24가 소유한다. V24는 #419 저장 후속 소스이며 실제 환경 미적용이다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
+- DDL은 메인 core-api의 Flyway V1~V25가 소유한다. V24 승인 저장과 V25 감사 조회 인덱스는 #419 후속 소스이며 실제 환경 미적용이다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
 - 두 저장소는 `dev` 개발·`master` 운영을 구분한다. 기능 PR은 dev로 squash, 운영 승격은 merge commit이다. Core Preview는 dev push/수동, production 배포·migration은 보호된 수동 workflow를 유지한다.
 
 ## 3. 남은 범위
@@ -43,7 +43,7 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 | 작업 | 현재 판단 |
 | --- | --- |
 | Preview API #429 | 9월 24일 종료. 9월 27일 인프라 작업에서 health 200·무인증 401 재확인. 모든 앱 화면의 E2E 성공을 뜻하지 않음 |
-| 보호자 예약 #419 | #440 정책·#476 저장 기반은 `dev` 반영. #477에서 환자 승인·철회, 실제 예약 INSERT 트랜잭션, 최소 접수증과 삭제 영향도를 기본 OFF로 연결. [API 검증](../reports/issue-419-booking-api-2026-09-29.md)과 실제 환경 미적용을 구분. V24 실제 적용·Android 요청 전달/승인·DEV 종단 검증은 남아 있으며 기존 보호자 쓰기 차단 유지 |
+| 보호자 예약 #419 | #440 정책·#476 저장 기반은 `dev` 반영. #477에서 환자 승인·철회, 실제 예약 INSERT 트랜잭션, 최소 접수증과 삭제 영향도를 기본 OFF로 연결하고 V25 감사 조회 인덱스 보완. [API 검증](../reports/issue-419-booking-api-2026-09-29.md)과 실제 환경 미적용을 구분. V24·V25 실제 적용·Android 요청 전달/승인·DEV 종단 검증은 남아 있으며 기존 보호자 쓰기 차단 유지 |
 | 내부 STT #420 | Naver Cloud 연동·녹음 저장 목표. #443 화면은 병합됐지만 실제 녹음·저장·공급자 검증은 미완료. 추가 논의 메모를 기존 내부 개발 철회나 운영 승인으로 해석하지 않음 |
 | 가이드 진입·번호 #422 | 신규·기존 세션, legacy 7단계·13단계 snapshot과 재진입 상태를 구분해 시작 단계·중복 번호 확인 |
 | 메모·리포트 #423 | 종료 전 최신 메모 조합은 반영. 마지막 CTA가 채팅으로 연결된다는 새 보고는 역할·단계·빌드 확인 필요. 종료 후 매니저 접근 회수 유지 |

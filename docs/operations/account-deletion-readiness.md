@@ -74,6 +74,8 @@ Flyway V15의 `bodeul.account_deletion_postgres_inventory(uuid)` 함수가 집�
 
 보호자 예약 생성 승인 저장은 V24의 기존 Core SELECT 권한으로 별도 집계한다. 본인이 환자 또는 지정 보호자인 현재 행 수 `guardianBookingApprovals`, 철회되지 않고 유효기간 안에 있는 행 수 `activeGuardianBookingApprovals`, 감사 수 `guardianBookingApprovalAudits`를 반환한다. 현재 상태와 감사 원문은 반환하지 않는다. 테이블이 없으면 이 세 key를 생략하고 PostgreSQL을 `PARTIAL`로 표시한다. 테이블·집계 오류는 출처 전체를 `ERROR`로 처리한다. 승인 만료는 권한 종료일 뿐 감사 삭제가 아니며 자동 파기나 탈퇴 적용 권한은 추가하지 않는다.
 
+감사 테이블의 환자 조건은 기존 PK, 보호자 조건은 V25의 `ix_guardian_booking_approval_events_guardian` 인덱스로 지원한다. V25는 조회 결과·RLS·권한을 변경하지 않으며 실제 환경에 적용하기 전에는 이 성능 보완도 적용 완료로 간주하지 않는다.
+
 | 코드 | 의미 |
 | --- | --- |
 | `ACTIVE_APPOINTMENT_PRESENT` | 완료·취소되지 않은 연관 예약이 있음 |

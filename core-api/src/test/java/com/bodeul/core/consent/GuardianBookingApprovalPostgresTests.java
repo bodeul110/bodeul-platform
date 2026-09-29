@@ -19,6 +19,8 @@ import com.bodeul.core.auth.AppUserRole;
 import com.bodeul.core.consent.AdultPatientGuardianBookingPolicy.ApprovalState;
 import com.bodeul.core.consent.AdultPatientGuardianBookingPolicy.DecisionReason;
 import com.bodeul.core.consent.GuardianBookingApprovalRepository.RequestKey;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -318,6 +321,99 @@ class GuardianBookingApprovalPostgresTests {
                     .extracting(error -> ((SQLException) error).getSQLState()).isEqualTo("55000");
             connection.rollback();
         }
+        assertThat(repository.findCurrent(key)).isEqualTo(initial);
+        assertThat(eventCount()).isEqualTo(1);
+    }
+
+    @Test
+    void guardianAuditCountsUseSelectiveIndexesWithoutPlannerHints() throws Exception {
+        repository.save(grant(key.pending(), FINGERPRINT), 0);
+        TransactionTemplate fixtureTransaction = new TransactionTemplate(new DataSourceTransactionManager(ownerDataSource));
+        List<String> plans = fixtureTransaction.execute(status -> {
+            status.setRollbackOnly();
+            UUID otherGuardian = UUID.fromString("a1900000-0000-0000-0000-000000000003");
+            owner.update("insert into bodeul.app_users (id, firebase_uid, role) values (?, 'booking-index-guardian', 'GUARDIAN')",
+                    otherGuardian);
+            // 소수 보호자의 조회 선택성을 검증한다. 합성 행은 이 트랜잭션 종료 시 모두 되돌린다.
+            owner.update("""
+                    insert into bodeul.guardian_booking_approvals
+                        (patient_user_id, guardian_user_id, client_request_id, version, grant_id,
+                         request_fingerprint, policy_version, granted_by_user_id, granted_at, expires_at)
+                    select ?, ?, md5('booking-audit-index-' || fixture_id)::uuid, 1, gen_random_uuid(),
+                           repeat('a', 64), 'test-v1', ?, timestamptz '2026-09-29 00:00:00+00',
+                           timestamptz '2026-09-29 01:00:00+00'
+                    from generate_series(1, 10000) as fixture(fixture_id)
+                    """, PATIENT, otherGuardian, PATIENT);
+            owner.update("""
+                    insert into bodeul.guardian_booking_approval_events
+                        (patient_user_id, guardian_user_id, client_request_id, version, grant_id,
+                         request_fingerprint, policy_version, granted_by_user_id, granted_at, expires_at,
+                         action, actor_user_id, occurred_at)
+                    select patient_user_id, guardian_user_id, client_request_id, version, grant_id,
+                           request_fingerprint, policy_version, granted_by_user_id, granted_at, expires_at,
+                           'GRANTED', patient_user_id, granted_at
+                    from bodeul.guardian_booking_approvals where guardian_user_id = ?
+                    """, otherGuardian);
+            owner.execute("analyze bodeul.guardian_booking_approval_events");
+            owner.execute("set local role bodeul_core_runtime");
+            assertThat(owner.queryForObject("select current_user", String.class)).isEqualTo("bodeul_core_runtime");
+            assertThat(owner.queryForObject("""
+                    select count(*) from bodeul.guardian_booking_approval_events
+                    where patient_user_id = ? or guardian_user_id = ?
+                    """, Integer.class, GUARDIAN, GUARDIAN)).isEqualTo(1);
+            return List.of(
+                    owner.queryForObject("""
+                            explain (analyze, buffers, format json)
+                            select count(*) from bodeul.guardian_booking_approval_events
+                            where patient_user_id = ? or guardian_user_id = ?
+                            """, String.class, GUARDIAN, GUARDIAN),
+                    owner.queryForObject("""
+                            explain (analyze, buffers, format json)
+                            select count(*) from bodeul.guardian_booking_approval_events where guardian_user_id = ?
+                            """, String.class, GUARDIAN));
+        });
+        assertThat(plans).hasSize(2);
+        for (String json : plans) {
+            JsonNode plan = new ObjectMapper().readTree(json).get(0).path("Plan");
+            assertThat(plan.findValuesAsText("Index Name"))
+                    .contains("ix_guardian_booking_approval_events_guardian");
+            assertThat(plan.findValuesAsText("Node Type")).doesNotContain("Seq Scan");
+        }
+        JsonNode inventoryPlan = new ObjectMapper().readTree(plans.get(0)).get(0).path("Plan");
+        assertThat(inventoryPlan.findValuesAsText("Index Name"))
+                .contains("guardian_booking_approval_events_pkey");
+        assertThat(inventoryPlan.findValuesAsText("Node Type")).contains("BitmapOr");
+        assertThat(eventCount()).isEqualTo(1);
+    }
+
+    @Test
+    void auditIndexRollbackAndReapplyPreserveApprovalAndAuditSnapshots() throws Exception {
+        ApprovalState initial = repository.save(grant(key.pending(), FINGERPRINT), 0);
+        String rollback = Files.readString(Path.of("db/rollback/V25__remove_guardian_booking_approval_audit_index.sql"),
+                StandardCharsets.UTF_8);
+        String migration = new ClassPathResource("db/migration/V25__index_guardian_booking_approval_audits.sql")
+                .getContentAsString(StandardCharsets.UTF_8);
+        TransactionTemplate fixtureTransaction = new TransactionTemplate(new DataSourceTransactionManager(ownerDataSource));
+        fixtureTransaction.executeWithoutResult(status -> {
+            status.setRollbackOnly();
+            owner.execute("set local role bodeul_migration");
+            var approvals = owner.queryForList("select * from bodeul.guardian_booking_approvals");
+            var audits = owner.queryForList("select * from bodeul.guardian_booking_approval_events");
+            owner.execute(rollback);
+            assertThat(owner.queryForObject("""
+                    select to_regclass('bodeul.ix_guardian_booking_approval_events_guardian') is null
+                    """, Boolean.class)).isTrue();
+            assertThat(owner.queryForList("select * from bodeul.guardian_booking_approvals")).isEqualTo(approvals);
+            assertThat(owner.queryForList("select * from bodeul.guardian_booking_approval_events")).isEqualTo(audits);
+            owner.execute(migration);
+            assertThat(owner.queryForObject("""
+                    select i.indisvalid and i.indisready and pg_get_userbyid(c.relowner) = 'bodeul_migration'
+                    from pg_index i join pg_class c on c.oid = i.indexrelid
+                    where i.indexrelid = 'bodeul.ix_guardian_booking_approval_events_guardian'::regclass
+                    """, Boolean.class)).isTrue();
+            assertThat(owner.queryForList("select * from bodeul.guardian_booking_approvals")).isEqualTo(approvals);
+            assertThat(owner.queryForList("select * from bodeul.guardian_booking_approval_events")).isEqualTo(audits);
+        });
         assertThat(repository.findCurrent(key)).isEqualTo(initial);
         assertThat(eventCount()).isEqualTo(1);
     }

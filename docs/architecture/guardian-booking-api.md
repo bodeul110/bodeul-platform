@@ -12,7 +12,7 @@
 
 ## 활성화 경계
 
-`bodeul.guardian-booking.enabled`의 기본값은 `false`다. 실제 개발 DB V24 적용, Android 환자 확인 화면과 보호자 요청 전달, DEV 종단 검증 전에는 켜지 않는다. 기존 예약 POST에서 보호자 생성을 거부하는 계약과 보호자 수정·취소 제한은 유지한다. 운영 배포와 DB migration은 이 작업에 포함하지 않는다.
+`bodeul.guardian-booking.enabled`의 기본값은 `false`다. 실제 개발 DB V24·V25 적용, Android 환자 확인 화면과 보호자 요청 전달, DEV 종단 검증 전에는 켜지 않는다. 기존 예약 POST에서 보호자 생성을 거부하는 계약과 보호자 수정·취소 제한은 유지한다. 운영 배포와 DB migration은 이 작업에 포함하지 않는다.
 
 환경변수 이름은 `BODEUL_GUARDIAN_BOOKING_ENABLED`다. 이번 변경에서는 배포 환경변수를 추가하거나 runtime DB 권한을 늘리지 않는다. Firebase 계정 조회에는 해당 환경 runtime의 `firebaseauth.users.get` 권한과 명시된 `FIREBASE_PROJECT_ID`가 필요하다. 권한·연결 실패를 활성 계정으로 간주하지 않고 503으로 닫는다. 이 권한의 실제 Cloud Run 검증도 활성화 전 조건이다.
 
@@ -53,6 +53,16 @@
 승인 저장소에는 요청 본문 원문을 보관하지 않는다. 승인·감사 이력은 기존 추가 전용 계약을 유지하며, 계정 삭제 영향도에 현재 승인·활성 승인·감사 건수를 포함한다. V24가 없는 환경은 이 부분을 미확인으로 표시하며 0건이나 전체 조사 완료로 처리하지 않는다. 승인 만료는 권한 종료이며 감사 삭제를 뜻하지 않는다. 감사 파기는 보존 정책과 별도 승인된 운영 절차의 대상이며 이 API에 삭제 권한을 추가하지 않는다.
 
 관리자 웹의 테이블 권한과 응답은 바뀌지 않는다. 예약 생성 후에도 정보공유 동의를 자동 발급하지 않는다.
+
+## 감사 집계 인덱스
+
+- 작업 목적: 본인 계정 삭제 영향도의 `patient_user_id = :userId OR guardian_user_id = :userId` 감사 집계가 보호자 조건 때문에 전체 이력을 순회하는 것을 방지한다.
+- 선택한 방식: 이미 병합된 V24를 수정하지 않고 V25에서 `guardian_booking_approval_events (guardian_user_id)` B-tree 인덱스를 추가한다. 환자 조건은 기존 PK의 첫 열이 담당한다.
+- 대안: 집계 쿼리를 두 개로 분리하거나 V24를 수정하는 방식 대신 후속 인덱스를 선택했다. 조회 의미와 기존 Flyway checksum을 보존한다.
+- 선택 이유: 현재 MVP에서는 추가 인덱스 하나로 기존 OR 집계를 지원할 수 있다. [PostgreSQL의 인덱스 결합](https://www.postgresql.org/docs/17/indexes-bitmap-scans.html)처럼 두 인덱스를 `BitmapOr`로 사용할 수 있는지 격리 DB에서 확인한다.
+- 리스크: 인덱스 저장 공간과 감사 INSERT 유지 비용이 증가한다. 일반 `CREATE INDEX`는 생성 중 쓰기를 막으므로 기능 OFF 상태에서 적용한다. 감사 데이터가 커진 뒤 적용한다면 [동시 인덱스 생성의 제약](https://www.postgresql.org/docs/17/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY)을 고려한 별도 비트랜잭션 적용 계획이 필요하다.
+
+V25 rollback은 새 인덱스만 제거하며 승인 상태·감사 이력·RLS·권한을 바꾸지 않는다. API의 V24 존재 여부 검사는 집계 결과의 완전성 검사이며 인덱스 적용을 대신 확인하지 않는다. 기능 활성화 전에는 별도 migration 이력에서 V25 성공까지 확인한다.
 
 ## 확인
 

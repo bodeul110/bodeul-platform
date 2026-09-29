@@ -30,12 +30,14 @@ DDL의 원본은 메인 저장소의 [Flyway migration](../../core-api/src/main/
 | V22 | 무통장입금 상세 원장·이벤트·제한 전이 함수 |
 | V23 | 관리자 무통장입금 조회 함수 |
 | V24 | 보호자 예약 생성 승인 최신 상태·추가 전용 감사. 소스 추가, 실제 환경 미적용 |
+| V25 | 보호자 기준 예약 승인 감사 집계 인덱스. 소스 추가, 실제 환경 미적용 |
 
 ## 적용 상태 확인
 
 - 대상 프로젝트와 DB를 먼저 식별하고 `flyway_schema_history`의 성공 버전을 읽기 전용으로 확인한다. 앱 commit, migration 소스 버전과 실제 DB 버전을 별도로 기록한다.
 - 9월 27일 양쪽 DB V23·실패 이력 0건을 확인했다. 운영 V16~V23 적용 run `36310121342`, V23 백업·격리 복원 run `36316057495`의 [실행 기록](../reports/dev-production-separation-2026-09-27.md)을 현재 적용 근거로 사용한다. V15 복원·9월 21일 일시정지는 당시 이력이다.
 - V24는 [#419 저장 기반](guardian-booking-approval-storage.md) 후속이다. 코드 추가나 CI 격리 DB 검증을 실제 DEV·production 적용으로 기록하지 않는다.
+- V25는 [#477 API 연결](guardian-booking-api.md#감사-집계-인덱스)의 보호자 감사 집계를 지원한다. V24 checksum은 유지하며 rollback은 새 인덱스만 제거한다.
 - [production 사전 점검](../operations/production-database-migration-readiness.md)은 연결·V14/V15 영향도에 한정된 검사다. 성공만으로 V16~V23 적용·호환성을 보장하지 않는다.
 - [bootstrap](../../core-api/db/bootstrap/), Realtime RLS와 [검증 SQL](../../core-api/db/verification/)도 함께 확인한다. Flyway 버전만 맞추고 환경별 인증·권한 설정을 생략하지 않는다.
 - 적용은 [Core API 런북](../operations/core-api-infrastructure-runbook.md)의 수동 workflow 경계를 따른다. 전체 DB reset이나 다른 환경에 대한 일괄 push를 하지 않는다.
