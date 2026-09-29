@@ -66,6 +66,6 @@ V25 rollback은 새 인덱스만 제거하며 승인 상태·감사 이력·RLS�
 
 ## 확인
 
-로컬 `core-api check` 529건과 CI의 격리 PostgreSQL 17 테스트 33건을 통과했다. API 인증·엄격한 입력 타입·오류/캐시, 활성 계정·역할 재확인, 승인 ID/버전/본문/가격, 재시도 최소 응답과 삭제 영향도 부분 집계를 포함한다. PostgreSQL에서는 실제 INSERT, 중복 요청, 생성/철회/재승인 경합, 트랜잭션 rollback, 정보공유 차단과 runtime 권한도 검증했다. 실제 DB 적용·환경 활성화·Android 실기기 검증과 이 테스트는 구분한다.
+로컬 `core-api check` 531건과 CI의 격리 PostgreSQL 17 테스트 35건을 통과했다. API 인증·엄격한 입력 타입·오류/캐시, 활성 계정·역할 재확인, 승인 ID/버전/본문/가격, 재시도 최소 응답과 삭제 영향도 부분 집계를 포함한다. PostgreSQL에서는 실제 INSERT, 중복 요청, 생성/철회/재승인 경합, 트랜잭션 rollback, 정보공유 차단과 runtime 권한도 검증했다. V25 보완으로 합성 감사 10,001건에서 인덱스 결합과 보호자 단독 인덱스 사용, 인덱스 rollback·재적용의 데이터 보존도 확인했다. 실제 DB 적용·환경 활성화·Android 실기기 검증과 이 테스트는 구분한다.
 
 인증 계정의 삭제·비활성 확인은 [Firebase Admin 사용자 관리](https://firebase.google.com/docs/auth/admin/manage-users), 트랜잭션 행 잠금은 [PostgreSQL 문서](https://www.postgresql.org/docs/17/explicit-locking.html#LOCKING-ROWS)를 따른다. 검증 증적은 [API 연결 기록](../reports/issue-419-booking-api-2026-09-29.md)에 남긴다.

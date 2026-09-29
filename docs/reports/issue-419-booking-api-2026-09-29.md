@@ -14,7 +14,7 @@
 - 단위·HTTP·격리 PostgreSQL 테스트와 [API 계약](../architecture/guardian-booking-api.md)
 - 관리자 웹 UI·테이블 권한, Android, Firebase Rules, 의존성 버전은 변경하지 않음
 
-## 검증
+## 최초 구현 검증
 
 - 로컬 `core-api check`: 529건 성공, 실패·건너뜀 없음
 - 기존 환자 직접 예약·보호자 수정/취소 차단 회귀 테스트 포함
@@ -27,11 +27,12 @@
 
 ## 리뷰 보완
 
-#477의 보호자 기준 감사 인덱스 누락 지적을 반영해 V25를 추가했다. 인덱스·rollback 계약 검사를 포함한 로컬 Core API 531건은 통과했다. 격리 PostgreSQL의 두 회귀 테스트도 추가했으며 이 보완 커밋의 CI 실행 결과는 검증 후 갱신한다.
+#477의 보호자 기준 감사 인덱스 누락 지적을 반영해 V25를 추가했다. 인덱스·rollback 계약 검사를 포함한 로컬 Core API 531건은 통과했다. 코드 커밋 `da78928`의 [Core API CI](https://github.com/bodeul110/bodeul-platform/actions/runs/36585287537)에서 격리 PostgreSQL 35건, 컨테이너 빌드·Firestore Emulator·기존 migration 검증을 통과했고 [preflight](https://github.com/bodeul110/bodeul-platform/actions/runs/36585287461)도 성공했다. CodeQL은 scope만 통과했으며 Android/JS 분석은 건너뛰었다.
 
-- 실제 Core runtime 역할에서 합성 감사 10,001건 중 한 보호자의 1건을 집계한다. `ANALYZE` 후 순차 조회 비활성화 같은 planner 강제 설정 없이 `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`으로 OR 집계와 보호자 단독 조건의 인덱스 사용을 확인한다.
-- V25 rollback·재적용을 migration 역할로 실행하고 기존 승인·감사 snapshot이 그대로인지, 재생성한 인덱스가 유효하고 migration 역할 소유인지 확인한다. 합성 데이터와 DDL 변경은 테스트 트랜잭션 종료 시 되돌린다.
-- 기존 V24 안전 rollback 검증 앞에서 V25 rollback의 객체 경계도 CI로 확인한다.
+- 실제 Core runtime 역할에서 합성 감사 10,001건 중 한 보호자의 1건을 집계했다. `ANALYZE` 후 planner 강제 설정 없이 `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)`으로 OR 집계의 기존 PK·새 인덱스 `BitmapOr` 사용과 보호자 단독 조건의 새 인덱스 사용을 확인했다. 두 계획 모두 `Seq Scan`이 없었다.
+- V25 rollback·재적용을 migration 역할로 실행해 기존 승인·감사 snapshot이 그대로이고, 재생성한 인덱스가 유효하며 migration 역할 소유임을 확인했다. 합성 데이터와 DDL 변경은 테스트 트랜잭션 종료 시 되돌렸다.
+- 기존 V24 안전 rollback 검증 앞에서 V25 rollback의 객체 경계도 CI로 확인했다. V24 파일은 `dev` 기준 원문과 동일하다.
+- 변경 문서 상대 링크, `git diff --check`, 검증 스크립트 `bash -n` 통과. 기능 활성화·실제 DB migration은 실행하지 않았다.
 
 ## 남은 범위
 
