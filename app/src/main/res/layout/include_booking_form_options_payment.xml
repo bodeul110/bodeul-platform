@@ -281,6 +281,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="@string/booking_coupon_section"
+        android:visibility="gone"
         android:textColor="@color/bodeul_text_primary"
         android:textSize="13sp"
         android:textStyle="bold" />
@@ -289,7 +290,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonBookingCouponNone"
@@ -341,6 +343,15 @@
             android:textColor="@color/bodeul_text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/textBookingPricePolicy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/booking_price_mvp_policy"
+            android:textColor="@color/figma_mvp_text_hint"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/textBookingEstimateBase"

@@ -391,14 +391,22 @@ final class CoreApiAuthenticatedClient {
         }
     }
 
-    private static final class ApiException extends Exception {
+    static final class ApiException extends Exception {
         private final int statusCode;
         private final String userMessage;
 
-        private ApiException(int statusCode, String userMessage) {
+        ApiException(int statusCode, String userMessage) {
             super("Core API request failed: " + statusCode);
             this.statusCode = statusCode;
             this.userMessage = userMessage;
+        }
+
+        int getStatusCode() {
+            return statusCode;
+        }
+
+        String getUserMessage() {
+            return userMessage;
         }
     }
 }

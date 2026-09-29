@@ -31,7 +31,7 @@
             android:textStyle="bold" />
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
+            style="@style/BodeulMemoFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
@@ -39,11 +39,11 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputGuideLocationSummary"
+                style="@style/BodeulMemoEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="3"
-                android:textColor="@color/figma_mvp_text_primary" />
+                android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
@@ -145,7 +145,7 @@
             android:textStyle="bold" />
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
+            style="@style/BodeulMemoFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
@@ -153,11 +153,11 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputGuardianUpdate"
+                style="@style/BodeulMemoEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
-                android:minLines="3"
-                android:textColor="@color/figma_mvp_text_primary" />
+                android:minLines="3" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton

@@ -119,7 +119,7 @@ final class ManagerGuideCareCompletionBinder {
             body.setTextColor(ContextCompat.getColor(
                     itemView.getContext(),
                     item.isEmpty()
-                            ? R.color.figma_mvp_text_tertiary
+                            ? R.color.figma_mvp_text_hint
                             : R.color.figma_mvp_text_primary));
             memoContainer.addView(itemView);
         }

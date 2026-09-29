@@ -39,7 +39,8 @@ class DefaultAppointmentService implements AppointmentService {
     private static final DateTimeFormatter APPOINTMENT_FORMATTER = DateTimeFormatter
             .ofPattern("uuuu-MM-dd HH:mm", Locale.KOREA)
             .withResolverStyle(ResolverStyle.STRICT);
-    private static final int BASE_PRICE = 69_000;
+    private static final int BASE_PRICE = 40_000;
+    private static final String PRICE_POLICY_VERSION = "mvp-fixed-40000-v1";
     private static final int PUBLIC_CODE_MAX_ATTEMPTS = 5;
     private static final Set<String> REVIEW_RATINGS = Set.of(
             "excellent", "good", "ok", "disappointing", "need_help");
@@ -143,9 +144,18 @@ class DefaultAppointmentService implements AppointmentService {
             return toViewForReader(appUser, existing.get());
         }
 
+        // 과거 요청의 재시도는 저장된 견적을 반환하고, 새 예약만 현재 가격 계약을 요구한다.
+        if (!PRICE_POLICY_VERSION.equals(command.pricePolicyVersion())
+                || command.expectedFinalPrice() == null
+                || command.expectedFinalPrice() != BASE_PRICE) {
+            throw AppointmentException.priceConfirmationRequired();
+        }
         requireFutureAppointment(draft);
+        if (!"NONE".equals(draft.couponCode())) {
+            throw AppointmentException.invalidRequest("현재 신규 예약에는 쿠폰을 적용할 수 없습니다.");
+        }
         ParticipantPair participants = resolveParticipants(appUser, draft);
-        Price price = calculatePrice(draft);
+        Price price = new Price(BASE_PRICE, 0, 0, BASE_PRICE);
         AppointmentMutation mutation = toMutation(
                 command.clientRequestId(),
                 appUser.id(),
@@ -202,13 +212,20 @@ class DefaultAppointmentService implements AppointmentService {
         requireFutureAppointment(draft);
         ParticipantPair participants = resolveParticipants(appUser, draft);
         requireRequesterLink(existing, participants);
-        Price price = calculatePrice(draft);
+        // 수정은 기존 견적을 보존한다. 새 정책으로 과거 원장·입금액을 재계산하지 않는다.
+        Price price = new Price(existing.basePrice(), existing.optionSurchargePrice(),
+                existing.couponDiscountPrice(), existing.finalPrice());
         if ("BANK_TRANSFER".equals(existing.paymentMethodCode())
                 || "BANK_TRANSFER".equals(draft.paymentMethodCode())) {
             if (!existing.paymentMethodCode().equals(draft.paymentMethodCode())
-                    || existing.finalPrice() != price.finalPrice()) {
+                    || !existing.mobilitySupportCode().equals(draft.mobilitySupportCode())
+                    || !existing.tripTypeCode().equals(draft.tripTypeCode())
+                    || !existing.couponCode().equals(draft.couponCode())) {
                 throw AppointmentException.bankTransferTermsConflict();
             }
+        }
+        if (!existing.couponCode().equals(draft.couponCode())) {
+            throw AppointmentException.invalidRequest("접수된 예약의 쿠폰은 변경할 수 없습니다.");
         }
         ParticipantSnapshot requester = existing.requesterRole() == AppUserRole.PATIENT
                 ? participants.patient()
@@ -586,14 +603,6 @@ class DefaultAppointmentService implements AppointmentService {
         }
     }
 
-    private Price calculatePrice(NormalizedDraft draft) {
-        int optionSurcharge = MobilitySupport.valueOf(draft.mobilitySupportCode()).surcharge
-                + TripType.valueOf(draft.tripTypeCode()).surcharge;
-        int subtotal = BASE_PRICE + optionSurcharge;
-        int discount = Math.min(subtotal, Coupon.valueOf(draft.couponCode()).discount);
-        return new Price(BASE_PRICE, optionSurcharge, discount, subtotal - discount);
-    }
-
     private void requireIdempotentCreateFingerprintMatches(
             UUID appointmentId,
             String createRequestFingerprint) {
@@ -877,26 +886,14 @@ class DefaultAppointmentService implements AppointmentService {
     }
 
     private enum MobilitySupport {
-        INDEPENDENT(0),
-        WALKING_AID(8_000),
-        WHEELCHAIR(15_000);
-
-        private final int surcharge;
-
-        MobilitySupport(int surcharge) {
-            this.surcharge = surcharge;
-        }
+        INDEPENDENT,
+        WALKING_AID,
+        WHEELCHAIR
     }
 
     private enum TripType {
-        ONE_WAY(0),
-        ROUND_TRIP(22_000);
-
-        private final int surcharge;
-
-        TripType(int surcharge) {
-            this.surcharge = surcharge;
-        }
+        ONE_WAY,
+        ROUND_TRIP
     }
 
     private enum ManagerGender {
@@ -913,15 +910,9 @@ class DefaultAppointmentService implements AppointmentService {
     }
 
     private enum Coupon {
-        NONE(0),
-        FIRST_VISIT(5_000),
-        FAMILY(10_000);
-
-        private final int discount;
-
-        Coupon(int discount) {
-            this.discount = discount;
-        }
+        NONE,
+        FIRST_VISIT,
+        FAMILY
     }
 
     private record NormalizedDraft(

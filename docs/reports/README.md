@@ -4,6 +4,7 @@
 
 ## 최신 점검
 
+- [개발 앱·관리자 웹 예약 금액 실연동 검증 (2026-09-29)](issue-27-live-price-validation-2026-09-29.md)
 - [PR 450 화면 통합 검증 (2026-09-27)](pr-450-integration-verification-2026-09-27.md)
 - [전체 문서 정합성 갱신 (2026-09-27)](document-refresh-2026-09-27.md)
 - [개발·운영 환경 분리 실행·검증 (2026-09-27)](dev-production-separation-2026-09-27.md)
