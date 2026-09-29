@@ -108,7 +108,8 @@ public class ClientBottomNavigationInsetsTest {
                 dispatch(navigation, 0, 0, dp(context, 48), 0);
                 for (int width : new int[]{360, 320}) {
                     for (int index = 0; index < navigation.getMenu().size(); index++) {
-                        navigation.setSelectedItemId(navigation.getMenu().getItem(index).getItemId());
+                        ClientBottomNavigationBinder.bind(navigation,
+                                ClientBottomNavigationTab.values()[index], tab -> {});
                         measure(navigation, dp(context, width));
                         if (fontScale == 1f && width == 360 && index == 0) {
                             captureNavigationEvidence(navigation);
@@ -135,7 +136,8 @@ public class ClientBottomNavigationInsetsTest {
             navigation.findViewById(R.id.clientNavScheduleHistory).performClick();
             navigation.findViewById(R.id.clientNavCompanionRoom).performClick();
             dispatch(navigation, 0, 0, dp(context, 24), 0);
-            assertEquals(R.id.clientNavCompanionRoom, navigation.getSelectedItemId());
+            assertEquals("이동 이벤트가 발생해도 원래 화면의 선택은 유지한다",
+                    R.id.clientNavProfile, navigation.getSelectedItemId());
             assertEquals(Arrays.asList(ClientBottomNavigationTab.HOME,
                     ClientBottomNavigationTab.SCHEDULE_HISTORY,
                     ClientBottomNavigationTab.COMPANION_ROOM), selected);
