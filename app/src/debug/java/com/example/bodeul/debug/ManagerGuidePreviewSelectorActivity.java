@@ -1,5 +1,7 @@
 package com.example.bodeul.debug;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,18 +24,39 @@ import java.util.List;
 
 /** debug 사용자가 원하는 가이드 단계를 고르는 화면이다. */
 public final class ManagerGuidePreviewSelectorActivity extends AppCompatActivity {
+    private static final String EXTRA_LEGACY_MODE =
+            "com.example.bodeul.debug.extra.LEGACY_GUIDE_SELECTOR";
+
+    static Intent createIntent(Context context, boolean legacyMode) {
+        return new Intent(context, ManagerGuidePreviewSelectorActivity.class)
+                .putExtra(EXTRA_LEGACY_MODE, legacyMode);
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manager_guide_preview_selector);
         applySystemBarInsets();
 
-        List<GuideStep> steps = ManagerGuidePreviewCatalog.steps();
+        boolean legacyMode = getIntent().getBooleanExtra(EXTRA_LEGACY_MODE, false);
+        List<GuideStep> steps = legacyMode
+                ? ManagerGuideLegacyPreviewCatalog.steps()
+                : ManagerGuidePreviewCatalog.steps();
+        TextView title = findViewById(R.id.textManagerGuidePreviewSelectorTitle);
+        TextView body = findViewById(R.id.textManagerGuidePreviewSelectorBody);
+        title.setText(legacyMode
+                ? R.string.debug_manager_guide_legacy_preview_title
+                : R.string.debug_manager_guide_preview_title);
+        body.setText(legacyMode
+                ? R.string.debug_manager_guide_legacy_preview_body
+                : R.string.debug_manager_guide_preview_body);
         ListView listView = findViewById(R.id.listManagerGuidePreviewSteps);
         listView.setAdapter(new StepAdapter(steps));
         listView.setOnItemClickListener((parent, view, position, id) -> {
             GuideStep step = steps.get(position);
-            startActivity(ManagerGuidePreviewActivity.createIntent(this, step.getCode()));
+            startActivity(legacyMode
+                    ? ManagerGuidePreviewActivity.createLegacyIntent(this, step.getCode())
+                    : ManagerGuidePreviewActivity.createIntent(this, step.getCode()));
         });
     }
 

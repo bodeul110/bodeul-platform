@@ -90,6 +90,59 @@ public class MockBodeulRepositoryTest {
     }
 
     @Test
+    public void seededHospitalGuide_usesLegacyCodesForNormalGuideScreenSelection() {
+        MockBodeulRepository repository = new MockBodeulRepository();
+
+        HospitalGuide guide = repository.getHospitalGuide("서울대학교병원", "신경과");
+
+        assertNotNull(guide);
+        String[] expectedCodes = {
+                "LEGACY_CORE_PATIENT_CONTACT",
+                "LEGACY_CORE_RECEPTION_PREPARATION",
+                "LEGACY_CORE_RECEPTION",
+                "LEGACY_CORE_CONSULTATION",
+                "LEGACY_CORE_PAYMENT",
+                "LEGACY_CORE_PHARMACY",
+                "LEGACY_CORE_RETURN_AND_CLOSE"
+        };
+        assertEquals(expectedCodes.length, guide.getSteps().size());
+        for (int index = 0; index < expectedCodes.length; index++) {
+            assertEquals(expectedCodes[index], guide.getSteps().get(index).getCode());
+        }
+    }
+
+    @Test
+    public void seededManagerDashboard_startsAtFirstLegacyStep() {
+        MockBodeulRepository repository = new MockBodeulRepository();
+        MockManagerRepository managerRepository = new MockManagerRepository(repository);
+        User manager = repository.findUserByEmail("manager@bodeul.app");
+        AtomicReference<ManagerDashboard> dashboardRef = new AtomicReference<>();
+
+        assertNotNull(manager);
+        managerRepository.getManagerDashboard(
+                manager.getId(),
+                new RepositoryCallback<ManagerDashboard>() {
+                    @Override
+                    public void onSuccess(ManagerDashboard result) {
+                        dashboardRef.set(result);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                    }
+                }
+        );
+
+        ManagerDashboard dashboard = dashboardRef.get();
+        assertNotNull(dashboard);
+        assertEquals(1, dashboard.getSession().getCurrentStepOrder());
+        assertEquals(
+                "LEGACY_CORE_PATIENT_CONTACT",
+                dashboard.getSession().getCurrentStepCode()
+        );
+    }
+
+    @Test
     public void managerRepository_advanceCurrentStep_movesToNextMockGuideStep() {
         MockBodeulRepository repository = new MockBodeulRepository();
         MockManagerRepository managerRepository = new MockManagerRepository(repository);

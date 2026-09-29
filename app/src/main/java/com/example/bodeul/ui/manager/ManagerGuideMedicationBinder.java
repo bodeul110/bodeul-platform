@@ -89,7 +89,7 @@ final class ManagerGuideMedicationBinder {
             boolean mutationInFlight
     ) {
         boolean medicationStep = "MEDICATION_CONFIRMATION".equals(
-                model.getCurrentStepCode());
+                model.getPresentationStepCode());
         content.setVisibility(medicationStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(medicationStep ? View.VISIBLE : View.GONE);
         footerHint.setVisibility(medicationStep ? View.VISIBLE : View.GONE);

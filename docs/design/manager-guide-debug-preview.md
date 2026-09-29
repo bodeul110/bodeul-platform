@@ -1,6 +1,6 @@
 # 매니저 가이드 debug 미리보기
 
-기준일: 2026-09-26
+기준일: 2026-09-27
 
 ## 작업 목적
 
@@ -10,7 +10,7 @@ Core API가 `GUIDE_NOT_READY`를 반환하거나 개발용 동행 세션이 아�
 
 - 운영 `ManagerGuideActivity`는 기존 `ServiceLocator`와 서버 진행 판정을 계속 사용한다.
 - 인증·매니저 저장소·realtime 구독을 교체할 수 있는 작은 `protected` 주입 지점만 운영 Activity에 둔다.
-- 단계 선택기, 13단계 코드 픽스처, 로컬 저장소와 미리보기 Activity는 모두 `app/src/debug` 소스 셋에 둔다.
+- 단계 선택기, 최신 13단계와 운영 fallback 7단계 코드 픽스처, 로컬 저장소와 미리보기 Activity는 모두 `app/src/debug` 소스 셋에 둔다.
 - Preview Activity는 Firebase, Core API, Supabase realtime, 기존 위치 공유와 Kakao 지도 SDK를 시작하지 않고 가이드 진행·메모·리포트를 로컬 메모리에만 반영한다.
 - 실제 가이드 화면과 혼동하지 않도록 화면 상단에 `DEBUG 미리보기 · 서버에 저장되지 않음` 배너를 고정한다.
 
@@ -33,9 +33,13 @@ adb shell am start -n com.example.bodeul/.debug.ManagerGuidePreviewSelectorActiv
 adb shell am start -n com.example.bodeul/.debug.FigmaScreenPreviewSelectorActivity
 ```
 
-이 선택기는 매니저 7·9·12·13단계, 환자 예약 메인, 보호자 최종 리포트를
+이 선택기는 매니저 7·9·12·13단계, 전체 1~13단계, 운영 fallback 1~7단계, 환자 예약 메인, 보호자 최종 리포트를
 로컬 데이터로 연다. 앱 아이콘을 길게 눌러 표시되는 `피그마 미리보기` 바로가기도
 같은 선택기를 사용하며 운영 서버, Firebase와 실제 동행 세션을 변경하지 않는다.
+
+`매니저 운영 7단계 흐름`에서는 원본 `LEGACY_CORE_*` 단계 코드를 유지한 채 최신 전용 화면 연결을 확인한다. 다음 단계 요청도 로컬에서 원본 코드를 기준으로 검사하므로 presentation 코드가 서버 계약에 섞이는 회귀를 확인할 수 있다. 레거시 수납 단계의 결제 증빙처럼 실제 Core API가 허용하지 않는 기능은 미리보기에서도 숨기고 지원 범위를 안내한다.
+
+개발 Firebase 설정이 없는 일반 debug 앱도 `MockBodeulRepository`의 같은 7단계 코드를 사용한다. 따라서 미리보기 Activity가 아닌 실제 `ManagerGuideActivity` 진입과 다음 단계 전환에서도 접수·진료·수납·복약·일지 전용 화면을 확인할 수 있다. 이 경로는 화면 결합을 검증할 뿐 실제 인증이나 Core API 저장 성공을 뜻하지 않는다.
 
 ## 대안과 선택 이유
 
@@ -48,4 +52,4 @@ adb shell am start -n com.example.bodeul/.debug.FigmaScreenPreviewSelectorActivi
 - 미리보기는 화면과 로컬 입력 흐름을 검증하지만 Core API 인가, DB snapshot, 실제 파일 업로드, realtime 연동을 검증하지 않는다.
 - 지도와 외부 화면 CTA는 미리보기에서 로컬 안내만 표시한다. 증빙·처방 자료의 Android 파일 선택기는 실제 기기의 로컬 URI 읽기 권한을 사용할 수 있다.
 - 서버 통합 검증은 Preview fixture와 실제 개발 매니저 UID를 사용해 별도로 수행한다.
-- Core API의 13단계 코드·순서·의미가 바뀐다면 debug 카탈로그와 계약 테스트를 같이 갱신해야 한다.
+- Core API의 13단계 또는 fallback 7단계 코드·순서·의미가 바뀐다면 debug 카탈로그와 계약 테스트를 같이 갱신해야 한다.

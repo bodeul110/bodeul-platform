@@ -215,7 +215,7 @@ public final class ManagerGuideDashboardBinder {
                 screenModel.getPrimaryAction());
         stepSectionsBinder.bind(
                 screenModel.getSectionVisibility(),
-                screenModel.getCurrentStepCode(),
+                screenModel.getPresentationStepCode(),
                 showMemoSummary
         );
         memoSummaryBinder.bind(

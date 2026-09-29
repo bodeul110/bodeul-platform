@@ -136,7 +136,9 @@ public interface ManagerRepository {
             String expectedSessionId,
             String expectedStepCode
     ) {
-        return "CONSULTATION_SUPPORT".equals(normalize(expectedStepCode))
+        String stepCode = normalize(expectedStepCode);
+        return ("CONSULTATION_SUPPORT".equals(stepCode)
+                || "LEGACY_CORE_CONSULTATION".equals(stepCode))
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
@@ -180,7 +182,7 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
-    /** 수납 증빙 화면의 공유 메모는 확인한 세션과 8단계가 그대로일 때만 저장한다. */
+    /** 수납 화면의 공유 메모는 확인한 세션과 해당 수납 단계가 그대로일 때만 저장한다. */
     default void savePaymentEvidenceNote(
             String managerUserId,
             String expectedSessionId,
@@ -196,7 +198,9 @@ public interface ManagerRepository {
             String expectedSessionId,
             String expectedStepCode
     ) {
-        return "PAYMENT_EVIDENCE".equals(normalize(expectedStepCode))
+        String stepCode = normalize(expectedStepCode);
+        return ("PAYMENT_EVIDENCE".equals(stepCode)
+                || "LEGACY_CORE_PAYMENT".equals(stepCode))
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
@@ -221,13 +225,15 @@ public interface ManagerRepository {
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 
-    /** 복약 확인 입력은 화면에서 확인한 세션과 11단계가 그대로일 때만 적용한다. */
+    /** 복약 확인 입력은 화면에서 확인한 세션과 해당 약국 단계가 그대로일 때만 적용한다. */
     static boolean matchesMedicationExpectation(
             CompanionSession session,
             String expectedSessionId,
             String expectedStepCode
     ) {
-        return "MEDICATION_CONFIRMATION".equals(normalize(expectedStepCode))
+        String stepCode = normalize(expectedStepCode);
+        return ("MEDICATION_CONFIRMATION".equals(stepCode)
+                || "LEGACY_CORE_PHARMACY".equals(stepCode))
                 && matchesAdvanceExpectation(session, expectedSessionId, expectedStepCode);
     }
 

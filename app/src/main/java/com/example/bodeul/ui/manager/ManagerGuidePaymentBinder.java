@@ -57,6 +57,7 @@ final class ManagerGuidePaymentBinder {
     private String boundNote = "";
     private boolean actionsEnabled;
     private boolean hasArtifact;
+    private boolean artifactSupported;
     private boolean bindingDraft;
 
     ManagerGuidePaymentBinder(View root, DraftListener draftListener) {
@@ -112,7 +113,8 @@ final class ManagerGuidePaymentBinder {
             boolean mutationInFlight,
             ManagerGuidePaymentDraft savedDraft
     ) {
-        boolean paymentStep = "PAYMENT_EVIDENCE".equals(model.getCurrentStepCode());
+        boolean paymentStep = "PAYMENT_EVIDENCE".equals(
+                model.getPresentationStepCode());
         content.setVisibility(paymentStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(paymentStep ? View.VISIBLE : View.GONE);
         if (!paymentStep) {
@@ -133,6 +135,7 @@ final class ManagerGuidePaymentBinder {
         legacyArtifactGroup.setVisibility(View.GONE);
 
         CompanionSession session = dashboard == null ? null : dashboard.getSession();
+        artifactSupported = "PAYMENT_EVIDENCE".equals(model.getCurrentStepCode());
         String sessionId = session == null ? "" : normalized(session.getId());
         boolean newSession = !TextUtils.equals(boundSessionId, sessionId);
         int currentOrder = session == null ? 0 : session.getCurrentStepOrder();
@@ -140,9 +143,14 @@ final class ManagerGuidePaymentBinder {
                 ? step.getContext().getString(R.string.guide_payment_step_format, currentOrder)
                 : step.getContext().getString(R.string.guide_payment_step_unknown));
         bindHospital(dashboard);
-        bindArtifacts(session == null
-                ? Collections.emptyList()
-                : session.getArtifacts(CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE));
+        if (artifactSupported) {
+            bindArtifacts(session == null
+                    ? Collections.emptyList()
+                    : session.getArtifacts(
+                            CompanionSessionArtifactUploadPolicy.PAYMENT_EVIDENCE));
+        } else {
+            bindUnsupportedArtifact();
+        }
         String serverNote = session == null ? "" : normalized(session.getFieldPhotoNote());
         ManagerGuidePaymentDraft reconciledDraft;
         if (newSession) {
@@ -206,6 +214,7 @@ final class ManagerGuidePaymentBinder {
 
     private void bindArtifacts(List<CompanionSessionArtifact> artifacts) {
         hasArtifact = artifacts != null && !artifacts.isEmpty();
+        select.setVisibility(View.VISIBLE);
         selectLabel.setText(hasArtifact
                 ? R.string.guide_payment_select_replace
                 : R.string.guide_payment_select_empty);
@@ -224,6 +233,14 @@ final class ManagerGuidePaymentBinder {
                     normalized(artifact.getFileName()),
                     formatSize(artifact.getSizeBytes())));
         }
+    }
+
+    private void bindUnsupportedArtifact() {
+        hasArtifact = false;
+        select.setVisibility(View.GONE);
+        clear.setVisibility(View.GONE);
+        file.setVisibility(View.GONE);
+        status.setText(R.string.guide_payment_evidence_legacy_unavailable);
     }
 
     private String formatSize(long sizeBytes) {
@@ -257,10 +274,10 @@ final class ManagerGuidePaymentBinder {
     }
 
     private void bindActionEnabledState() {
-        select.setEnabled(actionsEnabled);
-        select.setClickable(actionsEnabled);
-        select.setAlpha(actionsEnabled ? 1f : 0.55f);
-        clear.setEnabled(actionsEnabled && hasArtifact);
+        select.setEnabled(actionsEnabled && artifactSupported);
+        select.setClickable(actionsEnabled && artifactSupported);
+        select.setAlpha(actionsEnabled && artifactSupported ? 1f : 0.55f);
+        clear.setEnabled(actionsEnabled && artifactSupported && hasArtifact);
         note.setEnabled(actionsEnabled);
         saveNote.setEnabled(actionsEnabled);
     }
@@ -268,6 +285,7 @@ final class ManagerGuidePaymentBinder {
     private void resetBoundState() {
         boundSessionId = "";
         boundNote = "";
+        artifactSupported = false;
         note.setText("");
     }
 

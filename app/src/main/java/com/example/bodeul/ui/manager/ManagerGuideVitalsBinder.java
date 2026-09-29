@@ -81,7 +81,7 @@ final class ManagerGuideVitalsBinder {
             boolean mutationInFlight,
             ManagerGuideVitalsDraft savedDraft
     ) {
-        boolean vitalsStep = "VITALS_CHECK".equals(model.getCurrentStepCode());
+        boolean vitalsStep = "VITALS_CHECK".equals(model.getPresentationStepCode());
         content.setVisibility(vitalsStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(vitalsStep ? View.VISIBLE : View.GONE);
         if (!vitalsStep) {

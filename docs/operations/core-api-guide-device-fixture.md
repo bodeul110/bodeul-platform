@@ -69,7 +69,7 @@ gh workflow run core-api-migration.yml `
 
 - 공개 예약 API, 관리자 배정 route와 단계 진행 API를 연결할 수 있지만 현재 삭제 API가 없어 테스트 행을 완전히 정리할 수 없다.
 - 기존 세션 snapshot을 수정하는 방식은 V14 불변 계약을 훼손하므로 사용하지 않는다.
-- Mock 모드는 코드 없는 7단계 가이드이므로 `PHARMACY_ROUTE` 조건을 증명하지 못한다.
+- Mock 모드는 `LEGACY_CORE_*` 7단계 가이드이므로 canonical `PHARMACY_ROUTE` 단계 조건을 증명하지 못한다.
 
 ## 선택 이유
 

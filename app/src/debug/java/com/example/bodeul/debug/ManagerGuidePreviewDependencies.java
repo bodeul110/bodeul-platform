@@ -32,8 +32,18 @@ final class ManagerGuidePreviewDependencies {
             String stepCode,
             boolean seedPaymentEvidence
     ) {
+        return create(context, stepCode, seedPaymentEvidence, false);
+    }
+
+    static ManagerGuidePreviewDependencies create(
+            Context context,
+            String stepCode,
+            boolean seedPaymentEvidence,
+            boolean legacyMode
+    ) {
         ManagerGuidePreviewRepository managerRepository =
-                new ManagerGuidePreviewRepository(stepCode, seedPaymentEvidence);
+                new ManagerGuidePreviewRepository(
+                        stepCode, seedPaymentEvidence, legacyMode);
         MockAuthRepository authRepository =
                 new MockAuthRepository(managerRepository.dataRepository());
         authRepository.signIn(

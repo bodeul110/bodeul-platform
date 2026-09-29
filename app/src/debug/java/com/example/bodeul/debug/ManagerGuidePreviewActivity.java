@@ -31,6 +31,8 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
             "com.example.bodeul.debug.extra.MANAGER_GUIDE_STEP_CODE";
     private static final String EXTRA_SEED_PAYMENT_EVIDENCE =
             "com.example.bodeul.debug.extra.SEED_PAYMENT_EVIDENCE";
+    private static final String EXTRA_LEGACY_MODE =
+            "com.example.bodeul.debug.extra.LEGACY_GUIDE_MODE";
 
     private static final CompanionRealtimeSubscriber NO_OP_REALTIME =
             new CompanionRealtimeSubscriber() {
@@ -60,6 +62,11 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
         return new Intent(context, ManagerGuidePreviewActivity.class)
                 .putExtra(EXTRA_STEP_CODE, stepCode)
                 .putExtra(EXTRA_SEED_PAYMENT_EVIDENCE, seedPaymentEvidence);
+    }
+
+    static Intent createLegacyIntent(Context context, String stepCode) {
+        return createIntent(context, stepCode, false)
+                .putExtra(EXTRA_LEGACY_MODE, true);
     }
 
     @Override
@@ -127,14 +134,21 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
             dependencies = ManagerGuidePreviewDependencies.create(
                     this,
                     selectedStep().getCode(),
-                    getIntent().getBooleanExtra(EXTRA_SEED_PAYMENT_EVIDENCE, false));
+                    getIntent().getBooleanExtra(EXTRA_SEED_PAYMENT_EVIDENCE, false),
+                    isLegacyMode());
         }
         return dependencies;
     }
 
     private GuideStep selectedStep() {
-        return ManagerGuidePreviewCatalog.resolve(
-                getIntent().getStringExtra(EXTRA_STEP_CODE));
+        String stepCode = getIntent().getStringExtra(EXTRA_STEP_CODE);
+        return isLegacyMode()
+                ? ManagerGuideLegacyPreviewCatalog.resolve(stepCode)
+                : ManagerGuidePreviewCatalog.resolve(stepCode);
+    }
+
+    private boolean isLegacyMode() {
+        return getIntent().getBooleanExtra(EXTRA_LEGACY_MODE, false);
     }
 
     private void addPreviewBanner() {

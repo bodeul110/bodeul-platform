@@ -90,7 +90,8 @@ final class ManagerGuideConsultationSummaryBinder {
             boolean mutationInFlight,
             ManagerGuideSummaryDraft savedDraft
     ) {
-        boolean summaryStep = "CONSULTATION_SUMMARY".equals(model.getCurrentStepCode());
+        boolean summaryStep = "CONSULTATION_SUMMARY".equals(
+                model.getPresentationStepCode());
         content.setVisibility(summaryStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(summaryStep ? View.VISIBLE : View.GONE);
         if (!summaryStep) {
