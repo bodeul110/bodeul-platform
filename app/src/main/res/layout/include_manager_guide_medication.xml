@@ -73,7 +73,7 @@
                     android:layout_weight="1"
                     android:fontFamily="@font/pretendard_bold"
                     android:text="@string/guide_medication_existing_title"
-                    android:textColor="@color/figma_mvp_text_tertiary"
+                    android:textColor="@color/figma_mvp_text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -171,7 +171,7 @@
         android:fontFamily="@font/pretendard_regular"
         android:lineSpacingExtra="2dp"
         android:text="@string/guide_medication_prescription_disclaimer"
-        android:textColor="@color/figma_mvp_text_tertiary"
+        android:textColor="@color/figma_mvp_text_secondary"
         android:textSize="11sp" />
 
     <com.google.android.material.card.MaterialCardView
@@ -215,7 +215,7 @@
                     android:paddingEnd="8dp"
                     android:paddingBottom="4dp"
                     android:text="@string/guide_medication_new_prescription_badge"
-                    android:textColor="@color/guide_medication_accent"
+                    android:textColor="@color/figma_mvp_gold_text"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -485,7 +485,7 @@
                 android:textSize="12sp" />
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/BodeulFigmaFilledInput"
+                style="@style/BodeulFigmaMemoFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="18dp"
@@ -493,12 +493,12 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/inputGuideMedicationPharmacyNote"
+                    style="@style/BodeulMemoEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/pretendard_regular"
                     android:inputType="textMultiLine|textCapSentences"
                     android:minLines="2"
-                    android:textColor="@color/figma_mvp_text_primary"
                     android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -509,7 +509,7 @@
                 android:text="@string/guide_pharmacy_save" />
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/BodeulFigmaFilledInput"
+                style="@style/BodeulFigmaMemoFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -517,12 +517,12 @@
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/inputGuideMedicationGuidanceNote"
+                    style="@style/BodeulMemoEditText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fontFamily="@font/pretendard_regular"
                     android:inputType="textMultiLine|textCapSentences"
                     android:minLines="2"
-                    android:textColor="@color/figma_mvp_text_primary"
                     android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 

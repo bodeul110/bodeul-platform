@@ -54,7 +54,15 @@ public interface AppointmentService {
             String couponCode) {
     }
 
-    record CreateAppointmentCommand(UUID clientRequestId, AppointmentDraft draft) {
+    record CreateAppointmentCommand(
+            UUID clientRequestId,
+            AppointmentDraft draft,
+            String pricePolicyVersion,
+            Integer expectedFinalPrice) {
+
+        public CreateAppointmentCommand(UUID clientRequestId, AppointmentDraft draft) {
+            this(clientRequestId, draft, null, null);
+        }
     }
 
     record UpdateAppointmentCommand(long version, AppointmentDraft draft) {
