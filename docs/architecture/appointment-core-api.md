@@ -2,7 +2,7 @@
 
 기준일: 2026-07-19
 
-최종 갱신: 2026-09-24
+최종 갱신: 2026-09-28
 
 보호자 예약 생성은 #419의 후속 구현 범위다. [예약 전 생성 승인 판정](adult-patient-guardian-booking-authorization.md)을 준비했지만 API에는 연결하지 않았으므로 아래의 보호자 생성·수정·취소 차단이 현재 동작이다. 예약 후 정보공유 동의를 생성 권한으로 확대하지 않는다.
 
@@ -36,7 +36,8 @@ Firestore `appointmentRequests`에 직접 쓰던 예약 기본 흐름을 Spring 
 | --- | --- | --- | ---: |
 | `GET` | `/api/appointments` | 환자·배정 매니저 예약 목록. 보호자는 유효한 `APPOINTMENT` 동의가 있는 예약만 포함 | 200 |
 | `GET` | `/api/appointments/{id}` | 예약 상세. 보호자는 `APPOINTMENT` 동의 필수 | 200 |
-| `POST` | `/api/appointments` | 환자 예약 생성. 보호자 신규 생성은 환자 프로필 조회 전에 거부 | 201 / 403 |
+| `POST` | `/api/appointments/price-confirmed` | 새 앱의 환자 예약 생성. 현재 가격 계약·확인 금액 필수. 보호자 신규 생성은 거부 | 201 / 403 / 409 |
+| `POST` | `/api/appointments` | 기존 앱 호환 경로. 저장된 동일 요청 재시도는 허용하되 가격 계약 없는 신규 생성은 거부 | 201 / 403 / 409 |
 | `PUT` | `/api/appointments/{id}` | 환자 본인의 `REQUESTED` 예약 수정. 보호자 쓰기는 거부 | 200 / 403 |
 | `POST` | `/api/appointments/{id}/cancel` | 환자 본인의 `REQUESTED`, `MATCHED` 예약 취소. 보호자 쓰기는 거부 | 200 / 403 |
 | `GET` | `/api/appointments/{id}/guardian-sharing-consent` | 해당 환자·지정 보호자의 동의 상태 조회 | 200 |
@@ -47,11 +48,17 @@ Firestore `appointmentRequests`에 직접 쓰던 예약 기본 흐름을 Spring 
 
 모든 경로는 Firebase ID token이 필요하며 응답에 `Cache-Control: no-store`를 사용한다. 타인 예약은 403, 없는 예약은 404, 허용되지 않은 상태 전이와 오래된 `version`은 409를 반환한다.
 
+신규 생성은 `pricePolicyVersion: "mvp-fixed-40000-v1"`, `expectedFinalPrice: 40000`을 기존 입력에 추가한다. 금액은 JSON 정수만 허용하고 문자열·소수·정수 범위 초과는 400으로 거부한다. 정책 버전·금액 누락 또는 불일치는 409 `appointment_price_confirmation_required`로 거부하며 DB에 예약을 생성하지 않는다. 서버가 원장 금액을 결정하고 클라이언트 값은 사용자가 확인한 요금과의 일치 검사에만 사용한다.
+
+새 Android는 별도 `price-confirmed` 경로만 사용한다. 구형 서버의 404/405나 통신 오류에도 `/api/appointments` 생성으로 돌아가지 않으므로 서버 롤백 중 다른 요금으로 저장되는 것을 막는다. [배포 순서 판단](../design/mvp-booking-price.md#앱서버-배포-순서-보호)을 따른다. 이 경로는 앱 버전별 인증을 제공하는 것이 아니며 기존 Firebase·App Check·참여자 인가를 대체하지 않는다.
+
 ## 서버 소유 값
 
-- 기본 가격은 69,000원이다.
-- 왕복은 22,000원, 보행 보조는 8,000원, 휠체어는 15,000원을 더한다.
-- 첫 방문 쿠폰은 5,000원, 가족 쿠폰은 10,000원을 뺀다.
+- 신규 예약의 기본 2시간 가격은 40,000원이다. 왕복·이동 보조는 서비스 준비 정보로 보존하지만 추가요금은 계산하지 않는다.
+- 신규 예약은 쿠폰 `NONE`만 허용한다. 옵션 추가요금과 쿠폰 할인은 모두 0원이다.
+- 기존 예약을 수정할 때는 결제 수단과 무관하게 저장된 기본요금·추가요금·할인·최종금액을 그대로 유지한다. 과거 69,000원·96,000원 등을 새 요금으로 소급 재계산하지 않으며 쿠폰 변경도 거부한다.
+- 무통장입금 예약은 저장된 금액 외에도 결제 수단·이동 보조·편도/왕복·쿠폰 조건을 잠근다. 신규 고정요금 때문에 조건 변경이 금액 비교를 통과하지 않도록 명시적으로 검사한다.
+- 같은 생성 요청 ID와 지문으로 재시도하면 기존 예약을 반환한다. 이 처리는 신규 가격 확인·쿠폰 제한보다 먼저 수행해 구형 앱의 과거 요청 재시도를 유지한다. 가격 확인 필드는 과거 지문에 소급 추가하지 않는다.
 - 예약 최초 상태는 `REQUESTED`다.
 - 무통장입금 예약은 서버가 `AWAITING_DEPOSIT`으로 시작한다. 클라이언트가 전달한 결제 상태는 사용하지 않는다.
 - 입금 상태는 `AWAITING_DEPOSIT`, `DEPOSIT_CONFIRMED`, `REVIEW_REQUIRED`, `REFUND_REQUESTED`, `REFUNDED`, `CANCELED`만 서버가 전이한다.
@@ -73,11 +80,13 @@ Firestore `appointmentRequests`에 직접 쓰던 예약 기본 흐름을 Spring 
 
 취소 뒤 확인된 입금은 금액이 예상액과 같더라도 `CANCELED`에서 `REVIEW_REQUIRED`로 보내 수동 검토한다. 예약 자체가 이미 `CANCELED`인 검토 건은 `DEPOSIT_CONFIRMED`로 되돌리지 않고 `REFUND_REQUESTED`로만 진행한다. 입금자명이나 시점이 맞지 않는 경우에도 금액 일치만으로 자동 확정하지 않는다.
 
-현재 개발·preview MVP에는 실제 은행명, 계좌번호와 예금주를 설정하지 않는다. 합성 fixture로 상태 전이를 검증할 수 있지만 앱과 Firestore→PostgreSQL seed 도구는 계좌 안내나 기한을 임의 생성하지 않는다. 1차 Core API는 `instructionAvailable=false`를 반환하고, nullable `paymentDueAt`이 없으면 기한도 표시하지 않는다. 운영 명의 계좌·현금영수증·환불 절차와 접근 책임자가 준비되기 전에는 production에서 실제 수취를 활성화하지 않는다.
+현재 개발·preview MVP에는 실제 은행명, 계좌번호와 예금주를 설정하지 않는다. 합성 fixture로 상태 전이를 검증할 수 있지만 앱과 Firestore→PostgreSQL seed 도구는 계좌 안내나 개별 기한을 임의 생성하지 않는다. Core API는 `instructionAvailable=false`를 반환하고, nullable `paymentDueAt`이 없으면 Android는 구체적인 마감 시각 대신 신청 후 24시간 이내 입금 원칙, 임박 예약의 운영자 확인, 계좌 안내 전 송금 금지를 표시한다. 개별 기한 저장·공유와 기한 경과 처리는 별도이며 이 안내로 자동 취소·환불을 실행하지 않는다. 운영 명의 계좌·현금영수증·환불 절차와 접근 책임자가 준비되기 전에는 production에서 실제 수취를 활성화하지 않는다.
 
 Android는 환자 본인의 `BANK_TRANSFER` 예약에만 결제 화면을 노출한다. 전용 저장소가 Firebase ID token과 App Check token을 포함해 `GET /api/appointments/{appointmentId}/payment`를 호출하고, 입금 대기 또는 검토 상태에서만 `PATCH /api/appointments/{appointmentId}/payment/depositor`로 입금자명을 제출한다. PATCH에는 직전 조회의 `paymentVersion`과 새 `operationId`를 함께 보내며, 네트워크 오류 재시도는 같은 요청 본문과 작업 ID를 한 번만 재사용한다. 알 수 없는 결제 수단, 누락되거나 음수인 금액, 잘못된 예약 ID와 버전은 화면 값으로 보정하지 않고 실패 처리한다. 서버가 새 결제 상태를 반환하면 `UNKNOWN`으로 표시하고 변경 기능을 잠가 이전 상태로 오인하지 않게 한다.
 
 결제 원장은 PostgreSQL이다. `appointment_requests.payment_status_code`는 목록·매칭용 projection이며, `appointment_bank_transfer_payments`는 상세 원장, append-only `appointment_payment_events`는 감사 이력이다. Firestore 결제 필드는 백필과 rollback 비교에만 사용한다. 메인 저장소는 V22·V23 함수, 사용자 조회·입금자명 API와 Android 환자 화면을 소유한다. 별도 관리자 웹의 PR #51·#52로 입금 확인·검토·환불 UI와 Preview 검증이 반영됐다. 브라우저가 DB에 직접 쓰지 않으며, 개발 fixture 통과는 실제 계좌 노출·금전 수취 승인과 다르다. 관리자 계약은 [무통장입금 관리자 계약](admin-bank-transfer-payment-contract.md)을 따른다.
+
+V22의 최초 원장 생성 함수는 예약의 `final_price`를 기대 입금액으로 복사하므로 신규 40,000원 정책에 DB migration은 필요하지 않다. 기존 원장과 감사 이력은 변경하지 않는다. 관리자는 현재 가격 상수 대신 저장된 기대 금액을 대조한다. [요금 변경 판단](../design/mvp-booking-price.md)과 [9월 28일 검증 기록](../reports/issue-27-mvp-price-2026-09-28.md)을 참고하며, 코드 검증을 개발·운영 배포 완료로 보지 않는다.
 
 Firestore 예약 seed는 V22 생성 trigger가 상세 원장을 완전하게 초기화할 수 있는 `BANK_TRANSFER` + `AWAITING_DEPOSIT` 조합만 SQL 생성 대상으로 허용한다. `DEPOSIT_CONFIRMED`, `REVIEW_REQUIRED`, `REFUND_REQUESTED`, `REFUNDED`, `CANCELED`인 기존 예약은 projection만 옮기면 상세 원장과 이벤트가 불완전해지므로 `needs_review`로 차단한다. 이 다섯 상태는 현재 projection, `appointment_bank_transfer_payments`와 `appointment_payment_events`를 함께 검증하는 별도 backfill로 이관해야 한다. 무통장입금 seed를 재적용할 때 기존 PostgreSQL 예약이 seed와 다르면 SQLSTATE `55000`으로 전체 작업을 중단하며, 일치하는 행도 Firestore 값으로 다시 갱신하지 않는다.
 
