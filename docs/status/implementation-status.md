@@ -2,7 +2,7 @@
 
 코드·문서·GitHub 확인일: 2026-09-27
 
-부분 갱신: 하단 메뉴 #448은 2026-09-29의 `dev` 반영과 OS 모드별 실기기 결과를 반영했다. 다른 행의 확인일을 일괄 갱신한 것은 아니다.
+부분 갱신: #419 저장 후속과 #448 종료 상태는 2026-09-29 기준이다. 다른 행의 확인일을 일괄 갱신한 것은 아니다.
 
 최신 Notion MVP·내부 테스트, 현재 코드·PR과 같은 날의 개발·운영 환경 분리 검증 기록을 대조했다. 문서 갱신 과정에서 운영 데이터 쓰기나 실기기 검증을 다시 수행한 것은 아니다.
 
@@ -35,7 +35,7 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 - Android는 Java/XML, Activity·Coordinator·Binder·Repository 경계를 유지한다. Codex/CLI로 개발하며 Android Studio는 필수가 아니다.
 - ServiceLocator는 실제 인증 설정이 있으면 Core API와 Firebase 잔존 기능을 조합한다. Firebase 미설정 데모는 Mock이며 API 실패를 Firestore 쓰기로 우회하지 않는다.
 - 사용자·매니저는 Spring Core API, 관리자는 별도 Next.js 서버로 같은 환경의 PostgreSQL을 사용한다. 서버 사이 proxy는 없다.
-- DDL은 메인 core-api의 Flyway V1~V23만 소유한다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
+- DDL은 메인 core-api의 Flyway V1~V24가 소유한다. V24는 #419 저장 후속 소스이며 실제 환경 미적용이다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
 - 두 저장소는 `dev` 개발·`master` 운영을 구분한다. 기능 PR은 dev로 squash, 운영 승격은 merge commit이다. Core Preview는 dev push/수동, production 배포·migration은 보호된 수동 workflow를 유지한다.
 
 ## 3. 남은 범위
@@ -43,12 +43,12 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 | 작업 | 현재 판단 |
 | --- | --- |
 | Preview API #429 | 9월 24일 종료. 9월 27일 인프라 작업에서 health 200·무인증 401 재확인. 모든 앱 화면의 E2E 성공을 뜻하지 않음 |
-| 보호자 예약 #419 | 열린 PR #440에 예약 전 생성 승인 판정·본문 결합·재승인 버전 교체와 정책 테스트 45건 준비. 리뷰 지적 수정 후 재검토 대상이며 DB·API·Android 연결과 DB 경합 검증은 미완료. 보호자 쓰기 차단 유지 |
+| 보호자 예약 #419 | #440 정책 판정은 `dev` 반영. V24·JDBC 상태/감사 저장과 경합 테스트를 후속 추가. [저장 검증](../reports/issue-419-booking-approval-storage-2026-09-29.md)과 실제 환경 미적용을 구분. API·Android·실제 예약 INSERT 연결은 미완료, 보호자 쓰기 차단 유지 |
 | 내부 STT #420 | Naver Cloud 연동·녹음 저장 목표. #443 화면은 병합됐지만 실제 녹음·저장·공급자 검증은 미완료. 추가 논의 메모를 기존 내부 개발 철회나 운영 승인으로 해석하지 않음 |
 | 가이드 진입·번호 #422 | 신규·기존 세션, legacy 7단계·13단계 snapshot과 재진입 상태를 구분해 시작 단계·중복 번호 확인 |
 | 메모·리포트 #423 | 종료 전 최신 메모 조합은 반영. 마지막 CTA가 채팅으로 연결된다는 새 보고는 역할·단계·빌드 확인 필요. 종료 후 매니저 접근 회수 유지 |
 | 글자 가독성 #447 | 내부테스트 2에서 보고된 메모·복약 영역 가독성. 9월 27일 기준이며 후속 상태는 해당 이슈 확인 |
-| 하단 메뉴 #448 | #464·#474로 안전영역과 예약 목록·탭 복귀를 `dev`에 수정. 9월 29일 합성 예약 접수·실제 IME·3버튼/제스처 모드 각각 22건 통과와 원복 확인. 추가 회귀 테스트 PR의 리뷰·반영이 남음. [검증 경계](../reports/issue-448-device-navigation-modes-2026-09-29.md)를 따르며 운영 배포는 별도 |
+| 하단 메뉴 #448 | #464·#474·#475 `dev` 반영 후 종료. 9월 29일 합성 예약 접수·실제 IME·3버튼/제스처 모드 각각 22건 통과와 원복 확인. [검증 경계](../reports/issue-448-device-navigation-modes-2026-09-29.md)를 따르며 운영 배포는 별도 |
 | 열린 화면 PR #444·#445·#446·#450 | 앞의 3개는 코드 검토 승인, #450은 진료 요약 저장·미저장 이탈 보호 수정 요청. 통합 head 빌드·단위 테스트 298건·기기 테스트 APK 컴파일 통과, 실기기 미실행. 모두 미병합 |
 | 가이드 영상 #391 | V21 메타데이터·fallback 계약은 있음. 승인 영상·재생 UI·권리·비식별 검증은 별도 |
 | 위치·파기 #222 | 환자 GPS, 동의·철회·중지·파기 종단 검증과 production fixture |
