@@ -1,5 +1,6 @@
 package com.bodeul.core.appointment;
 
+import com.bodeul.core.consent.GuardianBookingException;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.CacheControl;
@@ -13,10 +14,17 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice(assignableTypes = {
     AppointmentController.class,
-    AppointmentPaymentController.class
+    AppointmentPaymentController.class,
+    GuardianBookingController.class
 })
-@Profile({"database", "appointment-test"})
+@Profile({"database", "appointment-test", "guardian-booking-test"})
 class AppointmentErrorHandler {
+
+    @ExceptionHandler(GuardianBookingException.class)
+    ResponseEntity<ApiError> handleGuardianBookingException(GuardianBookingException exception) {
+        return ResponseEntity.status(exception.status()).cacheControl(CacheControl.noStore())
+                .body(new ApiError(exception.error(), exception.getMessage()));
+    }
 
     @ExceptionHandler(AppointmentException.class)
     ResponseEntity<ApiError> handleAppointmentException(AppointmentException exception) {

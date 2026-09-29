@@ -1,6 +1,6 @@
 # 계정 탈퇴·삭제 준비 상태
 
-기준일: 2026-08-27
+기준일: 2026-09-29
 
 ## 작업 목적
 
@@ -24,7 +24,7 @@
 
 | 출처 | 현재 상태 | 확인 범위 |
 | --- | --- | --- |
-| PostgreSQL | 집계 성공 시 `COMPLETE`, 연결·함수 오류 시 `ERROR` | 프로필, 예약, 세션, 리포트, 후속 처리, 배정 감사, 채팅, 첨부 메타데이터, 읽음과 위치 건수 |
+| PostgreSQL | V24 승인 저장소까지 집계 성공 시 `COMPLETE`, V24 미적용 시 `PARTIAL`, 연결·함수 오류 시 `ERROR` | 프로필, 예약, 세션, 리포트, 후속 처리, 배정 감사, 채팅, 첨부 메타데이터, 읽음, 위치, 무통장입금·이벤트와 예약 생성 승인·감사 건수 |
 | Firestore | 본인 사용자·지원·필드별 직접 참조 집계 성공 시 `PARTIAL`, 일부 조회라도 실패하면 `ERROR` | `users/{firebaseUid}` 정확 조회, 지원 문의 2개 필드와 예약 4개·동행 세션 3개 UID 필드의 aggregation count 확인 |
 | Firebase Storage | `NOT_EVALUATED` | 첨부·증빙 원본은 아직 미점검 |
 | Firebase Auth | `NOT_EVALUATED` | 최근 재인증, token 폐기와 Auth 사용자 삭제는 아직 미점검 |
@@ -72,10 +72,13 @@ Flyway V15의 `bodeul.account_deletion_postgres_inventory(uuid)` 함수가 집�
 
 ## 관찰 코드
 
+보호자 예약 생성 승인 저장은 V24의 기존 Core SELECT 권한으로 별도 집계한다. 본인이 환자 또는 지정 보호자인 현재 행 수 `guardianBookingApprovals`, 철회되지 않고 유효기간 안에 있는 행 수 `activeGuardianBookingApprovals`, 감사 수 `guardianBookingApprovalAudits`를 반환한다. 현재 상태와 감사 원문은 반환하지 않는다. 테이블이 없으면 이 세 key를 생략하고 PostgreSQL을 `PARTIAL`로 표시한다. 테이블·집계 오류는 출처 전체를 `ERROR`로 처리한다. 승인 만료는 권한 종료일 뿐 감사 삭제가 아니며 자동 파기나 탈퇴 적용 권한은 추가하지 않는다.
+
 | 코드 | 의미 |
 | --- | --- |
 | `ACTIVE_APPOINTMENT_PRESENT` | 완료·취소되지 않은 연관 예약이 있음 |
 | `ACTIVE_SESSION_PRESENT` | 완료·취소되지 않은 연관 동행 세션이 있음 |
+| `ACTIVE_BOOKING_APPROVAL_PRESENT` | 본인이 참여한 유효한 예약 생성 승인이 있음 |
 | `POSTGRES_PROFILE_MISSING` | 인증 principal에 대응하는 PostgreSQL 프로필 집계가 없음 |
 
 관찰 코드는 현재 데이터의 사실만 나타내며 탈퇴 가능·불가를 결정하지 않는다. 특히 진행 중 예약·세션을 어떤 절차로 처리할지는 정책·운영 승인 대상이다.

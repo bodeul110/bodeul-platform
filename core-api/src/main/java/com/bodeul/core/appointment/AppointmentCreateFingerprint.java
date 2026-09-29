@@ -43,6 +43,16 @@ public final class AppointmentCreateFingerprint {
         return HexFormat.of().formatHex(digest.digest());
     }
 
+    /** 기존 환자 예약 fingerprint는 바꾸지 않고 신규 보호자 승인에만 견적을 묶는다. */
+    static String forGuardianApproval(CreateRequest request, String pricePolicyVersion, Integer confirmedPrice) {
+        MessageDigest digest = sha256();
+        add(digest, "bodeul-guardian-booking-create-v1");
+        add(digest, from(request));
+        add(digest, pricePolicyVersion);
+        add(digest, confirmedPrice);
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
     private static void add(MessageDigest digest, Object value) {
         byte[] bytes = value == null
                 ? null

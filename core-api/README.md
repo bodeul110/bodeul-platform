@@ -29,6 +29,7 @@
 | 예약·후속 처리 | `/api/appointments`, `/{id}/follow-up` | [예약 계약](../docs/architecture/appointment-core-api.md) |
 | 무통장입금 | `/api/appointments/{id}/payment`, `/payment/depositor` | 환자 본인 조회·입금자명 제출. 관리자 상태 전이는 별도 Next.js 서버 |
 | 보호자 동의 | `/api/appointments/{id}/guardian-sharing-consent` | [동의 계약](../docs/architecture/adult-patient-guardian-sharing-consent.md) |
+| 보호자 예약 승인 | `/api/appointments/guardian-booking` | [별도 생성 승인 API](../docs/architecture/guardian-booking-api.md). 기본 OFF, 환자 승인·보호자 최소 접수증 |
 | 동행·종료·리포트 | `/api/companion-sessions`, `/{id}/advance`, `/care-end`, `/report` | [동행 계약](../docs/architecture/companion-session-core-api.md) |
 | 채팅·읽음·첨부 | `/api/companion-sessions/{id}/realtime`, `/messages`, `/read-receipt`, `/attachments/{attachmentId}` | 서버 인가·저장, Realtime은 변경 신호만 전달 |
 | 동행 증빙 | `/api/companion-sessions/{id}/artifacts` | PostgreSQL 메타데이터와 Firebase Storage 원본 분리 |
@@ -92,6 +93,8 @@ $env:CORE_DB_PASSWORD = "<runtime-password>"
 Cloud Run에서는 전용 runtime 서비스 계정의 Application Default Credentials를 사용한다. 서비스 계정 JSON과 `GOOGLE_APPLICATION_CREDENTIALS` 파일을 만들지 않으며, `FIREBASE_PROJECT_ID`를 명시해 다른 project token을 거부한다.
 
 첫 범위는 Firebase Admin SDK의 기본 `verifyIdToken`을 사용하므로 token 폐기 여부를 추가 조회하지 않는다. ID token 만료 전 즉시 차단이 필요하면 PostgreSQL 역할을 제거하고, 계정 폐기 확인을 매 요청에 적용할지는 네트워크 비용과 캐시 전략을 정한 뒤 별도 반영한다.
+
+기본 OFF인 보호자 예약 승인 API는 예외적으로 두 참여자의 현재 PostgreSQL 역할과 Firebase 사용자 존재·disabled 상태를 서버에서 추가 확인한다. 이 확인이 다른 기존 API 전체의 token 폐기 검사까지 변경하는 것은 아니다.
 
 ## 계정 삭제 영향도 점검
 

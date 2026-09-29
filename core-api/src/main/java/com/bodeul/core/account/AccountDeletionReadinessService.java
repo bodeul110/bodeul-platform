@@ -30,6 +30,7 @@ interface AccountDeletionReadinessService {
     enum ObservationCode {
         ACTIVE_APPOINTMENT_PRESENT,
         ACTIVE_SESSION_PRESENT,
+        ACTIVE_BOOKING_APPROVAL_PRESENT,
         POSTGRES_PROFILE_MISSING
     }
 
