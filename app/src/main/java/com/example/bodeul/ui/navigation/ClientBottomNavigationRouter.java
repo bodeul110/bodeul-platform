@@ -40,10 +40,11 @@ public final class ClientBottomNavigationRouter {
             case HOME:
             default:
                 intent = new Intent(activity, MainActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 break;
         }
 
+        // 연속 이동 요청에도 기존 최상위 화면을 재사용해 같은 화면이 쌓이지 않게 한다.
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         activity.startActivity(intent);
         if (ClientBottomNavigationStackPolicy.shouldFinishCurrent(currentTab, destinationTab)) {
             activity.finish();

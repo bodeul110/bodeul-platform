@@ -256,8 +256,8 @@ public class BookingStatusActivity extends AppCompatActivity {
             case OPEN_FOLLOW_UP:
                 openFollowUp();
                 return;
-            case OPEN_BOOKING:
-                openBooking();
+            case OPEN_HISTORY:
+                openBookingHistory();
                 return;
             case REFRESH:
             default:
@@ -358,8 +358,11 @@ public class BookingStatusActivity extends AppCompatActivity {
         ));
     }
 
-    private void openBooking() {
-        startActivity(new Intent(this, BookingActivity.class));
+    private void openBookingHistory() {
+        Intent intent = new Intent(this, ClientBookingHistoryActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 
     private void openGuardianSharingConsent() {

@@ -22,9 +22,16 @@ public final class ClientBottomNavigationBinder {
             @NonNull Listener listener
     ) {
         ClientBottomNavigationInsets.apply(navigationView);
+        navigationView.setOnItemSelectedListener(null);
+        navigationView.setOnItemReselectedListener(null);
         navigationView.setSelectedItemId(resolveMenuItemId(selectedTab));
         navigationView.setOnItemReselectedListener(item -> {
-            // 이미 선택한 최상위 화면에서는 중복 Activity를 만들지 않는다.
+            ClientBottomNavigationTab tab = resolveTab(item.getItemId());
+            // 복원된 표시가 다른 탭이면 재선택도 이동으로 처리한다.
+            if (tab != null && tab != selectedTab) {
+                navigationView.setSelectedItemId(resolveMenuItemId(selectedTab));
+                listener.onTabSelected(tab);
+            }
         });
         navigationView.setOnItemSelectedListener(item -> {
             ClientBottomNavigationTab tab = resolveTab(item.getItemId());
@@ -32,7 +39,10 @@ public final class ClientBottomNavigationBinder {
                 return false;
             }
             if (tab != selectedTab) {
+                // 목적지는 별도 Activity다. 복귀할 원래 화면의 선택 표시는 유지한다.
+                navigationView.setSelectedItemId(resolveMenuItemId(selectedTab));
                 listener.onTabSelected(tab);
+                return false;
             }
             return true;
         });
