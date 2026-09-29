@@ -4,6 +4,8 @@
 
 대상: [#27](https://github.com/bodeul110/bodeul-platform/issues/27), 선행 [#470](https://github.com/bodeul110/bodeul-platform/pull/470)
 
+후속: #471은 리뷰 후 `dev`에 병합·개발 배포했다. 9월 29일의 실제 인증 앱 생성·관리자 원장 조회·취소 결과와 미완료 범위는 [실연동 검증 기록](issue-27-live-price-validation-2026-09-29.md)에 구분한다. 아래 내용은 9월 28일 구현 시점의 검증 기록이다.
+
 ## 구현한 내용
 
 신규 40,000원 요금이 앱과 서버에 서로 다른 순서로 반영되어도 다른 금액의 예약이 조용히 생성되지 않도록 보완했다. [설계 판단](../design/mvp-booking-price.md#앱서버-배포-순서-보호)에 선택 이유와 한계를 남겼다.
