@@ -2,7 +2,7 @@
 
 기준일: 2026-09-29
 
-상태: #440의 순수 Java 판정은 `dev` 반영 완료. 요청별 상태·감사 저장을 위한 V24와 JDBC 후속 코드를 추가했다. **실제 DB 적용·API 연결·Android 화면·환경 배포는 아직 없으며 보호자 예약 생성은 계속 403으로 차단한다.** 저장·동시성 범위는 [저장 경계](guardian-booking-approval-storage.md)를 따른다.
+상태: #440의 순수 Java 판정과 #476의 V24/JDBC 저장 기반은 `dev`에 반영됐다. 후속 [API 연결](guardian-booking-api.md)은 기본 OFF로 구현하며, **실제 V24 적용·Android 화면·기능 활성화는 아직 없고 기존 보호자 생성 차단도 유지한다.** 저장·동시성 범위는 [저장 경계](guardian-booking-approval-storage.md)를 따른다. 아래 저장 단계 검증 기록과 실제 활성화 상태는 구분한다.
 
 ## 작업 목적
 

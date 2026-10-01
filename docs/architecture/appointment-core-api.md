@@ -4,7 +4,7 @@
 
 최종 갱신: 2026-09-28
 
-보호자 예약 생성은 #419의 후속 구현 범위다. [예약 전 생성 승인 판정](adult-patient-guardian-booking-authorization.md)을 준비했지만 API에는 연결하지 않았으므로 아래의 보호자 생성·수정·취소 차단이 현재 동작이다. 예약 후 정보공유 동의를 생성 권한으로 확대하지 않는다.
+보호자 예약 생성은 #419에서 [예약 전 생성 승인](adult-patient-guardian-booking-authorization.md)과 [별도 API](guardian-booking-api.md)로 구현한다. 새 API의 기본값은 OFF이며 기존 `/api/appointments`의 보호자 생성·수정·취소 차단은 그대로다. 실제 V24 적용과 Android 환자 승인 화면·DEV 검증 전에는 활성화하지 않는다. 예약 후 정보공유 동의를 생성 권한으로 확대하지 않는다.
 
 ## 작업 목적
 

@@ -47,6 +47,18 @@ export BOOKING_TEST_DB_PASSWORD="$PGPASSWORD"
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 truncate bodeul.guardian_booking_approval_events, bodeul.guardian_booking_approvals;
 SQL
+psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V25__remove_guardian_booking_approval_audit_index.sql
+psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
+do $$
+begin
+    if to_regclass('bodeul.ix_guardian_booking_approval_events_guardian') is not null
+            or to_regclass('bodeul.guardian_booking_approvals') is null
+            or to_regclass('bodeul.guardian_booking_approval_events') is null then
+        raise exception 'V25 rollback의 객체 경계가 일치하지 않습니다.';
+    end if;
+end;
+$$;
+SQL
 psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V24__remove_guardian_booking_approvals.sql
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 do $$

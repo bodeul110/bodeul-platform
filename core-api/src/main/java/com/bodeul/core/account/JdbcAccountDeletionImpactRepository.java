@@ -3,6 +3,7 @@ package com.bodeul.core.account;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.util.Optional;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -51,6 +52,31 @@ class JdbcAccountDeletionImpactRepository implements AccountDeletionImpactReposi
             throw new DataRetrievalFailureException("계정 삭제 영향도 집계 결과를 확인할 수 없습니다.");
         }
         return impact;
+    }
+
+    @Override
+    public Optional<BookingApprovalImpact> inspectBookingApprovals(UUID userId) {
+        // V24 적용 전에도 기존 집계는 유지하되 새 저장소를 0건으로 오인하지 않는다.
+        Boolean schemaReady = jdbcTemplate.queryForObject("""
+                select to_regclass('bodeul.guardian_booking_approvals') is not null
+                   and to_regclass('bodeul.guardian_booking_approval_events') is not null
+                """, new MapSqlParameterSource(), Boolean.class);
+        if (schemaReady == null) throw new DataRetrievalFailureException("승인 저장소 적용 상태를 확인할 수 없습니다.");
+        if (!schemaReady) return Optional.empty();
+        BookingApprovalImpact impact = jdbcTemplate.queryForObject("""
+                select
+                    (select count(*) from bodeul.guardian_booking_approvals
+                     where patient_user_id = :userId or guardian_user_id = :userId) as approval_count,
+                    (select count(*) from bodeul.guardian_booking_approvals
+                     where (patient_user_id = :userId or guardian_user_id = :userId)
+                       and revoked_at is null and granted_at <= now() and expires_at > now()) as active_approval_count,
+                    (select count(*) from bodeul.guardian_booking_approval_events
+                     where patient_user_id = :userId or guardian_user_id = :userId) as audit_count
+                """, new MapSqlParameterSource("userId", userId),
+                (resultSet, row) -> new BookingApprovalImpact(requiredCount(resultSet, "approval_count"),
+                        requiredCount(resultSet, "active_approval_count"), requiredCount(resultSet, "audit_count")));
+        if (impact == null) throw new DataRetrievalFailureException("승인 영향도 집계를 확인할 수 없습니다.");
+        return Optional.of(impact);
     }
 
     private long requiredCount(ResultSet resultSet, String column) throws SQLException {

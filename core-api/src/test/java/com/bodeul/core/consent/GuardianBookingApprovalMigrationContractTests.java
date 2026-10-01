@@ -37,12 +37,33 @@ class GuardianBookingApprovalMigrationContractTests {
     }
 
     @Test
+    void auditGuardianIndexIsAddedInAFollowUpMigrationWithoutChangingPrivileges() throws IOException {
+        String sql = new ClassPathResource("db/migration/V25__index_guardian_booking_approval_audits.sql")
+                .getContentAsString(StandardCharsets.UTF_8);
+        assertThat(sql)
+                .contains("create index ix_guardian_booking_approval_events_guardian")
+                .contains("on bodeul.guardian_booking_approval_events (guardian_user_id)")
+                .doesNotContain("grant ", "revoke ", "alter table", "create policy", "drop ", "delete from", "truncate");
+    }
+
+    @Test
+    void auditIndexRollbackOnlyDropsTheNewIndex() throws IOException {
+        String sql = Files.readString(Path.of("db/rollback/V25__remove_guardian_booking_approval_audit_index.sql"),
+                StandardCharsets.UTF_8);
+        assertThat(sql)
+                .contains("drop index if exists bodeul.ix_guardian_booking_approval_events_guardian;")
+                .doesNotContain("drop table", "delete from", "truncate", "cascade", "grant ", "revoke ",
+                        "flyway_schema_history");
+    }
+
+    @Test
     void ciExecutesRepositoryRacesOnIsolatedPostgresAndThenChecksEmptyRollback() throws IOException {
         String script = Files.readString(Path.of("db/verification/verify_guardian_booking_approval_migration.sh"), StandardCharsets.UTF_8);
         String workflow = Files.readString(Path.of("../.github/workflows/core-api.yml"), StandardCharsets.UTF_8);
         assertThat(script).contains("bodeul_guardian_booking_test", "createdb", "127.0.0.1", "localhost",
                 "./gradlew migrateDatabase", "./gradlew guardianBookingApprovalPostgresTest",
-                "V24__remove_guardian_booking_approvals.sql", "to_regclass('bodeul.guardian_sharing_consents') is null");
+                "V25__remove_guardian_booking_approval_audit_index.sql", "V24__remove_guardian_booking_approvals.sql",
+                "to_regclass('bodeul.guardian_sharing_consents') is null");
         assertThat(workflow).contains("image: postgres:17", "bash db/verification/verify_guardian_booking_approval_migration.sh");
     }
 }
