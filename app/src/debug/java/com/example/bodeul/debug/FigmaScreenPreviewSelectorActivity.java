@@ -70,6 +70,11 @@ public final class FigmaScreenPreviewSelectorActivity extends AppCompatActivity 
                         "매니저 운영 7단계 흐름",
                         "실제 fallback 코드로 최신 화면 연결 확인",
                         destinationIntent(this, 7)
+                ),
+                new PreviewDestination(
+                        "환자 진행 현황 1~7 · 완료",
+                        "실제 환자 화면을 로컬 단계로 전환해 확인",
+                        destinationIntent(this, 8)
                 )
         );
 
@@ -98,6 +103,8 @@ public final class FigmaScreenPreviewSelectorActivity extends AppCompatActivity 
                 return ManagerGuidePreviewSelectorActivity.createIntent(context, false);
             case 7:
                 return ManagerGuidePreviewSelectorActivity.createIntent(context, true);
+            case 8:
+                return PatientProgressFigmaPreviewActivity.createIntent(context);
             default:
                 throw new IllegalArgumentException("Unknown preview position: " + position);
         }
