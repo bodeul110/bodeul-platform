@@ -11,6 +11,8 @@ import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.data.mock.MockAuthRepository;
 import com.example.bodeul.data.mock.MockBookingRepository;
 import com.example.bodeul.data.mock.MockGuardianReportRepository;
+import com.example.bodeul.domain.model.AppointmentRequestDetail;
+import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.domain.model.MedicationComparisonDecision;
 import com.example.bodeul.domain.model.User;
 import com.example.bodeul.domain.model.UserRole;
@@ -78,6 +80,45 @@ final class FigmaPreviewDependencies {
                 dataRepository,
                 R.string.demo_account_guardian_email,
                 UserRole.GUARDIAN
+        );
+        return new FigmaPreviewDependencies(
+                authRepository,
+                new MockBookingRepository(dataRepository),
+                new MockGuardianReportRepository(dataRepository)
+        );
+    }
+
+    static FigmaPreviewDependencies forPatientProgress(
+            Context context,
+            int stepOrder,
+            boolean completed
+    ) {
+        MockBodeulRepository dataRepository = new MockBodeulRepository();
+        int clampedStepOrder = Math.max(1, Math.min(stepOrder, 7));
+        AppointmentRequestDetail detail = dataRepository.getAppointmentRequestDetail("request-1");
+        if (detail == null) {
+            throw new IllegalStateException("환자 진행현황 미리보기 데이터를 준비하지 못했습니다.");
+        }
+
+        detail.getAppointmentRequest().setStatus(AppointmentStatus.IN_PROGRESS);
+        for (int currentOrder = 1; currentOrder < clampedStepOrder; currentOrder++) {
+            dataRepository.advanceManagerSession("manager-1");
+        }
+        if (completed) {
+            dataRepository.saveSessionReport(
+                    "manager-1",
+                    "오늘 동행을 안전하게 마쳤습니다.",
+                    "진료 결과와 다음 방문 일정을 확인했습니다.",
+                    "처방약 수령과 복약 안내를 완료했습니다.",
+                    "2026-12-22 10:30"
+            );
+        }
+
+        MockAuthRepository authRepository = signedInAuth(
+                context,
+                dataRepository,
+                R.string.demo_account_patient_email,
+                UserRole.PATIENT
         );
         return new FigmaPreviewDependencies(
                 authRepository,

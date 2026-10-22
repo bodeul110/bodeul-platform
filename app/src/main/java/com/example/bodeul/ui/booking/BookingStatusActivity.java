@@ -56,6 +56,12 @@ public class BookingStatusActivity extends AppCompatActivity {
     private AppointmentRequestDetail currentDetail;
     private BookingStatusScreenModel currentScreenModel;
     private String requestId;
+    @Nullable
+    private Runnable detailObserverRegistration;
+    private boolean detailObservationActive;
+    private boolean hasRenderedDetail;
+    private boolean refreshFailureNotified;
+    private int detailLoadGeneration;
 
     public static Intent createIntent(Context context, String requestId) {
         Intent intent = new Intent(context, BookingStatusActivity.class);
@@ -69,8 +75,8 @@ public class BookingStatusActivity extends AppCompatActivity {
         setContentView(R.layout.activity_booking_status);
 
         requestId = getIntent().getStringExtra(EXTRA_REQUEST_ID);
-        authRepository = ServiceLocator.provideAuthRepository(this);
-        bookingRepository = ServiceLocator.provideBookingRepository(this);
+        authRepository = provideAuthRepository();
+        bookingRepository = provideBookingRepository();
 
         BookingPresentationFormatter formatter = new BookingPresentationFormatter(this);
         bookingStatusCoordinator = new BookingStatusCoordinator(
@@ -126,10 +132,29 @@ public class BookingStatusActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        detailObservationActive = true;
         reloadDetail();
     }
 
+    @Override
+    protected void onStop() {
+        detailObservationActive = false;
+        detailLoadGeneration++;
+        stopObservingDetail();
+        super.onStop();
+    }
+
+    protected AuthRepository provideAuthRepository() {
+        return ServiceLocator.provideAuthRepository(this);
+    }
+
+    protected BookingRepository provideBookingRepository() {
+        return ServiceLocator.provideBookingRepository(this);
+    }
+
     private void reloadDetail() {
+        stopObservingDetail();
+        int loadGeneration = ++detailLoadGeneration;
         if (TextUtils.isEmpty(requestId)) {
             showLoadErrorState(getString(R.string.booking_status_request_missing));
             return;
@@ -140,6 +165,9 @@ public class BookingStatusActivity extends AppCompatActivity {
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
+                if (!isCurrentDetailLoad(loadGeneration)) {
+                    return;
+                }
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
                     openProfileCompletion();
                     return;
@@ -151,30 +179,75 @@ public class BookingStatusActivity extends AppCompatActivity {
                 }
 
                 currentUser = result;
-                bookingRepository.getAppointmentRequestDetail(result, requestId, new RepositoryCallback<AppointmentRequestDetail>() {
-                    @Override
-                    public void onSuccess(AppointmentRequestDetail result) {
-                        currentDetail = result;
-                        loadFollowUpIfNeeded(result);
-                    }
+                Runnable observerRegistration = bookingRepository.observeAppointmentRequestDetail(
+                        result,
+                        requestId,
+                        new RepositoryCallback<AppointmentRequestDetail>() {
+                            @Override
+                            public void onSuccess(AppointmentRequestDetail result) {
+                                if (!isCurrentDetailLoad(loadGeneration)) {
+                                    return;
+                                }
+                                currentDetail = result;
+                                loadFollowUpIfNeeded(result, loadGeneration);
+                            }
 
-                    @Override
-                    public void onError(String message) {
-                        setLoading(false);
-                        showLoadErrorState(message);
-                    }
-                });
+                            @Override
+                            public void onError(String message) {
+                                if (!isCurrentDetailLoad(loadGeneration)) {
+                                    return;
+                                }
+                                setLoading(false);
+                                if (hasRenderedDetail
+                                        && bookingStatusContentContainer.getVisibility()
+                                        == View.VISIBLE) {
+                                    if (!refreshFailureNotified) {
+                                        refreshFailureNotified = true;
+                                        Toast.makeText(
+                                                BookingStatusActivity.this,
+                                                R.string.booking_status_refresh_delayed,
+                                                Toast.LENGTH_SHORT
+                                        ).show();
+                                    }
+                                    return;
+                                }
+                                showLoadErrorState(message);
+                            }
+                        });
+                if (!isCurrentDetailLoad(loadGeneration)) {
+                    observerRegistration.run();
+                    return;
+                }
+                detailObserverRegistration = observerRegistration;
             }
 
             @Override
             public void onError(String message) {
+                if (!isCurrentDetailLoad(loadGeneration)) {
+                    return;
+                }
                 setLoading(false);
                 showAuthState();
             }
         });
     }
 
-    private void loadFollowUpIfNeeded(AppointmentRequestDetail detail) {
+    private void stopObservingDetail() {
+        if (detailObserverRegistration == null) {
+            return;
+        }
+        detailObserverRegistration.run();
+        detailObserverRegistration = null;
+    }
+
+    private boolean isCurrentDetailLoad(int loadGeneration) {
+        return detailObservationActive && loadGeneration == detailLoadGeneration;
+    }
+
+    private void loadFollowUpIfNeeded(
+            AppointmentRequestDetail detail,
+            int loadGeneration
+    ) {
         if (currentUser == null) {
             setLoading(false);
             showAuthState();
@@ -191,11 +264,17 @@ public class BookingStatusActivity extends AppCompatActivity {
                 new RepositoryCallback<AppointmentFollowUpRecord>() {
                     @Override
                     public void onSuccess(AppointmentFollowUpRecord result) {
+                        if (!isCurrentDetailLoad(loadGeneration) || currentDetail != detail) {
+                            return;
+                        }
                         renderDetail(detail, result);
                     }
 
                     @Override
                     public void onError(String message) {
+                        if (!isCurrentDetailLoad(loadGeneration) || currentDetail != detail) {
+                            return;
+                        }
                         renderDetail(
                                 detail,
                                 AppointmentFollowUpRecord.empty(detail.getAppointmentRequest().getId())
@@ -227,6 +306,8 @@ public class BookingStatusActivity extends AppCompatActivity {
                         ? View.VISIBLE
                         : View.GONE);
         bookingStatusContentContainer.setVisibility(View.VISIBLE);
+        hasRenderedDetail = true;
+        refreshFailureNotified = false;
         hideBlockingState();
         setLoading(false);
     }
