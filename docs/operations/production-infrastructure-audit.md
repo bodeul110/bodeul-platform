@@ -1,6 +1,6 @@
 # Production 인프라 읽기 전용 점검
 
-기준일: 2026-08-26
+현재 구성 대조: 2026-09-27. 8월 26일 최초 구성 결과는 아래에 당시 이력으로 유지한다.
 
 ## 목적
 
@@ -29,7 +29,7 @@ Production 배포나 데이터 조회 없이 Google Cloud/Firebase 기반의 누
 | Firestore | `(default)` database의 Tokyo·Native mode·삭제 방지 metadata |
 | Storage | Firebase Storage와 DB backup bucket의 위치·uniform access·public access prevention·보존 metadata |
 
-Cloud Run 첫 revision, Kakao production secret version, release App Check provider/enforcement와 Firebase Storage UBLA는 이미 구축됐다고 보는 baseline이 아니라 출시 차단 항목으로 따로 표시한다. Supabase와 PostgreSQL은 [Production DB migration 사전 점검](production-database-migration-readiness.md)에서 다룬다.
+9월 27일 Cloud Run 운영 revision과 Kakao secret version은 준비돼 baseline에 포함한다. 아직 남은 release App Check provider/enforcement와 Firebase Storage UBLA는 별도 출시 게이트다. 같은 날 감사 run `36313836486`과 실제 구성 근거는 [분리 실행 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다. Supabase와 PostgreSQL은 [Production DB migration 사전 점검](production-database-migration-readiness.md)에서 다룬다.
 
 IAM 검사는 production 프로젝트에 직접 설정된 binding을 대조한다. 조직·폴더에서 상속된 Allow와 Deny는 이 서비스 계정의 조회 범위가 아니므로 effective IAM 전체를 보장하지 않는다. 2026-08-26 구성 시 조직 Deny 정책 0건과 WIF provider 생성 권한의 `DENY_ACCESS_STATE_NOT_DENIED`를 별도 관리자 점검으로 확인했고, 이때 사용한 임시 `denyReviewer`, WIF 관리자와 서비스 계정 관리자 역할은 확인 직후 모두 회수했다.
 
@@ -115,8 +115,8 @@ GitHub Environment에는 공개 식별자만 변수로 등록한다. 비밀값�
 
 | JSON 필드 / 실행 환경변수 | 현재 값 | 전환 값 |
 | --- | --- | --- |
-| `cloudRun` / `CLOUD_RUN_EXPECTED_STATE` | `absent` | 첫 승인 배포 후 `present` |
-| `kakaoSecret` / `KAKAO_SECRET_EXPECTED_STATE` | `metadata-only` | 운영 version 등록 후 `enabled` |
+| `cloudRun` / `CLOUD_RUN_EXPECTED_STATE` | `present` | 승인 이미지·정상 revision 유지 |
+| `kakaoSecret` / `KAKAO_SECRET_EXPECTED_STATE` | `enabled` | 운영 version 등록 상태 유지. 실제 정상 token·Kakao 호출은 별도 검증 |
 | `firestorePitr` / `FIRESTORE_PITR_EXPECTED_STATE` | `enabled` | 7일 version 보존 유지 |
 | `firebaseStorageUbla` / `FIREBASE_STORAGE_UBLA_EXPECTED_STATE` | `deferred` | 개발 버킷 실검증 후 `enabled` |
 | `appCheck` / `APP_CHECK_EXPECTED_STATE` | `preparing` | 전체 provider·클라이언트 준비 후 `observe`, callable·서비스별 전환 `staged`, 전체 강제 `enforced` |

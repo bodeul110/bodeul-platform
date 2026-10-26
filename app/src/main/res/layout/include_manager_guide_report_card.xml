@@ -90,7 +90,8 @@
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
+            android:id="@+id/layoutReportSummary"
+            style="@style/BodeulMemoFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
@@ -98,6 +99,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputReportSummary"
+                style="@style/BodeulMemoEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
@@ -105,7 +107,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
+            style="@style/BodeulMemoFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -113,6 +115,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputReportTreatment"
+                style="@style/BodeulMemoEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
@@ -138,7 +141,8 @@
                 android:id="@+id/inputReportMedicationName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -161,25 +165,28 @@
                 android:id="@+id/radioMedicationComparisonMatched"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/guide_report_medication_comparison_matched" />
+                android:text="@string/guide_report_medication_comparison_matched"
+                android:textColor="@color/figma_mvp_text_primary" />
 
             <com.google.android.material.radiobutton.MaterialRadioButton
                 android:id="@+id/radioMedicationComparisonChanged"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="@string/guide_report_medication_comparison_changed" />
+                android:text="@string/guide_report_medication_comparison_changed"
+                android:textColor="@color/figma_mvp_text_primary" />
 
             <com.google.android.material.radiobutton.MaterialRadioButton
                 android:id="@+id/radioMedicationComparisonRecheck"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="@string/guide_report_medication_comparison_recheck" />
+                android:text="@string/guide_report_medication_comparison_recheck"
+                android:textColor="@color/figma_mvp_text_primary" />
         </RadioGroup>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
+            style="@style/BodeulMemoFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -187,6 +194,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputReportMedicationComparisonNote"
+                style="@style/BodeulMemoEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
@@ -194,7 +202,7 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
+            style="@style/BodeulMemoFilledInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -202,6 +210,7 @@
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputReportMedicationChangeSummary"
+                style="@style/BodeulMemoEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textMultiLine"
@@ -219,7 +228,8 @@
                 android:id="@+id/inputReportMedicationScheduleNote"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
@@ -241,7 +251,8 @@
                 android:id="@+id/inputNextVisit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text" />
+                android:inputType="text"
+                android:textColor="@color/figma_mvp_text_primary" />
         </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>

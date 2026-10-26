@@ -479,8 +479,8 @@ public final class BookingStatusCoordinator {
             case CANCELED:
             default:
                 action = new BookingStatusActionModel(
-                        BookingStatusActionType.OPEN_BOOKING,
-                        context.getString(R.string.booking_status_action_open_booking)
+                        BookingStatusActionType.OPEN_HISTORY,
+                        context.getString(R.string.booking_status_action_open_history)
                 );
                 break;
         }
@@ -532,8 +532,8 @@ public final class BookingStatusCoordinator {
                     );
                 }
                 return new BookingStatusActionModel(
-                        BookingStatusActionType.OPEN_BOOKING,
-                        context.getString(R.string.booking_status_action_open_booking)
+                        BookingStatusActionType.OPEN_HISTORY,
+                        context.getString(R.string.booking_status_action_open_history)
                 );
             case CANCELED:
             default:

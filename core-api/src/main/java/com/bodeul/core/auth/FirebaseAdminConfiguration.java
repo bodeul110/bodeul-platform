@@ -6,6 +6,8 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.AuthErrorCode;
+import com.google.firebase.auth.FirebaseAuthException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -26,6 +28,37 @@ class FirebaseAdminConfiguration {
     FirebaseTokenVerifier firebaseTokenVerifier(
             @Value("${FIREBASE_PROJECT_ID:}") String projectId) {
         return createVerifier(projectId, this::createDecoder);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(FirebaseAccountStatus.class)
+    FirebaseAccountStatus firebaseAccountStatus(@Value("${FIREBASE_PROJECT_ID:}") String projectId) {
+        if (projectId == null || projectId.isBlank()) {
+            return uid -> { throw new FirebaseAccountStatus.UnavailableException(); };
+        }
+        final FirebaseAuth auth;
+        try {
+            auth = FirebaseAuth.getInstance(getOrInitializeApp(projectId.trim()));
+        } catch (Exception exception) {
+            return uid -> { throw new FirebaseAccountStatus.UnavailableException(); };
+        }
+        return accountStatus(auth);
+    }
+
+    static FirebaseAccountStatus accountStatus(FirebaseAuth auth) {
+        return uid -> {
+            if (uid == null || uid.isBlank() || uid.length() > 128) {
+                return false;
+            }
+            try {
+                return !auth.getUser(uid).isDisabled();
+            } catch (FirebaseAuthException exception) {
+                if (exception.getAuthErrorCode() == AuthErrorCode.USER_NOT_FOUND) {
+                    return false;
+                }
+                throw new FirebaseAccountStatus.UnavailableException();
+            }
+        };
     }
 
     static FirebaseTokenVerifier createVerifier(String projectId, DecoderFactory decoderFactory) {

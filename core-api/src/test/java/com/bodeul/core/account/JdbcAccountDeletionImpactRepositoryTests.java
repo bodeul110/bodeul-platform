@@ -15,6 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,6 +62,38 @@ class JdbcAccountDeletionImpactRepositoryTests {
                 .doesNotContain("appointment_requests")
                 .doesNotContain("companion_session_assignment_audits");
         assertThat(parameters.getValue().getValue("userId")).isEqualTo(USER_ID);
+    }
+
+    @Test
+    void missingBookingTablesProduceUnknownInventory() {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Boolean.class))).thenReturn(false);
+        assertThat(repository.inspectBookingApprovals(USER_ID)).isEmpty();
+        verify(jdbcTemplate, never()).queryForObject(anyString(), any(MapSqlParameterSource.class), any(RowMapper.class));
+    }
+
+    @Test
+    void bookingCountsAreScopedToPatientOrGuardianAndExcludeExpiredApprovals() throws Exception {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Boolean.class))).thenReturn(true);
+        ResultSet resultSet = mock(ResultSet.class);
+        when(resultSet.getObject("approval_count", Long.class)).thenReturn(2L);
+        when(resultSet.getObject("active_approval_count", Long.class)).thenReturn(1L);
+        when(resultSet.getObject("audit_count", Long.class)).thenReturn(3L);
+        stubQuery(resultSet);
+        assertThat(repository.inspectBookingApprovals(USER_ID))
+                .contains(new AccountDeletionImpactRepository.BookingApprovalImpact(2, 1, 3));
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MapSqlParameterSource> parameters = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbcTemplate).queryForObject(sql.capture(), parameters.capture(), any(RowMapper.class));
+        assertThat(sql.getValue()).contains("patient_user_id = :userId or guardian_user_id = :userId",
+                "revoked_at is null", "expires_at > now()", "guardian_booking_approval_events");
+        assertThat(parameters.getValue().getValue("userId")).isEqualTo(USER_ID);
+    }
+
+    @Test
+    void bookingNullCountFailsClosed() throws Exception {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Boolean.class))).thenReturn(true);
+        stubQuery(mock(ResultSet.class));
+        assertThatThrownBy(() -> repository.inspectBookingApprovals(USER_ID)).isInstanceOf(DataRetrievalFailureException.class);
     }
 
     @Test
@@ -111,7 +145,7 @@ class JdbcAccountDeletionImpactRepositoryTests {
                 any(MapSqlParameterSource.class),
                 any(RowMapper.class)))
                 .thenAnswer(invocation -> {
-                    RowMapper<AccountDeletionImpactRepository.PostgreSqlImpact> mapper = invocation.getArgument(2);
+                    RowMapper<?> mapper = invocation.getArgument(2);
                     return mapper.mapRow(resultSet, 0);
                 });
     }

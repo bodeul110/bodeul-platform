@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_figma_preview_short_label">피그마 미리보기</string>
+    <string name="debug_figma_preview_long_label">피그마 구현 화면 미리보기</string>
+    <string name="debug_figma_preview_title">피그마 구현 화면</string>
+    <string name="debug_figma_preview_body">이번 구현 범위를 로컬 데이터로 확인합니다. 운영 서버·Firebase·실제 동행 세션은 변경하지 않습니다.</string>
+    <string name="debug_figma_preview_local_only">미리보기에서는 실제 서버 또는 외부 화면으로 이동하지 않습니다.</string>
+    <string name="debug_figma_preview_local_map">외부 지도 연결 없는 로컬 지도 미리보기</string>
+</resources>

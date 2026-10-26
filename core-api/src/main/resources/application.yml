@@ -35,6 +35,8 @@ management:
         enabled: true
 
 bodeul:
+  guardian-booking:
+    enabled: ${BODEUL_GUARDIAN_BOOKING_ENABLED:false}
   session:
     pre-consultation-enforcement: ${BODEUL_SESSION_PRE_CONSULTATION_ENFORCEMENT:false}
     completion-enforcement: ${BODEUL_SESSION_COMPLETION_ENFORCEMENT:false}

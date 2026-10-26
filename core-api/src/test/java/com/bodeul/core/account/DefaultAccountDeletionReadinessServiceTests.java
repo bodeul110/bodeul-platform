@@ -16,7 +16,12 @@ class DefaultAccountDeletionReadinessServiceTests {
 
     @Test
     void successfulPostgresInventoryStillDoesNotDecideDeletion() {
-        AccountDeletionImpactRepository repository = userId -> impact(1, 2, 1, 1);
+        AccountDeletionImpactRepository repository = new AccountDeletionImpactRepository() {
+            public PostgreSqlImpact inspect(UUID userId) { return impact(1, 2, 1, 1); }
+            public Optional<BookingApprovalImpact> inspectBookingApprovals(UUID userId) {
+                return Optional.of(new BookingApprovalImpact(2, 0, 4));
+            }
+        };
         FirebaseAccountDeletionImpactRepository firebaseRepository = firebaseUid -> firestoreImpact();
         var service = new DefaultAccountDeletionReadinessService(
                 Optional.of(repository),
@@ -38,6 +43,9 @@ class DefaultAccountDeletionReadinessServiceTests {
                 .containsEntry("activeAppointments", 2L)
                 .containsEntry("bankTransferPayments", 5L)
                 .containsEntry("paymentEvents", 6L)
+                .containsEntry("guardianBookingApprovals", 2L)
+                .containsEntry("activeGuardianBookingApprovals", 0L)
+                .containsEntry("guardianBookingApprovalAudits", 4L)
                 .doesNotContainKey("activeLegalHolds");
         assertThat(result.sources().get(1).source())
                 .isEqualTo(AccountDeletionReadinessService.Source.FIRESTORE);
@@ -84,6 +92,45 @@ class DefaultAccountDeletionReadinessServiceTests {
                 AccountDeletionReadinessService.ObservationCode.ACTIVE_SESSION_PRESENT);
         assertThat(result.blockerCodes()).containsExactly(
                 AccountDeletionReadinessService.BlockerCode.INVENTORY_INCOMPLETE);
+    }
+
+    @Test
+    void missingBookingMigrationIsPartialInsteadOfZero() {
+        var service = new DefaultAccountDeletionReadinessService(
+                Optional.of(userId -> impact(1, 0, 0, 0)), Optional.empty());
+        var result = service.inspect(USER_ID, FIREBASE_UID);
+        assertThat(result.sources().getFirst().status()).isEqualTo(AccountDeletionReadinessService.SourceStatus.PARTIAL);
+        assertThat(result.sources().getFirst().counts()).doesNotContainKeys(
+                "guardianBookingApprovals", "activeGuardianBookingApprovals", "guardianBookingApprovalAudits");
+        assertThat(result.deletionExecuted()).isFalse();
+    }
+
+    @Test
+    void activeBookingApprovalIsInventoryObservationNotDeletionAuthorization() {
+        AccountDeletionImpactRepository repository = new AccountDeletionImpactRepository() {
+            public PostgreSqlImpact inspect(UUID userId) { return impact(1, 0, 0, 0); }
+            public Optional<BookingApprovalImpact> inspectBookingApprovals(UUID userId) {
+                return Optional.of(new BookingApprovalImpact(1, 1, 3));
+            }
+        };
+        var result = new DefaultAccountDeletionReadinessService(Optional.of(repository), Optional.empty()).inspect(USER_ID, FIREBASE_UID);
+        assertThat(result.observationCodes()).contains(AccountDeletionReadinessService.ObservationCode.ACTIVE_BOOKING_APPROVAL_PRESENT);
+        assertThat(result.decision()).isEqualTo(AccountDeletionReadinessService.Decision.NOT_EVALUATED);
+        assertThat(result.deletionExecuted()).isFalse();
+    }
+
+    @Test
+    void bookingInventoryFailureDoesNotPretendPostgresInventoryIsComplete() {
+        AccountDeletionImpactRepository repository = new AccountDeletionImpactRepository() {
+            public PostgreSqlImpact inspect(UUID userId) { return impact(1, 0, 0, 0); }
+            public Optional<BookingApprovalImpact> inspectBookingApprovals(UUID userId) {
+                throw new DataAccessResourceFailureException("secret endpoint");
+            }
+        };
+        var result = new DefaultAccountDeletionReadinessService(Optional.of(repository), Optional.empty()).inspect(USER_ID, FIREBASE_UID);
+        assertThat(result.sources().getFirst().status()).isEqualTo(AccountDeletionReadinessService.SourceStatus.ERROR);
+        assertThat(result.sources().getFirst().counts()).isEmpty();
+        assertThat(result.toString()).doesNotContain("secret endpoint");
     }
 
     @Test

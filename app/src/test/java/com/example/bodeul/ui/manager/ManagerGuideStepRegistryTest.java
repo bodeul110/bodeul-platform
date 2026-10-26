@@ -72,9 +72,11 @@ public class ManagerGuideStepRegistryTest {
     }
 
     @Test
-    public void isHospitalRoute_matchesOnlyStableHospitalRouteCode() {
+    public void isHospitalRoute_matchesCanonicalAndLegacyRouteCodes() {
         assertTrue(ManagerGuideStepRegistry.isHospitalRoute("HOSPITAL_ROUTE"));
         assertTrue(ManagerGuideStepRegistry.isHospitalRoute(" HOSPITAL_ROUTE "));
+        assertTrue(ManagerGuideStepRegistry.isHospitalRoute(
+                "LEGACY_CORE_RECEPTION_PREPARATION"));
         assertFalse(ManagerGuideStepRegistry.isHospitalRoute("MEETING_CONFIRMATION"));
         assertFalse(ManagerGuideStepRegistry.isHospitalRoute("LEGACY_CORE_PATIENT_CONTACT"));
         assertFalse(ManagerGuideStepRegistry.isHospitalRoute(null));

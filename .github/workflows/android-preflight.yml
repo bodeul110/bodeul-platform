@@ -163,7 +163,7 @@ jobs:
 
       - name: Node.js 설정
         if: steps.scope.outputs.android == 'true' || steps.scope.outputs.functions == 'true' || steps.scope.outputs.firebase_tools == 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: "22"
           cache: npm

@@ -24,7 +24,7 @@ dependencies {
 	implementation("org.springframework.security:spring-security-oauth2-jose")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("com.google.firebase:firebase-admin:9.10.0")
+	implementation("com.google.firebase:firebase-admin:9.11.0")
 	implementation("org.flywaydb:flyway-core")
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("org.postgresql:postgresql")
@@ -40,6 +40,27 @@ tasks.withType<Test> {
 tasks.named<Test>("test") {
 	useJUnitPlatform {
 		excludeTags("firestore-emulator")
+		excludeTags("postgres-booking-approval")
+	}
+}
+
+tasks.register<Test>("guardianBookingApprovalPostgresTest") {
+	group = "verification"
+	description = "격리 PostgreSQL에서 보호자 예약 승인 저장·경합·권한을 검증합니다."
+	testClassesDirs = sourceSets["test"].output.classesDirs
+	classpath = sourceSets["test"].runtimeClasspath
+	outputs.upToDateWhen { false }
+	useJUnitPlatform {
+		includeTags("postgres-booking-approval")
+	}
+	testLogging {
+		events("passed", "failed", "skipped")
+	}
+	doFirst {
+		val url = System.getenv("BOOKING_TEST_DB_URL") ?: ""
+		if (!Regex("^jdbc:postgresql://(localhost|127\\.0\\.0\\.1):[0-9]{1,5}/bodeul_guardian_booking_test$").matches(url)) {
+			throw GradleException("로컬 bodeul_guardian_booking_test 격리 DB에서만 실행할 수 있습니다.")
+		}
 	}
 }
 

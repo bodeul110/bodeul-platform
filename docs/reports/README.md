@@ -4,6 +4,15 @@
 
 ## 최신 점검
 
+- [보호자 예약 승인 API·트랜잭션 검증 (2026-09-29)](issue-419-booking-api-2026-09-29.md)
+- [보호자 예약 승인 저장·경합 검증 (2026-09-29)](issue-419-booking-approval-storage-2026-09-29.md)
+- [개발 앱·관리자 웹 예약 금액 실연동 검증 (2026-09-29)](issue-27-live-price-validation-2026-09-29.md)
+- [PR 450 화면 통합 검증 (2026-09-27)](pr-450-integration-verification-2026-09-27.md)
+- [전체 문서 정합성 갱신 (2026-09-27)](document-refresh-2026-09-27.md)
+- [개발·운영 환경 분리 실행·검증 (2026-09-27)](dev-production-separation-2026-09-27.md)
+- [Notion MVP·내부테스트 2 대조 (2026-09-27)](notion-mvp-feedback-triage-2026-09-27.md)
+- [Notion 브라우저 대조·문서와 이슈 갱신 (2026-09-26)](notion-browser-alignment-2026-09-26.md)
+- [Notion 접근 확인·GitHub 이슈 정리와 예약 생성 판정 준비 (2026-09-24)](issue-sync-2026-09-24.md)
 - [전체 문서 정합성 갱신 (2026-09-21)](document-refresh-2026-09-21.md)
 - [관리자 웹 개발·운영 환경 표시 (2026-09-21)](admin-web-environment-display-2026-09-21.md)
 - [관리자 결제 조회·상태 연동 (2026-09-05)](issue-27-admin-payment-integration-2026-09-05.md)

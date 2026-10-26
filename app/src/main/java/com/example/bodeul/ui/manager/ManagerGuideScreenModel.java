@@ -28,6 +28,7 @@ public final class ManagerGuideScreenModel {
     private final ManagerGuideSectionVisibility sectionVisibility;
     private final List<ManagerGuideMemoItem> memoSummaryItems;
     private final String currentStepCode;
+    private final String presentationStepCode;
     private final String liveLocationStatus;
     private final String liveLocationHistory;
     private final String locationSummary;
@@ -74,6 +75,7 @@ public final class ManagerGuideScreenModel {
             ManagerGuideSectionVisibility sectionVisibility,
             List<ManagerGuideMemoItem> memoSummaryItems,
             String currentStepCode,
+            String presentationStepCode,
             String liveLocationStatus,
             String liveLocationHistory,
             String locationSummary,
@@ -118,6 +120,7 @@ public final class ManagerGuideScreenModel {
         this.sectionVisibility = sectionVisibility;
         this.memoSummaryItems = memoSummaryItems;
         this.currentStepCode = currentStepCode;
+        this.presentationStepCode = presentationStepCode;
         this.liveLocationStatus = liveLocationStatus;
         this.liveLocationHistory = liveLocationHistory;
         this.locationSummary = locationSummary;
@@ -187,7 +190,7 @@ public final class ManagerGuideScreenModel {
     }
 
     public boolean isMeetingStep() {
-        return ManagerGuideCurrentLocationPolicy.isAvailableFor(currentStepCode);
+        return ManagerGuideCurrentLocationPolicy.isAvailableFor(presentationStepCode);
     }
 
     public List<ManagerGuideMapActionModel> getMapActions() {
@@ -216,6 +219,10 @@ public final class ManagerGuideScreenModel {
 
     String getCurrentStepCode() {
         return currentStepCode;
+    }
+
+    String getPresentationStepCode() {
+        return presentationStepCode;
     }
 
     public String getLiveLocationStatus() {

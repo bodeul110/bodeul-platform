@@ -1,6 +1,6 @@
 # 디자인 문서
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 Figma 원본의 현재 화면 구조, 구현에 적용할 수 있는 시각 기준과 불일치를 관리한다.
 
@@ -23,6 +23,7 @@ Figma 원본의 현재 화면 구조, 구현에 적용할 수 있는 시각 기�
 
 - [브랜드 스플래시](figma-brand-splash-implementation-2026-09-19.md)
 - [환자 홈](figma-patient-home-implementation-2026-09-12.md)
+- [환자 예약 메인](figma-patient-booking-main-implementation-2026-09-27.md)
 - [병원 검색](figma-patient-hospital-search-implementation-2026-09-12.md)
 - [예약 날짜·시간](figma-patient-appointment-schedule-implementation-2026-09-12.md)
 - [예약 접수 완료](figma-patient-booking-completion-implementation-2026-09-12.md)
