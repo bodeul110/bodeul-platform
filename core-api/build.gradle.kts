@@ -41,6 +41,7 @@ tasks.named<Test>("test") {
 	useJUnitPlatform {
 		excludeTags("firestore-emulator")
 		excludeTags("postgres-booking-approval")
+		excludeTags("postgres-guide-promotion")
 	}
 }
 
@@ -60,6 +61,26 @@ tasks.register<Test>("guardianBookingApprovalPostgresTest") {
 		val url = System.getenv("BOOKING_TEST_DB_URL") ?: ""
 		if (!Regex("^jdbc:postgresql://(localhost|127\\.0\\.0\\.1):[0-9]{1,5}/bodeul_guardian_booking_test$").matches(url)) {
 			throw GradleException("로컬 bodeul_guardian_booking_test 격리 DB에서만 실행할 수 있습니다.")
+		}
+	}
+}
+
+tasks.register<Test>("previewHospitalGuideV1PromotionPostgresTest") {
+	group = "verification"
+	description = "격리 PostgreSQL에서 preview 병원 가이드 V1 전환과 snapshot 보존을 검증합니다."
+	testClassesDirs = sourceSets["test"].output.classesDirs
+	classpath = sourceSets["test"].runtimeClasspath
+	outputs.upToDateWhen { false }
+	useJUnitPlatform {
+		includeTags("postgres-guide-promotion")
+	}
+	testLogging {
+		events("passed", "failed", "skipped")
+	}
+	doFirst {
+		val url = System.getenv("GUIDE_PROMOTION_TEST_DB_URL") ?: ""
+		if (!Regex("^jdbc:postgresql://(localhost|127\\.0\\.0\\.1):[0-9]{1,5}/bodeul_guide_empty\\?sslmode=disable$").matches(url)) {
+			throw GradleException("로컬 bodeul_guide_empty 격리 DB에서만 실행할 수 있습니다.")
 		}
 	}
 }
@@ -138,4 +159,11 @@ tasks.register<JavaExec>("runGuideDeviceFixture") {
 	description = "preview 가이드 실기기 검증용 고정 fixture를 준비, 조회 또는 정리합니다."
 	classpath = sourceSets["main"].runtimeClasspath
 	mainClass.set("com.bodeul.core.GuideDeviceFixtureApplication")
+}
+
+tasks.register<JavaExec>("runPreviewHospitalGuideV1Promotion") {
+	group = "application"
+	description = "preview 서울내과병원/내과 가이드를 V1 계약으로 조회 또는 전환합니다."
+	classpath = sourceSets["main"].runtimeClasspath
+	mainClass.set("com.bodeul.core.PreviewHospitalGuideV1PromotionApplication")
 }

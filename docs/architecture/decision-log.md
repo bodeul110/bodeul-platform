@@ -261,3 +261,13 @@
 - 리스크: 로컬 예약 성공은 원격 API·결제·메시지·권한 검증을 대신하지 않는다. 홈의 기존 88dp와 나머지 메뉴의 84dp를 구분하며, 고정 메뉴를 고려한 스크롤로 자동 입력의 오동작을 방지한다. 기기 전역 설정 변경은 승인된 내비게이션 모드로 한정하고 실패 여부와 관계없이 복구한다.
 
 결과와 재현 명령은 [실기기 내비게이션 모드 검증](../reports/issue-448-device-navigation-modes-2026-09-29.md)에 남긴다.
+
+## 2026-10-26 개발 병원 가이드 V1 전환 경계
+
+- 작업 목적: 개발 DB의 코드 없는 7단계 병원 가이드 때문에 실제 매니저 단계 진행이 차단되는 문제를 production과 기존 세션에 영향 없이 해소한다.
+- 선택한 방식: `dev`와 개발 Supabase ref, `bodeul-dev`, `서울내과병원 / 내과`를 이중 확인하는 preview 전용 maintenance 실행기를 둔다. 상태 조회와 적용을 분리하고, 제목·설명·추가 필드를 보존한 채 코드와 순서만 보강하며 단일 트랜잭션, 행 잠금, revision, DB v1 검증 함수와 멱등성을 확인한다.
+- 대안: 공용 Flyway migration, Supabase SQL Editor 직접 수정, 기존 가이드 실기기 fixture 재사용을 검토했다.
+- 선택 이유: 특정 개발 데이터용 Flyway는 나중에 production에도 실행될 수 있고 preview의 다른 대기 migration까지 함께 적용할 수 있다. 직접 SQL은 코드 리뷰와 실행 이력을 우회하며, 별도 fixture는 실제 예약이 참조하는 가이드를 고치지 않는다.
+- 리스크: 실행에는 `core-api-migration-preview` Environment 승인이 필요하다. 실제 행 형상이 예상과 다르면 변경 없이 중단하며, 기존 세션 snapshot은 불변이므로 적용 뒤 새 예약과 새 배정을 만들어야 한다. 병합과 CI 통과만으로 DB 적용 완료를 주장하지 않는다.
+
+실행 절차는 [Preview 병원 가이드 V1 전환](../operations/core-api-preview-hospital-guide-v1-promotion.md)을 따른다.

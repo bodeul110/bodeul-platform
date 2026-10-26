@@ -152,6 +152,13 @@ jobs:
           PGPASSWORD: postgres
         run: bash db/verification/verify_companion_guide_snapshot_migration.sh
 
+      - name: preview 병원 가이드 V1 전환 트랜잭션 검증
+        env:
+          GUIDE_PROMOTION_TEST_DB_URL: jdbc:postgresql://127.0.0.1:5432/bodeul_guide_empty?sslmode=disable
+          GUIDE_PROMOTION_TEST_DB_USERNAME: postgres
+          GUIDE_PROMOTION_TEST_DB_PASSWORD: postgres
+        run: ./gradlew previewHospitalGuideV1PromotionPostgresTest --console=plain
+
       - name: 보호자 동의 V17 적용과 안전 rollback 검증
         env:
           PGPASSWORD: postgres

@@ -36,6 +36,8 @@
   - 팀 소유 서명과 release 검증 준비
 - [Core API 가이드 실기기 fixture](core-api-guide-device-fixture.md)
   - preview 13단계 가이드의 setup, status, cleanup과 실기기 검증 기준
+- [Preview 병원 가이드 V1 전환](core-api-preview-hospital-guide-v1-promotion.md)
+  - 개발 DB의 서울내과병원 7단계 가이드를 보존형 V1 계약으로 조회·전환하는 승인 절차
 - [인프라 운영 기준](infrastructure-operations-baseline.md)
   - 관리자 웹 배포 방식, 비용 리스크, App Check, 인덱스, 백업/복원, Functions, 운영 명령어
 - [Production 인프라 기본값](production-infrastructure-defaults.md)

@@ -68,6 +68,25 @@ on:
         required: false
         default: ""
         type: string
+      hospital_guide_v1_action:
+        description: preview 서울내과병원/내과 가이드 V1 작업
+        required: false
+        default: none
+        type: choice
+        options:
+          - none
+          - status
+          - apply
+      confirm_hospital_guide_v1_project:
+        description: 병원 가이드 V1 작업 시 bodeul-dev를 입력하세요.
+        required: false
+        default: ""
+        type: string
+      confirm_hospital_guide_v1_target:
+        description: 병원 가이드 V1 작업 시 서울내과병원/내과를 입력하세요.
+        required: false
+        default: ""
+        type: string
 permissions:
   contents: read
 
@@ -107,6 +126,9 @@ jobs:
           RETENTION_FIXTURE_CONFIRM_PROJECT: ${{ inputs.confirm_retention_fixture_project }}
           GUIDE_DEVICE_FIXTURE_ACTION: ${{ inputs.guide_device_fixture_action }}
           GUIDE_DEVICE_FIXTURE_CONFIRM_PROJECT: ${{ inputs.confirm_guide_device_fixture_project }}
+          HOSPITAL_GUIDE_V1_ACTION: ${{ inputs.hospital_guide_v1_action }}
+          HOSPITAL_GUIDE_V1_CONFIRM_PROJECT: ${{ inputs.confirm_hospital_guide_v1_project }}
+          HOSPITAL_GUIDE_V1_CONFIRM_TARGET: ${{ inputs.confirm_hospital_guide_v1_target }}
         run: |
           set -euo pipefail
 
@@ -196,6 +218,25 @@ jobs:
             fi
           fi
 
+          if [ "$HOSPITAL_GUIDE_V1_ACTION" != "none" ]; then
+            if [ "$MIGRATION_TARGET" != "preview" ] || [ "$GITHUB_REF" != "refs/heads/dev" ]; then
+              echo "병원 가이드 V1 작업은 dev의 preview DB에서만 실행할 수 있습니다." >&2
+              exit 1
+            fi
+            if [ "$HOSPITAL_GUIDE_V1_CONFIRM_PROJECT" != "bodeul-dev" ]; then
+              echo "병원 가이드 V1 프로젝트 확인값이 일치하지 않습니다." >&2
+              exit 1
+            fi
+            if [ "$HOSPITAL_GUIDE_V1_CONFIRM_TARGET" != "서울내과병원/내과" ]; then
+              echo "병원 가이드 V1 대상 확인값이 일치하지 않습니다." >&2
+              exit 1
+            fi
+            if [ "${{ inputs.apply_companion_session_seed }}" = "true" ] || [ "$RETENTION_FIXTURE_ACTION" != "none" ] || [ "$GUIDE_DEVICE_FIXTURE_ACTION" != "none" ]; then
+              echo "병원 가이드 V1 작업은 다른 fixture 또는 seed와 같은 실행에서 적용할 수 없습니다." >&2
+              exit 1
+            fi
+          fi
+
       - name: migration secret 확인
         shell: bash
         env:
@@ -255,6 +296,7 @@ jobs:
         run: ./gradlew verifyDatabaseConnectionTarget --console=plain
 
       - name: Flyway migration 실행
+        if: inputs.hospital_guide_v1_action == 'none'
         env:
           MIGRATION_DB_JDBC_URL: ${{ secrets.MIGRATION_DB_JDBC_URL }}
           MIGRATION_DB_USERNAME: ${{ secrets.MIGRATION_DB_USERNAME }}
@@ -262,6 +304,7 @@ jobs:
         run: ./gradlew migrateDatabase --console=plain
 
       - name: 계정 삭제 영향도 DB 계약 검증
+        if: inputs.hospital_guide_v1_action == 'none'
         env:
           MIGRATION_DB_JDBC_URL: ${{ secrets.MIGRATION_DB_JDBC_URL }}
           MIGRATION_DB_USERNAME: ${{ secrets.MIGRATION_DB_USERNAME }}
@@ -315,6 +358,17 @@ jobs:
           MIGRATION_DB_PASSWORD: ${{ secrets.MIGRATION_DB_PASSWORD }}
         run: ./gradlew runGuideDeviceFixture --console=plain
 
+      - name: preview 병원 가이드 V1 작업 실행
+        if: inputs.hospital_guide_v1_action != 'none'
+        env:
+          HOSPITAL_GUIDE_V1_ACTION: ${{ inputs.hospital_guide_v1_action }}
+          HOSPITAL_GUIDE_V1_CONFIRM_PROJECT: ${{ inputs.confirm_hospital_guide_v1_project }}
+          HOSPITAL_GUIDE_V1_CONFIRM_TARGET: ${{ inputs.confirm_hospital_guide_v1_target }}
+          MIGRATION_DB_JDBC_URL: ${{ secrets.MIGRATION_DB_JDBC_URL }}
+          MIGRATION_DB_USERNAME: ${{ secrets.MIGRATION_DB_USERNAME }}
+          MIGRATION_DB_PASSWORD: ${{ secrets.MIGRATION_DB_PASSWORD }}
+        run: ./gradlew runPreviewHospitalGuideV1Promotion --console=plain
+
       - name: 동행 세션 백필 파일 삭제
         if: always() && inputs.apply_companion_session_seed
         shell: bash
@@ -344,5 +398,11 @@ jobs:
             if [ "${{ inputs.guide_device_fixture_action }}" != "none" ]; then
               echo "- Guide device fixture: ${{ inputs.guide_device_fixture_action }}"
               echo "- Guide device fixture project: bodeul-dev"
+            fi
+            if [ "${{ inputs.hospital_guide_v1_action }}" != "none" ]; then
+              echo "- Hospital guide V1: ${{ inputs.hospital_guide_v1_action }}"
+              echo "- Hospital guide V1 project: bodeul-dev"
+              echo "- Hospital guide V1 target: 서울내과병원/내과"
+              echo "- Flyway migration: skipped"
             fi
           } >> "${GITHUB_STEP_SUMMARY}"
