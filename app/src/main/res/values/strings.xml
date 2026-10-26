@@ -1051,6 +1051,8 @@
     <string name="booking_status_progress_body_completed_pending">최종 리포트가 아직 도착하지 않았습니다. 저장이 완료되면 이 화면에 바로 반영됩니다.</string>
     <string name="booking_status_progress_body_canceled">취소된 일정입니다. 새 동행이 필요하면 예약 화면에서 다시 신청해주세요.</string>
     <string name="booking_status_progress_step_format">%1$d / %2$d 단계 진행 중</string>
+    <string name="booking_status_progress_current_step_format">현재 안내: %1$s</string>
+    <string name="booking_status_refresh_delayed">진행 정보를 잠시 갱신하지 못했습니다. 현재 내용을 유지합니다.</string>
     <string name="booking_status_progress_update_format">최근 공유: %1$s</string>
     <string name="booking_status_stage_section">진행 단계</string>
     <string name="booking_status_next_section">다음 안내</string>
@@ -1076,6 +1078,7 @@
     <string name="booking_status_line_medication_note">복약 메모</string>
     <string name="booking_status_line_session">현재 상태</string>
     <string name="booking_status_line_step">진행 단계</string>
+    <string name="booking_status_line_current_guide">현재 안내</string>
     <string name="booking_status_line_live_location">위치 공유 메모</string>
     <string name="booking_status_line_guardian_update">보호자 공유</string>
     <string name="booking_status_line_live_photo">현장 사진 메모</string>

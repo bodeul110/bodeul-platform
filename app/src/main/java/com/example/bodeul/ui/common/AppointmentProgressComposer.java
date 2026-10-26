@@ -9,6 +9,7 @@ import com.example.bodeul.R;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.domain.model.CompanionSession;
+import com.example.bodeul.domain.model.GuideStep;
 import com.example.bodeul.domain.model.HospitalGuide;
 import com.example.bodeul.domain.model.SessionReport;
 import com.example.bodeul.domain.model.SessionStatus;
@@ -277,6 +278,15 @@ public final class AppointmentProgressComposer {
                         session.getCurrentStepOrder(),
                         guide.getSteps().size()
                 ));
+                GuideStep currentStep = findCurrentStep(guide, session.getCurrentStepOrder());
+                if (currentStep != null) {
+                    if (!TextUtils.isEmpty(currentStep.getTitle())) {
+                        lines.add(context.getString(
+                                R.string.booking_status_progress_current_step_format,
+                                currentStep.getTitle()
+                        ));
+                    }
+                }
             }
         }
         if (legacyManagerLocationEnabled) {
@@ -291,6 +301,16 @@ public final class AppointmentProgressComposer {
         addLine(lines, R.string.booking_status_line_live_photo, session.getFieldPhotoNote());
         addLine(lines, R.string.booking_status_line_live_medication, session.getMedicationNote());
         return TextUtils.join("\n", lines);
+    }
+
+    @Nullable
+    private GuideStep findCurrentStep(HospitalGuide guide, int currentStepOrder) {
+        for (GuideStep step : guide.getSteps()) {
+            if (step.getOrder() == currentStepOrder) {
+                return step;
+            }
+        }
+        return null;
     }
 
     private String buildCompletedProgressBody(@Nullable SessionReport report) {

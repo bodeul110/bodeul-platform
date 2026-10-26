@@ -213,7 +213,6 @@ public final class BookingStatusBinder {
     private void bindActionButton(MaterialButton button, BookingStatusActionModel actionModel) {
         if (actionModel == null) {
             button.setVisibility(View.GONE);
-            button.setOnClickListener(null);
             return;
         }
         button.setVisibility(View.VISIBLE);

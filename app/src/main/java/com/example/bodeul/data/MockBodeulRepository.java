@@ -1834,7 +1834,7 @@ public class MockBodeulRepository implements BodeulRepository {
         if (stepOrder < totalSteps) {
             return SessionStatus.PAYMENT;
         }
-        return SessionStatus.PAYMENT;
+        return SessionStatus.CARE_ENDED;
     }
 
     boolean matchesRequestOwner(AppointmentRequest request, String userId, UserRole role) {

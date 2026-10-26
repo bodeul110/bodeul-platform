@@ -32,6 +32,7 @@ public class FigmaScreenPreviewSelectorTest {
             assertTitleAt(3, "매니저 13단계 · 매니저 일지");
             assertTitleAt(4, "환자 예약 메인");
             assertTitleAt(5, "보호자 최종 리포트");
+            assertTitleAt(8, "환자 진행 현황 1~7 · 완료");
         }
     }
 
@@ -45,6 +46,7 @@ public class FigmaScreenPreviewSelectorTest {
         assertDestination(context, 4, BookingFigmaPreviewActivity.class);
         assertDestination(context, 5, GuardianReportFigmaPreviewActivity.class);
         assertDestination(context, 6, ManagerGuidePreviewSelectorActivity.class);
+        assertDestination(context, 8, PatientProgressFigmaPreviewActivity.class);
     }
 
     private void assertTitleAt(int position, String expectedTitle) {
