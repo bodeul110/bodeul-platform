@@ -76,6 +76,6 @@ flowchart LR
 - 채팅·읽음과 legacy 위치 계약은 PostgreSQL을 사용하고 private Broadcast는 변경 신호만 보낸다. 재연결 뒤 Core API snapshot을 다시 읽는다. legacy 위치는 기본 OFF이며 환자 GPS 1분 공유 목표와 구분한다.
 - Core-only 채팅 첨부 원본은 Spring Core API가 Firebase Storage에 저장한다. 참여자와 만료 여부는 PostgreSQL에서 판정하고 Android는 Storage URL을 직접 받지 않는다.
 - Android의 Kakao 로그인·지도 SDK는 클라이언트에 남지만 Kakao Local REST는 Core API 뒤에 둔다.
-- 이 그림은 코드와 목표의 책임 경계다. 현재 서버 가용성이나 전체 production 개방을 뜻하지 않는다. 관리자 웹 배포·환경 표시와 별개로 production DB 일시정지·접속·업무 검증은 [환경 기준](../operations/admin-web-environments.md)에 남아 있다.
+- 이 그림은 코드와 목표의 책임 경계다. 9월 27일 양쪽 DB V23·운영 Core 배포·관리자 DB 연결과 최초 MFA 로그인을 확인했으나 전체 production 개방은 아니다. 남은 업무·보안 검증은 [환경 기준](../operations/admin-web-environments.md)을 따른다.
 
 상세 판단은 [현재 인프라 구성도](infra-overview.md)와 [목표 인프라 구조](target-infrastructure.md)를 따른다.

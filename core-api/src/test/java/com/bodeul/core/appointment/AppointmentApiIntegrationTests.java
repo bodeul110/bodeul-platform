@@ -1,5 +1,6 @@
 package com.bodeul.core.appointment;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -8,6 +9,8 @@ import com.bodeul.core.auth.AppCheckTokenVerifier;
 import com.bodeul.core.auth.AppUserRepository;
 import com.bodeul.core.auth.AppUserRole;
 import com.bodeul.core.auth.FirebaseTokenVerifier;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -117,7 +126,7 @@ class AppointmentApiIntegrationTests {
     }
 
     @Test
-    void createReturns201AndPassesTheIdempotencyKey() throws Exception {
+    void legacyCreatePathPassesMissingPriceToServiceForExistingRetry() throws Exception {
         appointmentService.result = appointment();
         UUID clientRequestId = UUID.fromString("1462354f-7162-42c0-9e40-d66b6d73b0f4");
 
@@ -131,6 +140,75 @@ class AppointmentApiIntegrationTests {
 
         assertThat(appointmentService.lastCreateCommand.clientRequestId()).isEqualTo(clientRequestId);
         assertThat(appointmentService.lastCreateCommand.draft().hospitalName()).isEqualTo("서울대학교병원");
+        assertThat(appointmentService.lastCreateCommand.pricePolicyVersion()).isNull();
+        assertThat(appointmentService.lastCreateCommand.expectedFinalPrice()).isNull();
+    }
+
+    @Test
+    void priceConfirmedPathPassesPriceAndIdempotencyContract() throws Exception {
+        appointmentService.result = appointment();
+        UUID requestId = UUID.randomUUID();
+        var body = (ObjectNode) new ObjectMapper().readTree(validCreateJson(requestId));
+        body.put("pricePolicyVersion", "mvp-fixed-40000-v1")
+                .put("expectedFinalPrice", 40_000);
+
+        mockMvc.perform(post("/api/appointments/price-confirmed")
+                        .header("Authorization", "Bearer valid-token")
+                        .contentType("application/json")
+                        .content(body.toString()))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Cache-Control", "no-store"));
+
+        assertThat(appointmentService.lastCreateCommand.clientRequestId()).isEqualTo(requestId);
+        assertThat(appointmentService.lastCreateCommand.pricePolicyVersion()).isEqualTo("mvp-fixed-40000-v1");
+        assertThat(appointmentService.lastCreateCommand.expectedFinalPrice()).isEqualTo(40_000);
+    }
+
+    @Test
+    void bothCreationPathsRejectMissingPriceWithRealServiceBeforeAnyWrite() throws Exception {
+        var repository = mock(AppointmentRepository.class);
+        var profiles = mock(AppUserProfileRepository.class);
+        appointmentService.createDelegate = new DefaultAppointmentService(
+                repository, profiles, (user, appointment, patient, guardian, scope) -> false,
+                Clock.systemUTC());
+
+        for (String path : List.of("/api/appointments", "/api/appointments/price-confirmed")) {
+            mockMvc.perform(post(path)
+                            .header("Authorization", "Bearer valid-token")
+                            .contentType("application/json")
+                            .content(validCreateJson(UUID.randomUUID())))
+                    .andExpect(status().isConflict())
+                    .andExpect(header().string("Cache-Control", "no-store"))
+                    .andExpect(jsonPath("$.error").value("appointment_price_confirmation_required"));
+        }
+        verifyNoInteractions(profiles);
+        verify(repository, never()).insert(any(), anyString(), anyString());
+    }
+
+    @Test
+    void priceConfirmedCreationStillRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/api/appointments/price-confirmed")
+                        .contentType("application/json")
+                        .content(validCreateJson(UUID.randomUUID())))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("missing_authorization"));
+        assertThat(appointmentService.lastCreateCommand).isNull();
+    }
+
+    @Test
+    void confirmationAmountRejectsCoercedOrOutOfRangeValues() throws Exception {
+        var mapper = new ObjectMapper();
+        for (String amount : List.of("\"40000\"", "40000.5", "40000.0", "2147483648", "true", "{}", "[]")) {
+            var body = (ObjectNode) mapper.readTree(validCreateJson(UUID.randomUUID()));
+            body.set("expectedFinalPrice", mapper.readTree(amount));
+            mockMvc.perform(post("/api/appointments/price-confirmed")
+                            .header("Authorization", "Bearer valid-token")
+                            .contentType("application/json")
+                            .content(body.toString()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value("invalid_appointment_request"));
+            assertThat(appointmentService.lastCreateCommand).isNull();
+        }
     }
 
     @Test
@@ -396,6 +474,7 @@ class AppointmentApiIntegrationTests {
 
     static final class MutableAppointmentService implements AppointmentService {
         private AppointmentView result;
+        private AppointmentService createDelegate;
         private RuntimeException failure;
         private AppUserRepository.AppUser lastUser;
         private UUID lastAppointmentId;
@@ -424,7 +503,7 @@ class AppointmentApiIntegrationTests {
                 CreateAppointmentCommand command) {
             recordCall(appUser, null);
             lastCreateCommand = command;
-            return result;
+            return createDelegate == null ? result : createDelegate.createAppointment(appUser, command);
         }
 
         @Override
@@ -467,6 +546,7 @@ class AppointmentApiIntegrationTests {
         void reset() {
             result = null;
             failure = null;
+            createDelegate = null;
             lastUser = null;
             lastAppointmentId = null;
             lastCreateCommand = null;

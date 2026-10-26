@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | 로컬 개발 서버 | 개발과 단위 검증 | 개발 환경 / 로컬 실행 · Local | 개발자가 비공개 로컬 파일로 설정 주입 |
 | Vercel Preview | PR·개발 DB 검증 | 개발 환경 / 미리보기 배포 · Preview | 실제 로그인 화면의 개발 표시 확인. 과거 DB 실연동 결과와 이번 표시 검증은 구분 |
-| Vercel Production | 운영 배포 대상 | 운영 환경 / 운영 배포 · Production | 웹 배포와 실제 로그인 화면의 운영 표시 확인. 운영 DB 업무 검증은 미완료 |
+| Vercel Production | 운영 배포 대상 | 운영 환경 / 운영 배포 · Production | 최초 개인 SUPER_ADMIN의 MFA 후 대시보드 진입 확인. 주요 업무 전체 검증은 미완료 |
 | 배포 정보 누락·알 수 없는 빌드 | 환경 판별 불가 | 환경 확인 필요 | 운영으로 추정하지 않고 빌드 설정 확인 |
 
 기본 Production 주소는 [관리자 웹](https://bodeul-admin-web-iota.vercel.app/)이다. 환경 표시는 로그인·세션 확인·2차 인증·로그인 후 관리 화면의 상단에 유지한다.
@@ -21,14 +21,14 @@
 
 | 항목 | 확인 내용 | 아직 완료로 볼 수 없는 범위 |
 | --- | --- | --- |
-| 웹 배포·환경 표시 | 2026-09-27 웹 PR #75의 dev → master 병합 후 Production 재빌드·배포 `READY`, Functions `hnd1`. 환경 검사 포함 빌드 성공과 실제 운영 로그인 화면 표시 확인 | 실제 계정으로 로그인한 운영 셸·업무 흐름 검증 |
+| 웹 배포·환경 표시 | 2026-09-27 웹 PR #77의 dev → master 병합 후 Production `30d3661` 배포 `READY`, Functions `hnd1`. 환경 표시와 MFA 후 대시보드 진입 확인 | 배정·서류 심사·결제 등 주요 업무의 정상·거부·감사 흐름 |
 | 운영 Firebase 설정 | 개발과 분리된 프로젝트와 웹 설정을 사용. App Check 클라이언트 활성화·서버 관찰 설정은 반영 | 인증된 요청의 `VALID` 확인, 강제 전환과 rollback |
-| 운영 로그인 계정 | 2026-09-21 Firebase Auth 계정 등록과 비밀번호 재설정 메일 발송까지 수행. 9월 27일 운영 DB의 ADMIN·활성 세부 관리자 역할은 각각 0건 | 비밀번호 설정 완료, PostgreSQL 관리자 역할 부여, MFA 등록과 로그인 성공 |
+| 운영 로그인 계정 | 2026-09-27 개인 Auth 계정의 이메일 인증·TOTP 등록·MFA 재로그인 확인. PostgreSQL ADMIN 1건·활성 SUPER_ADMIN 1건·역할 변경 감사 1건 등록 후 사용자가 대시보드 접속 확인 | 전체 관리자 MFA 강제, 추가 운영자·비상 복구와 업무별 권한 검증 |
 | 운영 DB | 2026-09-27 Pro의 `bodeul-db-prod` Healthy, 검증된 백업 후 Flyway V23 적용. 관리자 전용 LOGIN·TLS 연결·조회 성공. 연결 제한 5, 기존 runtime role 상속, 테이블 직접 쓰기 권한 0건 확인 | 실제 관리자 인증 후 Vercel 서버의 DB 업무 요청 |
 | 운영 DB 연결 설정 | 2026-09-27 새 운영 자격 증명을 Vercel Production `ADMIN_DATABASE_URL`에만 sensitive 형식으로 등록하고 메타데이터 재조회. 개발값 재사용 없음 | 인증·인가·업무 smoke test |
 | 운영 HTTP 경계 | access-context·가이드·결제 조회에 무인증·잘못된 형식·가짜 token 9건 모두 401. JSON·no-store·token 비노출 확인 | 정상 서명 token의 환경 간 거부와 관리자 업무 성공 |
 
-9월 21일의 DB 일시정지 기록은 당시 상태이며 현재 상태가 아니다. 9월 27일 DB migration, Core API 연결, 관리자 DB 로그인과 Production 비밀값 등록은 사용자 승인에 따른 별도 인프라 작업으로 수행했다. DB 서비스 로그인은 사람의 관리자 역할을 부여하지 않으며, 이것만으로 운영 업무가 활성화된 것은 아니다.
+9월 21일의 DB 일시정지 기록은 당시 상태이며 현재 상태가 아니다. DB 서비스 로그인과 사람의 관리자 역할은 별도다. 9월 27일 전용 DB 연결을 준비한 뒤 명시 승인된 최초 개인 관리자만 등록했다. 로그인 화면의 선행 Firestore 사용자 조회는 웹 PR #76·#77에서 제거했으며 현재 진입 인가는 Next.js의 Firebase token 검증과 PostgreSQL ADMIN·세부 역할을 따른다.
 
 ## 환경변수 경계
 
@@ -49,7 +49,7 @@ DB URL, 비밀번호, Firebase Admin 자격 증명을 `NEXT_PUBLIC_*` 또는 `VI
 - 관리자 애플리케이션 pool은 1, DB role connection limit은 5다.
 - Supabase Root CA를 명시하고 `rejectUnauthorized`를 유지한다.
 - `bodeul_admin_service`는 제한된 조회와 허용된 업무 함수 실행에 사용한다. "조회 전용"은 테이블 직접 쓰기를 허용하지 않는다는 뜻이며, 배정·감사·결제 등 인가된 함수 내부의 쓰기까지 없다는 뜻은 아니다.
-- 임시 검증 계정과 row는 검증 직후 삭제한다. 이번 운영 연결 점검에서는 업무용 테스트 계정이나 row를 생성하지 않았다.
+- 임시 검증 계정과 row는 승인된 검증 뒤 정리한다. 최초 운영 ADMIN·SUPER_ADMIN과 감사 기록은 실제 운영 주체의 영구 등록이며 테스트 fixture가 아니다.
 - PR마다 test, lint, Next.js build, Vite rollback build와 CodeQL을 통과시킨다.
 - Preview와 Production은 각각 다른 Supabase 프로젝트·자격 증명을 사용하고, Vercel Functions는 두 DB와 같은 Tokyo `hnd1`에서 실행한다.
 
@@ -65,7 +65,7 @@ DB URL, 비밀번호, Firebase Admin 자격 증명을 `NEXT_PUBLIC_*` 또는 `VI
 1. 적용된 V23과 검증된 백업을 기준으로 추가 변경 필요 여부를 확인한다. DB 복원이나 개발 데이터 복사는 자동 수행하지 않는다.
 2. 운영 전용 DB 자격 증명 등록과 테이블 직접 쓰기 제한은 확인했다. 실제 인증 요청에서 허용 함수별 인가와 개발 token 거부를 확인한다.
 3. 최종 사용할 도메인과 Firebase Auth authorized domain, App Check 허용 도메인을 대조한다. 기본 도메인의 웹 게시 완료와 custom domain 연결은 별개다.
-4. 실제 운영 관리자 역할 부여, MFA 등록·복구, App Check, 감사와 긴급 권한 회수를 검증한다.
+4. 최초 운영 관리자 등록·MFA 로그인과 별도로 전체 MFA 강제·복구, App Check, 업무 감사와 긴급 권한 회수를 검증한다.
 5. 무인증·비관리자 거부, 관리자 조회·업무 변경, DB 장애·충돌과 배포 rollback을 검증한다.
 6. live 배포·장애 대응 담당과 backup/restore 절차를 확인한다.
 

@@ -7,7 +7,7 @@
 ## 선택한 방식
 
 - `Core API DB Migration` workflow의 `guide_device_fixture_action`으로 `setup`, `status`, `cleanup`을 실행한다.
-- 대상은 `master`의 `preview`와 Firebase 개발 프로젝트 `bodeul-dev`로 고정한다.
+- 대상은 `dev`의 `preview`와 Firebase 개발 프로젝트 `bodeul-dev`로 고정한다. 운영 `master`·DB에는 fixture를 만들지 않는다.
 - Supabase 개발 프로젝트 ref와 migration DB 사용자명도 실행기에서 다시 확인한다.
 - Preview 환경 secret의 현재 fixture 매니저 Firebase UID를 PostgreSQL 매니저 행과 정확히 연결한다.
 - 연결된 기존 매니저 행은 조회만 하고 수정하거나 삭제하지 않는다.
@@ -69,7 +69,7 @@ gh workflow run core-api-migration.yml `
 
 - 공개 예약 API, 관리자 배정 route와 단계 진행 API를 연결할 수 있지만 현재 삭제 API가 없어 테스트 행을 완전히 정리할 수 없다.
 - 기존 세션 snapshot을 수정하는 방식은 V14 불변 계약을 훼손하므로 사용하지 않는다.
-- Mock 모드는 코드 없는 7단계 가이드이므로 `PHARMACY_ROUTE` 조건을 증명하지 못한다.
+- Mock 모드는 `LEGACY_CORE_*` 7단계 가이드이므로 canonical `PHARMACY_ROUTE` 단계 조건을 증명하지 못한다.
 
 ## 선택 이유
 

@@ -2,12 +2,9 @@ package com.bodeul.core.appointment;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +14,7 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 import com.bodeul.core.appointment.AppUserProfileRepository.AppUserProfile;
+import com.bodeul.core.appointment.AppointmentDraftNormalizer.NormalizedDraft;
 import com.bodeul.core.appointment.AppointmentRepository.AppointmentMutation;
 import com.bodeul.core.appointment.AppointmentRepository.AppointmentRecord;
 import com.bodeul.core.appointment.AppointmentRepository.AppointmentFollowUpMutation;
@@ -39,7 +37,7 @@ class DefaultAppointmentService implements AppointmentService {
     private static final DateTimeFormatter APPOINTMENT_FORMATTER = DateTimeFormatter
             .ofPattern("uuuu-MM-dd HH:mm", Locale.KOREA)
             .withResolverStyle(ResolverStyle.STRICT);
-    private static final int BASE_PRICE = 69_000;
+    private static final int BASE_PRICE = AppointmentPricePolicy.BASE_PRICE;
     private static final int PUBLIC_CODE_MAX_ATTEMPTS = 5;
     private static final Set<String> REVIEW_RATINGS = Set.of(
             "excellent", "good", "ok", "disappointing", "need_help");
@@ -127,7 +125,7 @@ class DefaultAppointmentService implements AppointmentService {
             throw AppointmentException.invalidRequest("중복 생성 방지용 clientRequestId가 필요합니다.");
         }
 
-        NormalizedDraft draft = normalizeDraft(command.draft());
+        NormalizedDraft draft = AppointmentDraftNormalizer.normalize(command.draft());
         String createRequestFingerprint = AppointmentCreateFingerprint.from(
                 toCreateFingerprintRequest(
                         appUser,
@@ -143,9 +141,14 @@ class DefaultAppointmentService implements AppointmentService {
             return toViewForReader(appUser, existing.get());
         }
 
+        // 과거 요청의 재시도는 저장된 견적을 반환하고, 새 예약만 현재 가격 계약을 요구한다.
+        AppointmentPricePolicy.requireConfirmation(command);
         requireFutureAppointment(draft);
+        if (!"NONE".equals(draft.couponCode())) {
+            throw AppointmentException.invalidRequest("현재 신규 예약에는 쿠폰을 적용할 수 없습니다.");
+        }
         ParticipantPair participants = resolveParticipants(appUser, draft);
-        Price price = calculatePrice(draft);
+        Price price = new Price(BASE_PRICE, 0, 0, BASE_PRICE);
         AppointmentMutation mutation = toMutation(
                 command.clientRequestId(),
                 appUser.id(),
@@ -198,17 +201,24 @@ class DefaultAppointmentService implements AppointmentService {
             throw AppointmentException.versionConflict();
         }
 
-        NormalizedDraft draft = normalizeDraft(command.draft());
+        NormalizedDraft draft = AppointmentDraftNormalizer.normalize(command.draft());
         requireFutureAppointment(draft);
         ParticipantPair participants = resolveParticipants(appUser, draft);
         requireRequesterLink(existing, participants);
-        Price price = calculatePrice(draft);
+        // 수정은 기존 견적을 보존한다. 새 정책으로 과거 원장·입금액을 재계산하지 않는다.
+        Price price = new Price(existing.basePrice(), existing.optionSurchargePrice(),
+                existing.couponDiscountPrice(), existing.finalPrice());
         if ("BANK_TRANSFER".equals(existing.paymentMethodCode())
                 || "BANK_TRANSFER".equals(draft.paymentMethodCode())) {
             if (!existing.paymentMethodCode().equals(draft.paymentMethodCode())
-                    || existing.finalPrice() != price.finalPrice()) {
+                    || !existing.mobilitySupportCode().equals(draft.mobilitySupportCode())
+                    || !existing.tripTypeCode().equals(draft.tripTypeCode())
+                    || !existing.couponCode().equals(draft.couponCode())) {
                 throw AppointmentException.bankTransferTermsConflict();
             }
+        }
+        if (!existing.couponCode().equals(draft.couponCode())) {
+            throw AppointmentException.invalidRequest("접수된 예약의 쿠폰은 변경할 수 없습니다.");
         }
         ParticipantSnapshot requester = existing.requesterRole() == AppUserRole.PATIENT
                 ? participants.patient()
@@ -509,89 +519,10 @@ class DefaultAppointmentService implements AppointmentService {
                 normalizeEmail(profile.email()));
     }
 
-    private NormalizedDraft normalizeDraft(AppointmentDraft draft) {
-        if (draft == null) {
-            throw AppointmentException.invalidRequest("예약 입력값이 필요합니다.");
-        }
-
-        String linkedParticipantName = requireText(
-                normalizeName(draft.linkedParticipantName()),
-                "연결 사용자 이름",
-                100);
-        String linkedParticipantPhone = normalizePhone(draft.linkedParticipantPhone());
-        if (!isValidPhone(linkedParticipantPhone)) {
-            throw AppointmentException.invalidRequest("연결 사용자 전화번호를 확인해 주세요.");
-        }
-        String linkedParticipantEmail = limitText(
-                normalizeEmail(draft.linkedParticipantEmail()),
-                "연결 사용자 이메일",
-                320);
-        if (!linkedParticipantEmail.isEmpty() && !isValidEmail(linkedParticipantEmail)) {
-            throw AppointmentException.invalidRequest("연결 사용자 이메일을 확인해 주세요.");
-        }
-        String patientConditionSummary = requireText(
-                draft.patientConditionSummary(),
-                "환자 상태",
-                2_000);
-        String hospitalName = requireText(draft.hospitalName(), "병원 이름", 200);
-        String departmentName = requireText(draft.departmentName(), "진료과", 100);
-        String meetingPlace = requireText(draft.meetingPlace(), "만남 장소", 300);
-        String appointmentAtText = requireText(draft.appointmentAt(), "예약 일시", 16);
-        Instant appointmentAt = parseAppointmentAt(appointmentAtText);
-        if (!Double.isFinite(draft.hospitalLatitude())
-                || !Double.isFinite(draft.hospitalLongitude())
-                || draft.hospitalLatitude() < -90 || draft.hospitalLatitude() > 90
-                || draft.hospitalLongitude() < -180 || draft.hospitalLongitude() > 180) {
-            throw AppointmentException.invalidRequest("병원 좌표 범위를 확인해 주세요.");
-        }
-
-        String mobilitySupport = requireCode(
-                draft.mobilitySupportCode(),
-                "이동 보조 방식",
-                MobilitySupport.values());
-        String tripType = requireCode(draft.tripTypeCode(), "이동 범위", TripType.values());
-        String managerGender = requireCode(
-                draft.managerGenderPreferenceCode(),
-                "매니저 성별 선호",
-                ManagerGender.values());
-        String paymentMethod = requireCode(
-                draft.paymentMethodCode(),
-                "결제 방식",
-                PaymentMethod.values());
-        String coupon = requireCode(draft.couponCode(), "쿠폰", Coupon.values());
-
-        return new NormalizedDraft(
-                linkedParticipantName,
-                linkedParticipantPhone,
-                linkedParticipantEmail,
-                patientConditionSummary,
-                limitText(normalizeText(draft.medicationSummary()), "복약 정보", 2_000),
-                hospitalName,
-                departmentName,
-                draft.hospitalLatitude(),
-                draft.hospitalLongitude(),
-                appointmentAt,
-                meetingPlace,
-                limitText(normalizeText(draft.specialNotes()), "특이사항", 2_000),
-                mobilitySupport,
-                tripType,
-                managerGender,
-                paymentMethod,
-                coupon);
-    }
-
     private void requireFutureAppointment(NormalizedDraft draft) {
         if (!draft.appointmentAt().isAfter(clock.instant())) {
             throw AppointmentException.invalidRequest("예약 일시는 현재보다 이후여야 합니다.");
         }
-    }
-
-    private Price calculatePrice(NormalizedDraft draft) {
-        int optionSurcharge = MobilitySupport.valueOf(draft.mobilitySupportCode()).surcharge
-                + TripType.valueOf(draft.tripTypeCode()).surcharge;
-        int subtotal = BASE_PRICE + optionSurcharge;
-        int discount = Math.min(subtotal, Coupon.valueOf(draft.couponCode()).discount);
-        return new Price(BASE_PRICE, optionSurcharge, discount, subtotal - discount);
     }
 
     private void requireIdempotentCreateFingerprintMatches(
@@ -606,30 +537,8 @@ class DefaultAppointmentService implements AppointmentService {
     }
 
     private AppointmentCreateFingerprint.CreateRequest toCreateFingerprintRequest(
-            AppUserRepository.AppUser appUser,
-            UUID clientRequestId,
-            NormalizedDraft draft) {
-        return new AppointmentCreateFingerprint.CreateRequest(
-                appUser.id(),
-                appUser.role(),
-                clientRequestId,
-                draft.linkedParticipantName(),
-                draft.linkedParticipantPhone(),
-                draft.linkedParticipantEmail(),
-                draft.patientConditionSummary(),
-                draft.medicationSummary(),
-                draft.hospitalName(),
-                draft.departmentName(),
-                draft.hospitalLatitude(),
-                draft.hospitalLongitude(),
-                draft.appointmentAt(),
-                draft.meetingPlace(),
-                draft.specialNotes(),
-                draft.mobilitySupportCode(),
-                draft.tripTypeCode(),
-                draft.managerGenderPreferenceCode(),
-                draft.paymentMethodCode(),
-                draft.couponCode());
+            AppUserRepository.AppUser appUser, UUID clientRequestId, NormalizedDraft draft) {
+        return AppointmentDraftNormalizer.toFingerprintRequest(appUser, clientRequestId, draft);
     }
 
     private AppointmentMutation toMutation(
@@ -771,41 +680,11 @@ class DefaultAppointmentService implements AppointmentService {
                 appointmentId, "", "", "", "", "", "", "", 0L);
     }
 
-    private Instant parseAppointmentAt(String value) {
-        try {
-            return LocalDateTime.parse(value, APPOINTMENT_FORMATTER)
-                    .atZone(SEOUL)
-                    .toInstant();
-        } catch (DateTimeParseException exception) {
-            throw AppointmentException.invalidRequest("예약 일시는 yyyy-MM-dd HH:mm 형식이어야 합니다.");
-        }
-    }
-
-    private String requireText(String value, String label, int maxLength) {
-        String normalized = normalizeText(value);
-        if (normalized.isEmpty()) {
-            throw AppointmentException.invalidRequest(label + "이(가) 필요합니다.");
-        }
-        return limitText(normalized, label, maxLength);
-    }
-
     private String limitText(String value, String label, int maxLength) {
         if (value.length() > maxLength) {
             throw AppointmentException.invalidRequest(label + "은(는) " + maxLength + "자 이하로 입력해 주세요.");
         }
         return value;
-    }
-
-    private <T extends Enum<T>> String requireCode(String value, String label, T[] values) {
-        String normalized = normalizeText(value);
-        List<String> allowed = new ArrayList<>();
-        for (T candidate : values) {
-            allowed.add(candidate.name());
-        }
-        if (!allowed.contains(normalized)) {
-            throw AppointmentException.invalidRequest(label + " 값이 올바르지 않습니다.");
-        }
-        return normalized;
     }
 
     private String normalizeOptionalCode(
@@ -874,74 +753,6 @@ class DefaultAppointmentService implements AppointmentService {
 
     private String instantText(Instant value) {
         return value == null ? "" : value.toString();
-    }
-
-    private enum MobilitySupport {
-        INDEPENDENT(0),
-        WALKING_AID(8_000),
-        WHEELCHAIR(15_000);
-
-        private final int surcharge;
-
-        MobilitySupport(int surcharge) {
-            this.surcharge = surcharge;
-        }
-    }
-
-    private enum TripType {
-        ONE_WAY(0),
-        ROUND_TRIP(22_000);
-
-        private final int surcharge;
-
-        TripType(int surcharge) {
-            this.surcharge = surcharge;
-        }
-    }
-
-    private enum ManagerGender {
-        ANY,
-        FEMALE,
-        MALE
-    }
-
-    private enum PaymentMethod {
-        CARD,
-        EASY_PAY,
-        ON_SITE,
-        BANK_TRANSFER
-    }
-
-    private enum Coupon {
-        NONE(0),
-        FIRST_VISIT(5_000),
-        FAMILY(10_000);
-
-        private final int discount;
-
-        Coupon(int discount) {
-            this.discount = discount;
-        }
-    }
-
-    private record NormalizedDraft(
-            String linkedParticipantName,
-            String linkedParticipantPhone,
-            String linkedParticipantEmail,
-            String patientConditionSummary,
-            String medicationSummary,
-            String hospitalName,
-            String departmentName,
-            double hospitalLatitude,
-            double hospitalLongitude,
-            Instant appointmentAt,
-            String meetingPlace,
-            String specialNotes,
-            String mobilitySupportCode,
-            String tripTypeCode,
-            String managerGenderPreferenceCode,
-            String paymentMethodCode,
-            String couponCode) {
     }
 
     private record ParticipantPair(

@@ -47,6 +47,8 @@ public final class ManagerGuideCoordinator {
         SessionReport report = dashboard.getSessionReport();
         List<ManagerGuideStageModel> stages = buildStages(dashboard);
         GuideStep focusStep = findFocusStep(dashboard);
+        String presentationStepCode = ManagerGuidePresentationStepResolver.resolve(
+                focusStep.getCode());
         ManagerGuideProgressPolicy.Decision advanceDecision =
                 ManagerGuideProgressPolicy.resolve(
                         session,
@@ -79,6 +81,7 @@ public final class ManagerGuideCoordinator {
                 sectionVisibility,
                 buildMemoSummary(session),
                 focusStep.getCode(),
+                presentationStepCode,
                 legacyManagerLocationEnabled
                         ? CompanionLocationDisplayHelper.buildLiveSharingStatus(context, session)
                         : "",
@@ -146,6 +149,7 @@ public final class ManagerGuideCoordinator {
                 ManagerGuideSectionVisibility.hidden(),
                 Collections.emptyList(),
                 "",
+                "",
                 context.getString(R.string.live_location_status_inactive_empty),
                 context.getString(R.string.live_location_history_empty),
                 "",
@@ -182,6 +186,7 @@ public final class ManagerGuideCoordinator {
         String hospitalName = dashboard.getAppointmentRequest().getHospitalName();
         String departmentName = dashboard.getAppointmentRequest().getDepartmentName();
         String meetingPlace = resolveMeetingPlace(dashboard);
+        String fallbackQuery = buildExternalMapFallbackQuery(hospitalName);
         CompanionSession session = dashboard.getSession();
 
         double hospitalLat = dashboard.getAppointmentRequest().getHospitalLatitude();
@@ -197,7 +202,7 @@ public final class ManagerGuideCoordinator {
                     context.getString(R.string.guide_map_action_meeting_title),
                     context.getString(R.string.guide_map_action_meeting_body, meetingPlace),
                     context.getString(R.string.guide_meeting_map_action),
-                    hospitalName + " " + meetingPlace,
+                    fallbackQuery,
                     meetingMapUrl
             ));
             return actions;
@@ -209,9 +214,7 @@ public final class ManagerGuideCoordinator {
                     context.getString(R.string.guide_map_action_shared_title),
                     buildSharedLocationBody(session, meetingPlace),
                     context.getString(R.string.guide_map_action_shared_button),
-                    TextUtils.isEmpty(session.getLocationSummary())
-                            ? hospitalName + " " + meetingPlace
-                            : session.getLocationSummary(),
+                    fallbackQuery,
                     buildSharedLocationDirectUrl(session)
             ));
         }
@@ -224,7 +227,7 @@ public final class ManagerGuideCoordinator {
                 context.getString(R.string.guide_map_action_hospital_title),
                 context.getString(R.string.guide_map_action_hospital_body, hospitalName, departmentName),
                 context.getString(R.string.guide_map_action_hospital_button),
-                hospitalName + " " + departmentName + " 안내 지도",
+                fallbackQuery,
                 hospitalMapUrl
         ));
 
@@ -232,7 +235,7 @@ public final class ManagerGuideCoordinator {
                 context.getString(R.string.guide_map_action_meeting_title),
                 context.getString(R.string.guide_map_action_meeting_body, meetingPlace),
                 context.getString(R.string.guide_map_action_meeting_button),
-                hospitalName + " " + meetingPlace,
+                fallbackQuery,
                 meetingMapUrl
         ));
 
@@ -244,6 +247,10 @@ public final class ManagerGuideCoordinator {
             ));
         }
         return actions;
+    }
+
+    static String buildExternalMapFallbackQuery(String hospitalName) {
+        return hospitalName == null ? "" : hospitalName.trim();
     }
 
     private String buildToolbarTitle(GuideStep focusStep) {
@@ -269,9 +276,8 @@ public final class ManagerGuideCoordinator {
     }
 
     private boolean isMeetingStep(GuideStep step) {
-        return step != null && "MEETING_CONFIRMATION".equals(
-                step.getCode() == null ? "" : step.getCode().trim()
-        );
+        return step != null && ManagerGuidePresentationStepResolver.matches(
+                step.getCode(), "MEETING_CONFIRMATION");
     }
 
     private String valueOrFallback(String value) {
@@ -364,8 +370,10 @@ public final class ManagerGuideCoordinator {
             CompanionSession session,
             ManagerGuideProgressPolicy.Decision advanceDecision
     ) {
+        GuideStep presentationStep =
+                ManagerGuidePresentationStepResolver.toPresentationStep(focusStep);
         ManagerGuideVideoGuidancePolicy.Result videoGuidance =
-                ManagerGuideVideoGuidancePolicy.resolve(focusStep);
+                ManagerGuideVideoGuidancePolicy.resolve(presentationStep);
         String videoGuidanceBody = videoGuidance.getFallbackText().isEmpty()
                 ? context.getString(R.string.guide_video_fallback_default)
                 : videoGuidance.getFallbackText();
@@ -392,8 +400,8 @@ public final class ManagerGuideCoordinator {
                 context.getString(R.string.guide_focus_preview_label),
                 shouldShowBlockedGuidance(advanceDecision)
                         ? buildBlockedGuidance(advanceDecision)
-                        : formatter.buildFocusPreviewBody(focusStep, session),
-                formatter.resolveFocusPreviewBackground(focusStep),
+                        : formatter.buildFocusPreviewBody(presentationStep, session),
+                formatter.resolveFocusPreviewBackground(presentationStep),
                 videoGuidance.isVisible(),
                 videoGuidanceTitle,
                 videoGuidanceBody
@@ -494,8 +502,10 @@ public final class ManagerGuideCoordinator {
             GuideStep focusStep,
             ManagerGuidePrimaryAction primaryAction
     ) {
+        GuideStep presentationStep =
+                ManagerGuidePresentationStepResolver.toPresentationStep(focusStep);
         ManagerGuideSectionVisibility visibility =
-                ManagerGuideSectionVisibility.forStep(focusStep);
+                ManagerGuideSectionVisibility.forStep(presentationStep);
         if (primaryAction == ManagerGuidePrimaryAction.SUBMIT_REPORT) {
             return visibility.withReportSection();
         }
@@ -514,7 +524,9 @@ public final class ManagerGuideCoordinator {
     }
 
     private String buildStepActionLabel(GuideStep step) {
-        String code = step == null || step.getCode() == null ? "" : step.getCode().trim();
+        String code = step == null
+                ? ""
+                : ManagerGuidePresentationStepResolver.resolve(step.getCode());
         switch (code) {
             case "MEETING_CONFIRMATION":
                 return context.getString(R.string.guide_action_meeting_complete);

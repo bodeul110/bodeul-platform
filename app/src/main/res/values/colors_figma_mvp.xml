@@ -27,4 +27,10 @@
     <color name="figma_mvp_card_outline">#1AC3C6D4</color>
     <color name="figma_mvp_subtle_divider">#F2F4F7</color>
     <color name="figma_mvp_bottom_surface">#E6F7F9FC</color>
+    <color name="guide_medication_neutral_card">#F2F4F7</color>
+    <color name="guide_medication_new_card">#1AD8E2FF</color>
+    <color name="guide_medication_new_outline">#1A1958B7</color>
+    <color name="guide_medication_accent">#FEB64C</color>
+    <color name="guide_medication_badge_background">#1A704800</color>
+    <color name="guide_medication_item_surface">#99FFFFFF</color>
 </resources>

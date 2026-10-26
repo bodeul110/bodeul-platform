@@ -1,13 +1,13 @@
 # 현재 인프라 구성도
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 초기에는 빠른 구현을 우선했기 때문에 모든 선택 근거가 사전에 정리되지는 않았다.
 현재는 구현된 구조를 기준으로 선택 이유, 대안, 단점, 전환 조건을 정리하고 있다.
 
 ## 한 줄 결론
 
-개발과 production 인프라는 `Vercel Next.js 관리자 서버 + Cloud Run Spring Core API + 공용 Supabase PostgreSQL + Supabase Realtime + Firebase Auth/FCM/App Check/Storage` 경계로 분리했다. production 프로젝트, DB migration과 복원 기반은 생성했지만 사용자 업무 쓰기, 관리자 production DB, Kakao key, release App Check와 도메인은 아직 전환하지 않았다.
+개발과 운영은 각각 `Vercel Next.js 관리자 서버 + Cloud Run Spring Core API + 공용 Supabase PostgreSQL + Supabase Realtime + Firebase Auth/FCM/App Check/Storage`로 구성한다. 두 서버는 같은 환경의 DB만 공유하고 개발·운영의 DB·인증·자격 증명은 분리한다. 양쪽 DB V23, 운영 Core 배포·관리자 DB 연결과 최초 MFA 로그인까지 확인했으며 주요 업무·교차 환경 토큰·App Check 강제 등 출시 검증은 남아 있다.
 
 ## 구성도
 
@@ -24,7 +24,7 @@ flowchart LR
     CoreApi["Google Cloud Run\nSpring Core API"]
   end
 
-  subgraph Data["공용 데이터"]
+  subgraph Data["같은 환경의 공용 데이터 · 개발/운영은 분리"]
     Postgres["Supabase PostgreSQL\nbodeul schema"]
     Realtime["Supabase Realtime\nprivate Broadcast"]
     Firestore["Cloud Firestore\n인증 프로필·지원·서류\nrollback 비교"]
@@ -41,16 +41,15 @@ flowchart LR
 
   Admin --> AdminNext
   Android --> CoreApi
-  UserWeb --> CoreApi
+  UserWeb -.->|"후속 구현"| CoreApi
   Admin --> Auth
   Android --> Auth
-  UserWeb --> Auth
+  UserWeb -.-> Auth
   AdminNext -->|"ADMIN + 세부 역할·제한 함수"| Postgres
   CoreApi -->|"ID token + core role"| Postgres
   Postgres --> Realtime
   Realtime --> Android
-  Realtime --> UserWeb
-  Realtime --> Admin
+  Realtime -.->|"후속 구현"| UserWeb
   AdminNext -->|"서류 심사·outbox"| Firestore
   AdminNext --> Storage
   CoreApi -->|"세션 첨부"| Storage
@@ -68,12 +67,12 @@ flowchart LR
 
 | 경계 | 현재 상태 | 검증 |
 | --- | --- | --- |
-| 관리자 웹 | 별도 `bodeul-admin-web` 저장소, Next.js, Vercel | 2026-09-21 Production 웹 배포와 실제 Preview·Production 로그인 화면의 환경 표시 확인. 운영 로그인·DB 업무 검증은 별개 |
-| 관리자 DB 접속 | `bodeul_admin_service`, transaction pooler, 최대 연결 5 | 개발 DB 조회·TLS 검증 기록이 있음. 제한된 조회와 허용된 업무 함수 사용, 테이블 직접 쓰기는 금지. 운영 접속 준비 상태는 [환경 기준](../operations/admin-web-environments.md) 참조 |
-| 사용자 Core API | `core-api/`, Java 21, Spring Boot, Cloud Run Tokyo | 과거 인증·DB·FCM·rollback 검증 기록 있음. 현재 Preview 500/503 재확인은 #429에서 추적하며 이번 문서 작업에서 health 재검증은 하지 않음 |
+| 관리자 웹 | 별도 `bodeul-admin-web` 저장소, Next.js, Vercel | 9월 27일 Production 배포, 최초 개인 SUPER_ADMIN·TOTP와 MFA 후 대시보드 진입 확인. 주요 업무 전체 검증은 별개 |
+| 관리자 DB 접속 | `bodeul_admin_service`, transaction pooler, 최대 연결 5 | 개발 검증과 9월 27일 운영 TLS 로그인·조회·직접 쓰기 차단 확인. 상세는 [환경 기준](../operations/admin-web-environments.md) 참조 |
+| 사용자 Core API | `core-api/`, Java 21, Spring Boot, Cloud Run Tokyo | 9월 27일 개발·운영 배포, health 200·무인증 401 확인. 운영 정상 사용자·Kakao 업무 검증은 남음 |
 | Kakao Local | Core API의 `/api/places/search` 뒤에 배치 | Android 직접 REST 키 제거, 인증된 실제 호출 확인 |
-| 공용 DB | 개발·production Supabase PostgreSQL을 Tokyo에 분리 | 소스는 V1~V23. production V15 복원·권한 점검은 과거 기록이며 9월 21일 일시정지를 확인함. 재개·최신 적용 버전 검증은 별도 |
-| 실시간 | Supabase Realtime private Broadcast | 실제 참여·비참여 인가, 재연결, 10개 동시 join과 Broadcast 10/10 수신 확인 |
+| 공용 DB | Supabase Pro, 개발·운영 PostgreSQL을 Tokyo에 분리 | 양쪽 V23·실패 0, 운영 V23 logical backup·격리 복원·외부 보관 확인 |
+| 실시간 | Supabase Realtime private Broadcast | 개발의 실제 구독 검증 기록과 양쪽 환경의 SQL 인가 검사를 구분. 운영 정상 서명 token·실소켓 확인은 남음 |
 | Firebase | 개발·production Auth, Firestore, Storage를 분리 | production Rules 배포, Firestore 삭제 방지, App Check는 미강제 |
 
 ## 저장소 소유권
@@ -104,10 +103,10 @@ flowchart LR
 
 ## 남은 운영 전환
 
-- Vercel Production 웹 배포·Firebase 설정과 별도로 운영 관리자 DB 접속·역할별 업무를 검증하고 Cloud Run 첫 승인을 배포한다. 관리자 DB 재개와 자격 증명 적용 범위는 [관리자 웹 환경 기준](../operations/admin-web-environments.md)을 따른다.
-- 관리자 웹 custom domain, Auth authorized domain, App Check enforcement와 live 승인 조건을 확정한다.
+- 배포된 두 운영 서버에서 정상 인증·역할별 업무·감사와 교차 환경 거부를 검증한다. 최초 관리자 로그인과 나머지 업무의 차이는 [관리자 웹 환경 기준](../operations/admin-web-environments.md)을 따른다.
+- 기본 Vercel 운영 도메인과 등록된 Auth domain을 유지하고, custom domain이 필요해질 때 별도 변경한다. App Check 강제와 출시 승인은 후속 게이트다.
 - 개발에서 전환한 예약·매칭·동행·채팅·위치 domain을 production 데이터 cutover와 함께 재검증한다.
-- Cloud Run과 Vercel rollback을 실제 격리 환경에서 검증한다. PostgreSQL V15 restore는 2026-08-26 완료했다.
+- Cloud Run과 Vercel의 운영 rollback 리허설을 검증한다. PostgreSQL V23 격리 복원은 9월 27일 완료했으며 운영 DB에 복원하지 않았다.
 - 실제 운영 전에 플랜·비용·백업 조건을 확인하고 Go/No-Go를 수행한다. 이전 문서의 11월·12월 일정은 계획용 가정이며 확정 운영일이 아니다.
 
 이 항목은 구현 미완료와 운영 의사결정을 구분한다. 현재 개발 경계의 인증·인가·DB 연결과 production 복원은 검증됐지만 production 트래픽 전환 완료를 뜻하지 않는다.

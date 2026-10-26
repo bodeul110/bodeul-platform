@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.bodeul.core.auth.AppUserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,7 @@ class AppointmentController {
         return noStore(appointmentService.getAppointment(appUser, appointmentId));
     }
 
-    @PostMapping
+    @PostMapping({"", "/price-confirmed"})
     ResponseEntity<AppointmentService.AppointmentView> createAppointment(
             @AuthenticationPrincipal AppUserRepository.AppUser appUser,
             @RequestBody CreateAppointmentRequest request) {
@@ -52,7 +53,9 @@ class AppointmentController {
                 appUser,
                 new AppointmentService.CreateAppointmentCommand(
                         request == null ? null : request.clientRequestId(),
-                        request == null ? null : request.toDraft()));
+                        request == null ? null : request.toDraft(),
+                        request == null ? null : request.pricePolicyVersion(),
+                        request == null ? null : request.confirmedFinalPrice()));
         return ResponseEntity.created(URI.create("/api/appointments/" + created.id()))
                 .cacheControl(CacheControl.noStore())
                 .body(created);
@@ -112,6 +115,8 @@ class AppointmentController {
 
     record CreateAppointmentRequest(
             UUID clientRequestId,
+            String pricePolicyVersion,
+            JsonNode expectedFinalPrice,
             String linkedParticipantName,
             String linkedParticipantPhone,
             String linkedParticipantEmail,
@@ -129,6 +134,16 @@ class AppointmentController {
             String managerGenderPreferenceCode,
             String paymentMethodCode,
             String couponCode) {
+
+        Integer confirmedFinalPrice() {
+            if (expectedFinalPrice == null || expectedFinalPrice.isNull()) {
+                return null;
+            }
+            if (!expectedFinalPrice.isIntegralNumber() || !expectedFinalPrice.canConvertToInt()) {
+                throw AppointmentException.invalidRequest("확인한 예약 금액은 정수로 보내 주세요.");
+            }
+            return expectedFinalPrice.intValue();
+        }
 
         AppointmentService.AppointmentDraft toDraft() {
             return new AppointmentService.AppointmentDraft(

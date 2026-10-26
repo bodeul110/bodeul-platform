@@ -27,6 +27,13 @@ final class AppointmentException extends RuntimeException {
                 "이 예약을 조회하거나 변경할 권한이 없습니다.");
     }
 
+    static AppointmentException priceConfirmationRequired() {
+        return new AppointmentException(
+                HttpStatus.CONFLICT,
+                "appointment_price_confirmation_required",
+                "예약 요금 정보가 변경되었습니다. 최신 앱으로 업데이트한 뒤 요금을 다시 확인해 주세요.");
+    }
+
     static AppointmentException roleNotSupported() {
         return new AppointmentException(
                 HttpStatus.FORBIDDEN,
@@ -108,7 +115,7 @@ final class AppointmentException extends RuntimeException {
         return new AppointmentException(
                 HttpStatus.CONFLICT,
                 "bank_transfer_terms_conflict",
-                "무통장입금 예약의 결제수단과 입금액은 생성 후 변경할 수 없습니다.");
+                "무통장입금 예약의 결제수단·이동 조건·쿠폰·입금액은 생성 후 변경할 수 없습니다.");
     }
 
     static AppointmentException paymentOperationConflict() {

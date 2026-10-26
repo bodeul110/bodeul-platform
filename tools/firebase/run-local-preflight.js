@@ -48,7 +48,7 @@ async function main() {
     androidArgs.push("assembleDebug");
   }
   if (!options.skipTests) {
-    androidArgs.push("testDebugUnitTest");
+    androidArgs.push("testDebugUnitTest", "assembleDebugAndroidTest");
   }
   if (androidArgs.length > 0) {
     steps.push(await runCommand({
@@ -108,7 +108,7 @@ function printHelp() {
   console.log("");
   console.log("기본 동작");
   console.log("- Firebase 운영 워크플로를 실행합니다.");
-  console.log("- Android assembleDebug와 testDebugUnitTest를 실행합니다.");
+  console.log("- Android assembleDebug, testDebugUnitTest, assembleDebugAndroidTest를 실행합니다.");
   console.log("- 최종 결과를 reports 폴더의 Markdown/JSON 요약으로 남깁니다.");
 }
 
@@ -118,12 +118,12 @@ function resolveGradleCommand() {
 
 function buildAndroidStepLabel({skipBuild, skipTests}) {
   if (!skipBuild && !skipTests) {
-    return "Android assembleDebug 및 testDebugUnitTest";
+    return "Android assembleDebug, testDebugUnitTest 및 assembleDebugAndroidTest";
   }
   if (!skipBuild) {
     return "Android assembleDebug";
   }
-  return "Android testDebugUnitTest";
+  return "Android testDebugUnitTest 및 assembleDebugAndroidTest";
 }
 
 async function runWorkflow({cwd, env = {}, label}) {

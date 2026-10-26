@@ -6,6 +6,7 @@ import android.util.Patterns;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.example.bodeul.BuildConfig;
@@ -33,6 +34,10 @@ import java.util.LinkedHashMap;
  * 예약 신청 폼 입력과 비용 요약 바인딩을 담당한다.
  */
 public final class BookingFormBinder {
+    public interface OnHospitalSelectionChangedListener {
+        void onHospitalSelectionChanged(BookingHospitalSelection selection);
+    }
+
     private final Context context;
     private final BookingPresentationFormatter formatter;
     private final BookingPriceEstimator priceEstimator;
@@ -49,6 +54,7 @@ public final class BookingFormBinder {
     private final TextView textPaymentHelper;
     private final TextView textHealthProfileSummary;
     private final TextView textHealthProfileError;
+    private final TextView textHospitalSelectionError;
     private final TextInputLayout layoutHealthSummary;
     private final TextInputLayout layoutMedicationSummary;
     private final TextInputLayout layoutLinkedName;
@@ -85,6 +91,8 @@ public final class BookingFormBinder {
     private boolean loading;
     private boolean bankTransferTermsLocked;
     private BookingPriceSummary lockedPaymentPriceSummary;
+    @Nullable
+    private OnHospitalSelectionChangedListener hospitalSelectionChangedListener;
 
     public BookingFormBinder(
             Context context,
@@ -103,6 +111,7 @@ public final class BookingFormBinder {
             TextView textPaymentHelper,
             TextView textHealthProfileSummary,
             TextView textHealthProfileError,
+            TextView textHospitalSelectionError,
             TextInputLayout layoutHealthSummary,
             TextInputLayout layoutMedicationSummary,
             TextInputLayout layoutLinkedName,
@@ -158,6 +167,7 @@ public final class BookingFormBinder {
         this.textPaymentHelper = textPaymentHelper;
         this.textHealthProfileSummary = textHealthProfileSummary;
         this.textHealthProfileError = textHealthProfileError;
+        this.textHospitalSelectionError = textHospitalSelectionError;
         this.layoutHealthSummary = layoutHealthSummary;
         this.layoutMedicationSummary = layoutMedicationSummary;
         this.layoutLinkedName = layoutLinkedName;
@@ -241,14 +251,13 @@ public final class BookingFormBinder {
     public void bindEditMode(User currentUser, AppointmentRequest request) {
         BookingPaymentMethod paymentMethod = BookingPaymentMethod.fromValue(request.getPaymentMethodCode());
         bankTransferTermsLocked = BookingPaymentSelectionPolicy.arePaymentTermsLockedForEdit(paymentMethod);
-        lockedPaymentPriceSummary = bankTransferTermsLocked
-                ? new BookingPriceSummary(
-                        request.getBasePrice(),
-                        request.getOptionSurchargePrice(),
-                        request.getCouponDiscountPrice(),
-                        request.getFinalPrice()
-                )
-                : null;
+        // 요금 정책이 바뀌어도 일정·전달 내용 수정으로 기존 금액을 재계산하지 않는다.
+        lockedPaymentPriceSummary = new BookingPriceSummary(
+                request.getBasePrice(),
+                request.getOptionSurchargePrice(),
+                request.getCouponDiscountPrice(),
+                request.getFinalPrice()
+        );
         buttonPaymentBankTransfer.setVisibility(
                 BookingPaymentSelectionPolicy.isBankTransferVisibleForEdit(paymentMethod)
                         ? View.VISIBLE
@@ -312,8 +321,11 @@ public final class BookingFormBinder {
         isValid &= validateHealthProfile(healthSummary);
         isValid &= validateRequired(layoutLinkedName, linkedName);
         isValid &= validateRequired(layoutLinkedPhone, linkedPhone);
-        isValid &= validateRequired(layoutHospitalName, hospitalName);
-        isValid &= validateRequired(layoutDepartmentName, departmentName);
+        boolean hospitalNameValid = validateRequired(layoutHospitalName, hospitalName);
+        boolean departmentNameValid = validateRequired(layoutDepartmentName, departmentName);
+        boolean hospitalValid = hospitalNameValid && departmentNameValid;
+        textHospitalSelectionError.setVisibility(hospitalValid ? View.GONE : View.VISIBLE);
+        isValid &= hospitalValid;
         isValid &= appointmentSelector.validateRequiredAndFormat();
         isValid &= validateRequired(layoutMeetingPlace, meetingPlace);
         isValid &= validateLinkedPhone(linkedPhone);
@@ -358,6 +370,13 @@ public final class BookingFormBinder {
 
     public void setOnMeetingPlaceSelectorClickListener(View.OnClickListener listener) {
         buttonSelectMeetingPlace.setOnClickListener(listener);
+    }
+
+    public void setOnHospitalSelectionChangedListener(
+            @Nullable OnHospitalSelectionChangedListener listener
+    ) {
+        hospitalSelectionChangedListener = listener;
+        dispatchHospitalSelectionChanged();
     }
 
     public BookingHospitalSelection getHospitalSelection() {
@@ -448,7 +467,10 @@ public final class BookingFormBinder {
                 R.string.booking_price_base_line,
                 formatter.formatPrice(summary.getBasePrice())
         ));
-        textEstimateOption.setText(context.getString(
+        textEstimateOption.setText(lockedPaymentPriceSummary != null
+                ? context.getString(R.string.booking_price_saved_option_line,
+                        formatter.formatPrice(summary.getOptionSurchargePrice()))
+                : context.getString(
                 R.string.booking_price_option_line,
                 formatter.toTripTypeLabel(tripTypeGroupBinder.getSelection().name()),
                 formatter.toMobilityLabel(mobilityGroupBinder.getSelection().name()),
@@ -476,6 +498,7 @@ public final class BookingFormBinder {
         inputDepartmentName.setText(null);
         selectedHospitalLatitude = 0.0;
         selectedHospitalLongitude = 0.0;
+        dispatchHospitalSelectionChanged();
         inputMeetingPlace.setText(null);
         selectedMeetingPointId = "";
         inputSpecialNotes.setText(null);
@@ -503,6 +526,14 @@ public final class BookingFormBinder {
         }
         layoutHospitalName.setError(null);
         layoutDepartmentName.setError(null);
+        textHospitalSelectionError.setVisibility(View.GONE);
+        dispatchHospitalSelectionChanged();
+    }
+
+    private void dispatchHospitalSelectionChanged() {
+        if (hospitalSelectionChangedListener != null) {
+            hospitalSelectionChangedListener.onHospitalSelectionChanged(getHospitalSelection());
+        }
     }
 
     private boolean validateRequired(TextInputLayout layout, String value) {
@@ -589,7 +620,7 @@ public final class BookingFormBinder {
         mobilityGroupBinder.setEnabled(enabled);
         tripTypeGroupBinder.setEnabled(enabled);
         paymentMethodGroupBinder.setEnabled(enabled);
-        couponTypeGroupBinder.setEnabled(enabled);
+        couponTypeGroupBinder.setEnabled(false);
     }
 
     private BookingPriceSummary resolvePriceSummary() {
@@ -611,6 +642,7 @@ public final class BookingFormBinder {
         layoutLinkedEmail.setError(null);
         layoutHospitalName.setError(null);
         layoutDepartmentName.setError(null);
+        textHospitalSelectionError.setVisibility(View.GONE);
         layoutMeetingPlace.setError(null);
         layoutSpecialNotes.setError(null);
         textHealthProfileError.setVisibility(View.GONE);

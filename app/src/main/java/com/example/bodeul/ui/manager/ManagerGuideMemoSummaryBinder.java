@@ -37,7 +37,7 @@ final class ManagerGuideMemoSummaryBinder {
             title.setText(item.getTitle());
             body.setText(item.getBody());
             body.setTextColor(itemView.getContext().getColor(item.isEmpty()
-                    ? R.color.bodeul_text_secondary
+                    ? R.color.figma_mvp_text_hint
                     : R.color.bodeul_text_primary));
             container.addView(itemView);
         }

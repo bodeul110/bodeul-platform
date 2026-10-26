@@ -9,14 +9,15 @@ import java.util.UUID;
 
 import com.bodeul.core.auth.AppUserRole;
 
-final class AppointmentCreateFingerprint {
+public final class AppointmentCreateFingerprint {
 
     private static final String CONTRACT_VERSION = "bodeul-appointment-create-v1";
 
     private AppointmentCreateFingerprint() {
     }
 
-    static String from(CreateRequest request) {
+    /** 서버에서 검증·정규화한 생성 본문의 승인 및 재시도 비교값을 만든다. */
+    public static String from(CreateRequest request) {
         MessageDigest digest = sha256();
         add(digest, CONTRACT_VERSION);
         add(digest, request.requesterUserId());
@@ -42,6 +43,16 @@ final class AppointmentCreateFingerprint {
         return HexFormat.of().formatHex(digest.digest());
     }
 
+    /** 기존 환자 예약 fingerprint는 바꾸지 않고 신규 보호자 승인에만 견적을 묶는다. */
+    static String forGuardianApproval(CreateRequest request, String pricePolicyVersion, Integer confirmedPrice) {
+        MessageDigest digest = sha256();
+        add(digest, "bodeul-guardian-booking-create-v1");
+        add(digest, from(request));
+        add(digest, pricePolicyVersion);
+        add(digest, confirmedPrice);
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
     private static void add(MessageDigest digest, Object value) {
         byte[] bytes = value == null
                 ? null
@@ -64,7 +75,7 @@ final class AppointmentCreateFingerprint {
         }
     }
 
-    record CreateRequest(
+    public record CreateRequest(
             UUID requesterUserId,
             AppUserRole requesterRole,
             UUID clientRequestId,

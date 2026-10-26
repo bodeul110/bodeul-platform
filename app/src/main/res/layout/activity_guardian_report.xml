@@ -1,253 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_screen_glow"
-    android:fillViewport="true">
+    android:background="@color/figma_mvp_background">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="24dp"
-        android:paddingTop="24dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="28dp">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true">
 
         <LinearLayout
+            android:id="@+id/guardianReportInsetContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:paddingBottom="112dp">
 
-            <ImageView
-                android:layout_width="94dp"
-                android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:contentDescription="@string/app_name"
-                android:src="@drawable/bodeul_logo_full" />
+            <FrameLayout
+                android:id="@+id/guardianReportTopBar"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="@color/figma_mvp_surface">
 
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+                <ImageButton
+                    android:id="@+id/buttonBackGuardianReport"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/guardian_final_report_back_description"
+                    android:padding="16dp"
+                    android:src="@drawable/ic_figma_guide_back_vector" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="46dp"
+                    android:text="@string/guardian_final_report_brand"
+                    android:textColor="@color/figma_mvp_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="@string/guardian_final_report_header_title"
+                    android:textColor="@color/figma_mvp_text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/buttonGuardianReportRefresh"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/guardian_final_report_menu_description"
+                    android:padding="16dp"
+                    android:src="@drawable/ic_figma_more_vertical" />
+            </FrameLayout>
 
             <TextView
-                android:id="@+id/buttonBackGuardianReport"
+                android:id="@+id/textGuardianReportMode"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/bg_surface_pill"
-                android:paddingStart="14dp"
-                android:paddingTop="9dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="9dp"
-                android:text="@string/guide_back"
-                android:textColor="@color/bodeul_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:textColor="@color/figma_mvp_primary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/textGuardianReportMode"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_surface_pill"
-            android:paddingStart="14dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="8dp"
-            android:textColor="@color/bodeul_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="@string/feature_guardian_report_title"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="32sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:lineSpacingExtra="4dp"
-            android:text="@string/guardian_report_subtitle"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="14sp" />
-
-        <include
-            android:id="@+id/guardianReportStatePanel"
-            layout="@layout/include_state_panel" />
-
-        <LinearLayout
-            android:id="@+id/guardianReportContentContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <com.google.android.material.card.MaterialCardView
+            <include
+                android:id="@+id/guardianReportStatePanel"
+                layout="@layout/include_state_panel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
                 android:layout_marginTop="20dp"
-                app:cardBackgroundColor="@color/bodeul_surface"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:strokeColor="@color/bodeul_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_badge_purple"
-                        android:paddingStart="10dp"
-                        android:paddingTop="5dp"
-                        android:paddingEnd="10dp"
-                        android:paddingBottom="5dp"
-                        android:text="@string/guardian_report_account_badge"
-                        android:textColor="@color/bodeul_primary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textGuardianReportGreeting"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="24sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textGuardianReportSummary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_surface_pill"
-                        android:lineSpacingExtra="4dp"
-                        android:paddingStart="16dp"
-                        android:paddingTop="14dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="14dp"
-                        android:textColor="@color/bodeul_text_secondary"
-                        android:textSize="14sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonGuardianReportRefresh"
-                        style="@style/BodeulOutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:text="@string/guardian_report_action_refresh" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/bodeul_surface"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:strokeColor="@color/bodeul_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/guardian_report_highlight_label"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textGuardianReportHighlightStatus"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_surface_pill"
-                        android:paddingStart="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="8dp"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textGuardianReportHighlightTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:lineSpacingExtra="2dp"
-                        android:textColor="@color/bodeul_text_primary"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/textGuardianReportHighlightBody"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:lineSpacingExtra="4dp"
-                        android:textColor="@color/bodeul_text_secondary"
-                        android:textSize="14sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonGuardianReportHighlightAction"
-                        style="@style/BodeulHomeButton"
-                        android:layout_marginTop="16dp"
-                        android:visibility="gone" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:text="@string/guardian_report_list_title"
-                android:textColor="@color/bodeul_text_primary"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="@string/guardian_report_list_helper"
-                android:textColor="@color/bodeul_text_secondary"
-                android:textSize="13sp" />
+                android:layout_marginEnd="20dp" />
 
             <LinearLayout
-                android:id="@+id/guardianReportListContainer"
+                android:id="@+id/guardianReportContentContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:orientation="vertical" />
-        </LinearLayout>
+                android:orientation="vertical"
+                android:paddingStart="20dp"
+                android:paddingTop="20dp"
+                android:paddingEnd="20dp">
 
-        <ProgressBar
-            android:id="@+id/progressGuardianReport"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:visibility="gone"
-            app:indicatorColor="@color/bodeul_primary" />
-    </LinearLayout>
-</ScrollView>
+                <LinearLayout
+                    android:id="@+id/guardianReportListContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <ProgressBar
+        android:id="@+id/progressGuardianReport"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        app:indicatorColor="@color/figma_mvp_primary" />
+
+    <include layout="@layout/include_client_bottom_navigation" />
+</FrameLayout>

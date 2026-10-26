@@ -4,6 +4,8 @@
     <string name="debug_manager_guide_preview_long_label">매니저 가이드 단계 미리보기</string>
     <string name="debug_manager_guide_preview_title">매니저 가이드 미리보기</string>
     <string name="debug_manager_guide_preview_body">debug APK에서만 보입니다. 단계를 선택하면 서버·Firebase·실제 동행 세션을 변경하지 않고 해당 화면을 엽니다.</string>
+    <string name="debug_manager_guide_legacy_preview_title">운영 7단계 흐름</string>
+    <string name="debug_manager_guide_legacy_preview_body">현재 운영 fallback 단계 코드를 그대로 사용하면서 최신 전용 화면 연결과 안전한 저장 동작을 확인합니다.</string>
     <string name="debug_manager_guide_preview_step_label">%1$d단계 · %2$s</string>
     <string name="debug_manager_guide_preview_step_description">%1$s\n%2$s</string>
     <string name="debug_manager_guide_preview_banner">DEBUG 미리보기 · 서버에 저장되지 않음</string>

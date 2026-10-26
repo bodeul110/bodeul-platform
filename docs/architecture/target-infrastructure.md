@@ -1,6 +1,6 @@
 # 목표 인프라 구조
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 초기에는 빠른 구현을 우선했기 때문에 모든 선택 근거가 사전에 정리되지는 않았다.
 현재는 구현된 구조를 기준으로 선택 이유, 대안, 단점, 전환 조건을 정리하고 있다.
@@ -43,7 +43,7 @@ DDL은 메인 저장소 `core-api/`의 Flyway migration만 소유한다. 런타�
 
 ## 구현과 과거 검증 기록
 
-아래 검증은 각 보고서 시점의 결과다. 2026-09-21 현재 #429는 Preview 500/503 재확인 과제로 열려 있고, production DB는 일시정지 확인 후 재개하지 않았다. 코드 존재·이전 검증 성공을 현재 가용성으로 해석하지 않는다.
+아래 항목 중 과거 검증은 해당 보고서 시점의 증거다. 최신 [9월 27일 실행 기록](../reports/dev-production-separation-2026-09-27.md)에서는 dev/master 분리, 두 DB V23·환경별 Realtime 인가, 운영 Core 배포, 관리자 DB 연결과 최초 MFA 후 대시보드를 확인했다. #429는 9월 24일 가용성 차단 해소로 종료됐다. 운영 정상 업무·실소켓·교차 환경 token 거부·MFA/App Check 강제 검증은 남아 있다.
 
 - Spring Core API Cloud Run preview, WIF 배포, Secret Manager, DB 연결과 rollback을 검증했다.
 - 관리자 Next.js Preview에서 Firebase token과 PostgreSQL 관리자 role을 사용한 401·403·200을 검증했다.
@@ -52,13 +52,13 @@ DDL은 메인 저장소 `core-api/`의 Flyway migration만 소유한다. 런타�
 - Android의 Kakao Local REST 직접 호출과 REST 키를 제거했다.
 - 개발 환경의 예약·동행 세션·리포트·후속 처리는 PostgreSQL을 쓰기 source of truth로 사용하고, Firestore Rules는 해당 업무 쓰기를 거부한다.
 - 개발 DB의 채팅·위치는 PostgreSQL V8~V12 schema·trigger, 최소 권한과 보관 계약을 적용했다. Core API snapshot·메시지·읽음·위치 계약과 privileged Broadcast publisher를 배포했고 Firestore legacy 쓰기는 차단했다.
-- Core-only 세션 채팅 첨부는 Spring Core API 서버 중계 계약으로 전환했다. 개발·production Firebase 기본 버킷에는 각 Cloud Run 런타임 계정의 버킷 단위 `roles/storage.objectUser`만 부여했고, 버킷 메타데이터 권한 없이 객체 API를 직접 사용한다. Preview 배포, 인증된 실기기 업로드·다운로드와 DB 충돌 보상 삭제를 완료했으며 production 적용은 #134 출시 게이트까지 보류한다.
+- Core-only 세션 채팅 첨부는 Spring Core API 서버 중계 계약으로 전환했다. 개발·production Firebase 기본 버킷에는 각 Cloud Run 런타임 계정의 버킷 단위 `roles/storage.objectUser`만 부여했고, 버킷 메타데이터 권한 없이 객체 API를 직접 사용한다. 개발의 인증된 실기기 업로드·다운로드와 DB 충돌 보상 삭제 기록이 있다. 운영 서버 코드는 배포됐지만 운영 첨부의 정상 인증 흐름은 #134에서 별도 검증한다.
 - 실제 세션으로 private Realtime join·재연결, 채팅·읽음·위치, FCM 실기기 알림을 확인했다. 10개 동시 join과 `chat.changed` 10/10 수신은 운영 목표 Pro 포함량 안에서 통과했다.
 - production Google Cloud/Firebase `bodeul-prod-110`(표시 이름 `bodeul-prod`)과 Supabase `bodeul-db-prod`를 개발 환경과 분리했다. 기존 식별자는 유지하고 [명칭 기준](../operations/resource-naming.md)에 따라 표시 이름만 정리한다.
-- production Flyway V1~V15, 최소 권한 role, Artifact Registry, WIF와 DB Secret Manager version을 검증했다.
-- production PostgreSQL V15 dump를 격리 PostgreSQL 17에 복원해 schema, row 수, owner, ACL, RLS, 인덱스와 제약 일치를 검증했다.
-- production Supabase 조직은 아직 Free이며, 실제 사용자 데이터 투입 전 Pro 전환이 필요하다.
-- Kakao 운영 키, 첫 Cloud Run revision과 Vercel Production 관리자 DB는 아직 연결하지 않았다.
+- production Flyway V1~V23, 최소 권한 role, Artifact Registry, WIF와 DB·Kakao Secret Manager 참조를 확인했다. DB 자격 증명은 개발과 분리하고 Kakao REST 키만 승인된 예외로 공유한다.
+- 9월 27일 production V23 dump를 격리 PostgreSQL 17에 복원하고 manifest·GCS 보관 checksum을 대조했다. 운영 DB 복원은 수행하지 않았다.
+- 개발·운영 Supabase는 Pro 조직에서 가동한다. 제공자 자동 백업 복구 지점과 실제 청구액은 별도 점검한다.
+- 운영 Kakao Secret, Cloud Run revision과 Vercel Production 관리자 DB 연결은 완료했다. 기본 smoke·최초 관리자 로그인과 서비스 전체 E2E는 구분한다.
 
 ## 대안과 판단
 
@@ -75,8 +75,8 @@ DDL은 메인 저장소 `core-api/`의 Flyway migration만 소유한다. 런타�
 
 1. [x] 개발과 분리된 Google Cloud/Firebase 프로젝트와 Supabase 프로젝트를 만들고 기존 Vercel 프로젝트의 Production 환경을 사용한다.
 2. [x] production migration과 Core API runtime 자격 증명을 별도 Environment/Secret Manager에 둔다.
-3. [ ] Kakao 운영 키를 등록하고 첫 Cloud Run revision의 인증·DB·rollback을 검증한다.
-4. [ ] Vercel Production에 최소 권한 관리자 DB 자격 증명을 연결하고 MFA·역할별 401·403·200과 업무 함수를 검증한다.
+3. [ ] 등록된 Kakao 키와 운영 revision에서 정상 토큰·환경 교차 거부·DB·장소 검색·rollback을 검증한다. 키 등록과 기본 smoke는 완료했다.
+4. [ ] 연결된 Vercel Production 관리자 DB에서 역할별 401·403·200과 업무 함수를 검증한다. 최초 개인 관리자 MFA 로그인·대시보드는 완료했다.
 5. [ ] custom domain, Firebase Auth authorized domain과 App Check provider/enforcement를 검증한다.
 6. [x] PostgreSQL backup/restore를 격리 환경에서 리허설한다.
 7. [x] 도메인별 source of truth, 이중 쓰기 금지와 rollback 기준을 문서화한다.

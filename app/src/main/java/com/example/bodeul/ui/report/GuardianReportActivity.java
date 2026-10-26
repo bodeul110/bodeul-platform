@@ -4,8 +4,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -22,8 +24,11 @@ import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.ui.booking.BookingStatusActivity;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationBinder;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationRouter;
+import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
 import com.example.bodeul.util.StatePanelHelper;
-import com.google.android.material.button.MaterialButton;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
  * 보호자 진행 화면의 인증, 로딩, 상세 이동만 담당한다.
@@ -35,19 +40,22 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
     private GuardianReportDashboardBinder guardianReportDashboardBinder;
 
     private User currentUser;
-    private boolean loading;
+    private int loadGeneration;
 
     private View guardianReportStatePanel;
     private View guardianReportContentContainer;
+    private View reportMenuButton;
     private ProgressBar progressGuardianReport;
+    private BottomNavigationView bottomNavigation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_guardian_report);
 
-        authRepository = ServiceLocator.provideAuthRepository(this);
-        guardianReportRepository = ServiceLocator.provideGuardianReportRepository(this);
+        authRepository = provideAuthRepository();
+        guardianReportRepository = provideGuardianReportRepository();
         guardianReportCoordinator = new GuardianReportCoordinator(
                 this,
                 new GuardianReportPresentationFormatter(this)
@@ -62,28 +70,60 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
                 getLayoutInflater(),
                 new GuardianReportEntryCardBinder(this, getLayoutInflater(), this),
                 findViewById(R.id.textGuardianReportMode),
-                findViewById(R.id.textGuardianReportGreeting),
-                findViewById(R.id.textGuardianReportSummary),
-                findViewById(R.id.textGuardianReportHighlightStatus),
-                findViewById(R.id.textGuardianReportHighlightTitle),
-                findViewById(R.id.textGuardianReportHighlightBody),
-                (MaterialButton) findViewById(R.id.buttonGuardianReportHighlightAction),
                 findViewById(R.id.guardianReportListContainer)
         );
 
         findViewById(R.id.buttonBackGuardianReport).setOnClickListener(view -> finish());
-        findViewById(R.id.buttonGuardianReportRefresh).setOnClickListener(view -> refreshDashboard());
+        reportMenuButton = findViewById(R.id.buttonGuardianReportRefresh);
+        reportMenuButton.setOnClickListener(this::showReportMenu);
+        bottomNavigation = findViewById(R.id.clientBottomNavigation);
+        GuardianReportInsets.apply(
+                findViewById(R.id.guardianReportInsetContent),
+                findViewById(R.id.guardianReportTopBar),
+                bottomNavigation
+        );
+        bottomNavigation.setVisibility(View.GONE);
+        ClientBottomNavigationBinder.bind(
+                bottomNavigation,
+                ClientBottomNavigationTab.SCHEDULE_HISTORY,
+                tab -> ClientBottomNavigationRouter.open(
+                        this,
+                        ClientBottomNavigationTab.SCHEDULE_HISTORY,
+                        tab
+                )
+        );
         bindEmptyState();
+        guardianReportContentContainer.setVisibility(View.GONE);
+    }
+
+    /**
+     * 디버그 전용 화면이 로컬 인증 저장소를 주입할 수 있는 얇은 경계다.
+     */
+    protected AuthRepository provideAuthRepository() {
+        return ServiceLocator.provideAuthRepository(this);
+    }
+
+    /**
+     * 디버그 전용 화면이 로컬 리포트 저장소를 주입할 수 있는 얇은 경계다.
+     */
+    protected GuardianReportRepository provideGuardianReportRepository() {
+        return ServiceLocator.provideGuardianReportRepository(this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        int generation = ++loadGeneration;
+        currentUser = null;
         setLoading(true);
-        hideBlockingState();
+        hideAllStates();
+        bottomNavigation.setVisibility(View.GONE);
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
+                if (!isActiveGeneration(generation)) {
+                    return;
+                }
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
                     openProfileCompletion();
                     return;
@@ -95,22 +135,34 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
                 }
 
                 currentUser = result;
-                hideBlockingState();
-                refreshDashboard();
+                bottomNavigation.setVisibility(View.VISIBLE);
+                loadDashboard(generation, result);
             }
 
             @Override
             public void onError(String message) {
+                if (!isActiveGeneration(generation)) {
+                    return;
+                }
                 setLoading(false);
                 showAuthState();
             }
         });
     }
 
-    private void loadDashboard() {
-        guardianReportRepository.getGuardianDashboard(currentUser, new RepositoryCallback<GuardianReportDashboard>() {
+    @Override
+    protected void onStop() {
+        loadGeneration++;
+        super.onStop();
+    }
+
+    private void loadDashboard(int generation, User user) {
+        guardianReportRepository.getGuardianDashboard(user, new RepositoryCallback<GuardianReportDashboard>() {
             @Override
             public void onSuccess(GuardianReportDashboard result) {
+                if (!isActiveGeneration(generation)) {
+                    return;
+                }
                 setLoading(false);
                 hideBlockingState();
                 bindDashboard(result);
@@ -118,6 +170,9 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
 
             @Override
             public void onError(String message) {
+                if (!isActiveGeneration(generation)) {
+                    return;
+                }
                 setLoading(false);
                 bindEmptyState();
                 showLoadErrorState(message);
@@ -130,9 +185,15 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
             showAuthState();
             return;
         }
+        int generation = ++loadGeneration;
+        User user = currentUser;
         setLoading(true);
-        hideBlockingState();
-        loadDashboard();
+        hideAllStates();
+        loadDashboard(generation, user);
+    }
+
+    private boolean isActiveGeneration(int generation) {
+        return generation == loadGeneration && !isFinishing() && !isDestroyed();
     }
 
     private void bindDashboard(@Nullable GuardianReportDashboard dashboard) {
@@ -142,13 +203,22 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
                         : guardianReportCoordinator.createScreenModel(
                                 dashboard,
                                 guardianReportRepository.isFirebaseBacked()
-                        ),
-                this
+                )
         );
     }
 
     private void bindEmptyState() {
         bindDashboard(null);
+    }
+
+    private void showReportMenu(View anchor) {
+        PopupMenu popupMenu = new PopupMenu(this, anchor);
+        popupMenu.getMenu().add(R.string.guardian_final_report_refresh_action);
+        popupMenu.setOnMenuItemClickListener(item -> {
+            refreshDashboard();
+            return true;
+        });
+        popupMenu.show();
     }
 
     @Override
@@ -160,8 +230,8 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
     }
 
     private void setLoading(boolean loading) {
-        this.loading = loading;
         progressGuardianReport.setVisibility(loading ? View.VISIBLE : View.GONE);
+        reportMenuButton.setEnabled(!loading);
     }
 
     private void showPermissionState() {
@@ -234,6 +304,11 @@ public class GuardianReportActivity extends AppCompatActivity implements Guardia
     private void hideBlockingState() {
         StatePanelHelper.hide(guardianReportStatePanel);
         guardianReportContentContainer.setVisibility(View.VISIBLE);
+    }
+
+    private void hideAllStates() {
+        StatePanelHelper.hide(guardianReportStatePanel);
+        guardianReportContentContainer.setVisibility(View.GONE);
     }
 
     private void openHome() {

@@ -28,6 +28,8 @@ Android 앱, 관리자 웹, Core API, PostgreSQL, Firebase와 운영 도구의 �
   - 세션·리포트·후속 처리, 관리자 배정 함수와 단계별 cutover 경계
 - [성인 환자·보호자 정보공유 동의 계약](adult-patient-guardian-sharing-consent.md)
   - 예약별 저장, Core API 범위 인가, Android 동의·철회와 Firebase 직접 접근 차단 경계
+- [성인 환자·보호자 예약 생성 승인 계약](adult-patient-guardian-booking-authorization.md)
+  - #419의 예약 전 생성 판정 준비. API·DB 연결 전이며 정보공유 동의와 구분
 - [동행 가이드 13개 화면과 단계 계약](companion-guide-step-contract.md)
   - Figma 화면, 안정적인 단계 코드, 완료 이벤트와 PostgreSQL·Core API·Android 차이
 - [PostgreSQL API 경계 기준](postgres-api-boundary.md)

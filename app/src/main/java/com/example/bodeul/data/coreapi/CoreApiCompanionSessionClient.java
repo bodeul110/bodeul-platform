@@ -377,6 +377,16 @@ final class CoreApiCompanionSessionClient {
         updateSession(externalSessionId, field, value, null, callback);
     }
 
+    void updateBoolean(
+            String externalSessionId,
+            String field,
+            boolean value,
+            String expectedStepCode,
+            RepositoryCallback<SessionSnapshot> callback
+    ) {
+        updateSession(externalSessionId, field, value, expectedStepCode, callback);
+    }
+
     void advance(
             String externalSessionId,
             String expectedStepCode,
