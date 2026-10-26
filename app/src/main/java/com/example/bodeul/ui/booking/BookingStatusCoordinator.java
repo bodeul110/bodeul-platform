@@ -11,6 +11,7 @@ import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentRequestDetail;
 import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.domain.model.CompanionSession;
+import com.example.bodeul.domain.model.GuideStep;
 import com.example.bodeul.domain.model.HospitalGuide;
 import com.example.bodeul.domain.model.SessionReport;
 import com.example.bodeul.domain.model.User;
@@ -285,6 +286,14 @@ public final class BookingStatusCoordinator {
                             ),
                     false
             ));
+            GuideStep currentStep = findCurrentStep(guide, session.getCurrentStepOrder());
+            if (currentStep != null && !TextUtils.isEmpty(currentStep.getTitle())) {
+                items.add(new BookingStatusLineItem(
+                        context.getString(R.string.booking_status_line_current_guide),
+                        currentStep.getTitle(),
+                        true
+                ));
+            }
         }
         if (legacyManagerLocationEnabled) {
             addOptionalLine(
@@ -310,6 +319,16 @@ public final class BookingStatusCoordinator {
             ));
         }
         return items;
+    }
+
+    @Nullable
+    private GuideStep findCurrentStep(HospitalGuide guide, int currentStepOrder) {
+        for (GuideStep step : guide.getSteps()) {
+            if (step.getOrder() == currentStepOrder) {
+                return step;
+            }
+        }
+        return null;
     }
 
     private List<BookingStatusSectionModel> createReportSections(

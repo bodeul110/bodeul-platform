@@ -37,6 +37,10 @@
             android:name="com.example.bodeul.debug.GuardianReportFigmaPreviewActivity"
             android:exported="false"
             android:theme="@style/Theme.Bodeul" />
+        <activity
+            android:name="com.example.bodeul.debug.PatientProgressFigmaPreviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bodeul" />
         <activity android:name="com.example.bodeul.ui.auth.SplashActivity">
             <meta-data
                 android:name="android.app.shortcuts"

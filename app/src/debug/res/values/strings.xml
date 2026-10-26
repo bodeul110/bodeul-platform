@@ -10,4 +10,20 @@
     <string name="debug_manager_guide_preview_step_description">%1$s\n%2$s</string>
     <string name="debug_manager_guide_preview_banner">DEBUG 미리보기 · 서버에 저장되지 않음</string>
     <string name="debug_manager_guide_preview_local_only">미리보기에서는 실제 서버 화면으로 이동하지 않습니다.</string>
+    <string name="debug_patient_progress_preview_title">환자 진행현황 시연</string>
+    <string name="debug_patient_progress_preview_body">실제 환자 화면을 로컬 데이터로 표시합니다. 운영 권한과 서버 데이터는 변경하지 않습니다.</string>
+    <string name="debug_patient_progress_preview_previous">이전 단계</string>
+    <string name="debug_patient_progress_preview_next">다음 단계</string>
+    <string name="debug_patient_progress_preview_completed">완료 · 최종 리포트</string>
+    <string name="debug_patient_progress_preview_local_only">이 기능은 debug 시연 전용이며 서버에는 반영되지 않습니다.</string>
+    <string-array name="debug_patient_progress_preview_states">
+        <item>1단계 · 환자 접촉</item>
+        <item>2단계 · 간편 등록</item>
+        <item>3단계 · 진료 접수</item>
+        <item>4단계 · 진료 완료</item>
+        <item>5단계 · 수납 처리</item>
+        <item>6단계 · 약국 방문</item>
+        <item>7단계 · 환자 귀가</item>
+        <item>완료 · 최종 리포트</item>
+    </string-array>
 </resources>
