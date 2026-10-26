@@ -83,7 +83,8 @@ final class ManagerGuidePreConsultationBinder {
     }
 
     void bind(ManagerGuideScreenModel model, ManagerDashboard dashboard, boolean mutationInFlight) {
-        boolean preConsultationStep = "PRE_CONSULTATION".equals(model.getCurrentStepCode());
+        boolean preConsultationStep = "PRE_CONSULTATION".equals(
+                model.getPresentationStepCode());
         content.setVisibility(preConsultationStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(preConsultationStep ? View.VISIBLE : View.GONE);
         bottomNav.setVisibility(preConsultationStep ? View.GONE : View.VISIBLE);

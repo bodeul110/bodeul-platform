@@ -2,6 +2,8 @@
 
 기준 범위 확인: 2026-09-21. 현재 소스 migration은 V23까지지만 이 readiness 도구의 도메인별 영향 집계는 V14·V15 가이드 전환 중심이다. 통과했다고 V16~V23 업무 계약·권한·데이터 이관 전체가 검증된 것은 아니다. [Migration 목록](../architecture/database-migration-catalog.md)과 각 버전 검증을 함께 적용한다.
 
+실제 적용 상태는 2026-09-27 개발·운영 모두 V23·실패 이력 0건이다. 운영 V23 백업·격리 복원도 통과했다. [환경 분리 실행 기록](../reports/dev-production-separation-2026-09-27.md)을 현재 상태로 보고 아래 8월 실행 기록과 구분한다.
+
 ## 작업 목적
 
 Production PostgreSQL migration 전후에 연결 대상, 현재 schema 버전, 실패 이력과 영향 건수를 쓰기 없이 확인한다.
@@ -64,7 +66,7 @@ workflow와 Java 실행기는 접속 문자열, 사용자명과 Supabase project
 | `Core API DB Migration` production | 입력·Environment 확인 후 Java target 검증 | Flyway 단계에서 수행 | apply 후 별도 계약 검증 | migration 수행 |
 | `Production PostgreSQL Backup and Restore Rehearsal` | 입력·Environment 확인 후 Java target 검증 | dump 단계에서 수행 | 수행하지 않음 | 원본 DB에는 없음 |
 
-preview migration은 `confirm_database_project_ref`와 production target 검증을 사용하지 않는다.
+preview migration도 `dev`와 개발 project ref를 확인한다. 운영 자격 증명·project ref를 재사용하지 않는다. 정확한 입력은 현재 `core-api-migration.yml`과 [환경 전환 기준](dev-production-branch-transition-plan.md)을 따른다.
 
 ## 현재 검증 상태
 

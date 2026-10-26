@@ -70,7 +70,8 @@ final class ManagerGuidePrescriptionBinder {
     }
 
     void bind(ManagerGuideScreenModel model, ManagerDashboard dashboard, boolean mutationInFlight) {
-        boolean prescriptionStep = "PRESCRIPTION_DOCUMENTS".equals(model.getCurrentStepCode());
+        boolean prescriptionStep = "PRESCRIPTION_DOCUMENTS".equals(
+                model.getPresentationStepCode());
         content.setVisibility(prescriptionStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(prescriptionStep ? View.VISIBLE : View.GONE);
         if (!prescriptionStep) {

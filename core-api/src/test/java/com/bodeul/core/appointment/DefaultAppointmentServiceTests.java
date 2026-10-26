@@ -79,7 +79,7 @@ class DefaultAppointmentServiceTests {
     void patientCreatesAppointmentWithServerOwnedPriceAndLinkedGuardian() {
         var created = service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(
+                confirmedCreate(
                         UUID.fromString("7e80b784-1212-429e-b4ea-a5f9e8db7488"),
                         draft()));
 
@@ -88,13 +88,172 @@ class DefaultAppointmentServiceTests {
         assertThat(created.guardianUserId()).isEqualTo(GUARDIAN_ID);
         assertThat(created.patientName()).isEqualTo("환자 사용자");
         assertThat(created.guardianName()).isEqualTo("보호자 사용자");
-        assertThat(created.basePrice()).isEqualTo(69_000);
-        assertThat(created.optionSurchargePrice()).isEqualTo(37_000);
-        assertThat(created.couponDiscountPrice()).isEqualTo(10_000);
-        assertThat(created.finalPrice()).isEqualTo(96_000);
+        assertThat(created.basePrice()).isEqualTo(40_000);
+        assertThat(created.optionSurchargePrice()).isZero();
+        assertThat(created.couponDiscountPrice()).isZero();
+        assertThat(created.finalPrice()).isEqualTo(40_000);
         assertThat(created.paymentStatusCode()).isEqualTo("PENDING");
         assertThat(created.status()).isEqualTo("REQUESTED");
         assertThat(created.publicCode()).matches("^BD-[A-Z0-9]{6}$");
+    }
+
+    @Test
+    void newBookingsKeepTheSamePriceForEveryMobilityAndTripSelection() {
+        for (String mobility : List.of("INDEPENDENT", "WALKING_AID", "WHEELCHAIR")) {
+            for (String trip : List.of("ONE_WAY", "ROUND_TRIP")) {
+                var created = service.createAppointment(patient(),
+                        confirmedCreate(UUID.randomUUID(),
+                                draftWithOptions(draft(), mobility, trip, "NONE")));
+                assertThat(created.finalPrice()).isEqualTo(40_000);
+                assertThat(created.optionSurchargePrice()).isZero();
+                assertThat(created.couponDiscountPrice()).isZero();
+            }
+        }
+    }
+
+    @Test
+    void oldAppCannotCreateWithoutPriceConfirmation() {
+        assertThatThrownBy(() -> service.createAppointment(patient(),
+                new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(), draft())))
+                .isInstanceOfSatisfying(AppointmentException.class, failure -> {
+                    assertThat(failure.status().value()).isEqualTo(409);
+                    assertThat(failure.error()).isEqualTo("appointment_price_confirmation_required");
+                });
+        assertThat(appointmentRepository.insertCount).isZero();
+        assertThat(profileRepository.lookupCount).isZero();
+    }
+
+    @Test
+    void wrongOrIncompletePriceConfirmationDoesNotCreateAnAppointment() {
+        for (String version : new String[]{null, "", "mvp-fixed-40000-v0", "mvp-fixed-40000-v1"}) {
+            for (Integer amount : new Integer[]{null, -1, 0, 39_999, 40_000, 69_000, 96_000}) {
+                if ("mvp-fixed-40000-v1".equals(version) && Integer.valueOf(40_000).equals(amount)) {
+                    continue;
+                }
+                assertThatThrownBy(() -> service.createAppointment(patient(),
+                        new AppointmentService.CreateAppointmentCommand(
+                                UUID.randomUUID(), draft(), version, amount)))
+                        .isInstanceOfSatisfying(AppointmentException.class, failure ->
+                                assertThat(failure.error()).isEqualTo("appointment_price_confirmation_required"));
+            }
+        }
+        assertThat(appointmentRepository.insertCount).isZero();
+        assertThat(profileRepository.lookupCount).isZero();
+    }
+
+    @Test
+    void oldAppRetryOfAlreadySavedNewPriceDoesNotInsertAgain() {
+        UUID requestId = UUID.randomUUID();
+        var created = service.createAppointment(patient(), confirmedCreate(requestId, draft()));
+
+        var retried = service.createAppointment(patient(),
+                new AppointmentService.CreateAppointmentCommand(requestId, draft()));
+
+        assertThat(retried.id()).isEqualTo(created.id());
+        assertThat(retried.finalPrice()).isEqualTo(40_000);
+        assertThat(appointmentRepository.insertCount).isEqualTo(1);
+    }
+
+    @Test
+    void newBookingRejectsLegacyCouponsInsteadOfSilentlyDiscounting() {
+        for (String coupon : List.of("FIRST_VISIT", "FAMILY")) {
+            assertThatThrownBy(() -> service.createAppointment(patient(),
+                    confirmedCreate(UUID.randomUUID(),
+                            draftWithOptions(draft(), "INDEPENDENT", "ONE_WAY", coupon))))
+                    .isInstanceOf(AppointmentException.class)
+                    .hasMessage("현재 신규 예약에는 쿠폰을 적용할 수 없습니다.");
+        }
+        assertThat(appointmentRepository.insertCount).isZero();
+    }
+
+    @Test
+    void legacyAppointmentEditKeepsItsOriginalPriceAndCoupon() {
+        appointmentRepository.current = Optional.of(
+                existingAppointment("REQUESTED", 0, null, "CARD", "FAMILY"));
+        var updated = service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(0,
+                        draftWithOptions(draftWithMeetingPlace("별관 2층"),
+                                "INDEPENDENT", "ONE_WAY", "FAMILY")));
+        assertThat(updated.basePrice()).isEqualTo(69_000);
+        assertThat(updated.optionSurchargePrice()).isEqualTo(37_000);
+        assertThat(updated.couponDiscountPrice()).isEqualTo(10_000);
+        assertThat(updated.finalPrice()).isEqualTo(96_000);
+        assertThat(updated.couponCode()).isEqualTo("FAMILY");
+        assertThat(updated.meetingPlace()).isEqualTo("별관 2층");
+    }
+
+    @Test
+    void exactCreateRetryReturnsSavedLegacyPriceInsteadOfNewTariff() {
+        UUID clientRequestId = UUID.randomUUID();
+        var command = confirmedCreate(clientRequestId, draft());
+        service.createAppointment(patient(), command);
+        appointmentRepository.putLegacyClientRequest(clientRequestId,
+                existingAppointment("REQUESTED", 0));
+
+        var retried = service.createAppointment(patient(),
+                new AppointmentService.CreateAppointmentCommand(clientRequestId, draft()));
+
+        assertThat(retried.finalPrice()).isEqualTo(69_000);
+        assertThat(appointmentRepository.insertCount).isEqualTo(1);
+    }
+
+    @Test
+    void legacyCouponCreateRetryRemainsValidAfterNewCouponsAreDisabled() {
+        UUID clientRequestId = UUID.randomUUID();
+        var legacyDraft = draftWithOptions(draft(), "WHEELCHAIR", "ROUND_TRIP", "FAMILY");
+        appointmentRepository.putLegacyClientRequest(clientRequestId,
+                existingAppointment("REQUESTED", 0, null, "CARD", "FAMILY"));
+        // 이전 계약으로 정규화·저장된 지문을 사용한다. 신규 생성은 호출하지 않는다.
+        appointmentRepository.createRequestFingerprints.put(APPOINTMENT_ID,
+                AppointmentCreateFingerprint.from(new AppointmentCreateFingerprint.CreateRequest(
+                        PATIENT_ID, AppUserRole.PATIENT, clientRequestId,
+                        legacyDraft.linkedParticipantName(), "010-9876-5432",
+                        "guardian@example.com", legacyDraft.patientConditionSummary(),
+                        legacyDraft.medicationSummary(), legacyDraft.hospitalName(), legacyDraft.departmentName(),
+                        legacyDraft.hospitalLatitude(), legacyDraft.hospitalLongitude(),
+                        Instant.parse("2026-12-20T01:30:00Z"), legacyDraft.meetingPlace(),
+                        legacyDraft.specialNotes(), "WHEELCHAIR", "ROUND_TRIP", "ANY", "CARD", "FAMILY")));
+
+        var retried = service.createAppointment(patient(),
+                new AppointmentService.CreateAppointmentCommand(clientRequestId, legacyDraft));
+
+        assertThat(retried.finalPrice()).isEqualTo(96_000);
+        assertThat(retried.couponCode()).isEqualTo("FAMILY");
+        assertThat(appointmentRepository.insertCount).isZero();
+    }
+
+    private static AppointmentService.CreateAppointmentCommand confirmedCreate(
+            UUID clientRequestId, AppointmentService.AppointmentDraft draft) {
+        return new AppointmentService.CreateAppointmentCommand(
+                clientRequestId, draft, "mvp-fixed-40000-v1", 40_000);
+    }
+
+    @Test
+    void legacyBankTransferEditKeepsPriceWhileTermChangesAreRejected() {
+        appointmentRepository.current = Optional.of(
+                existingAppointment("REQUESTED", 0, null, "BANK_TRANSFER", "NONE"));
+        var unchangedTerms = draftWithOptions(draftWithPaymentMethod("BANK_TRANSFER"),
+                "INDEPENDENT", "ONE_WAY", "NONE");
+        var updated = service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(0, unchangedTerms));
+        assertThat(updated.finalPrice()).isEqualTo(69_000);
+        assertThat(updated.paymentMethodCode()).isEqualTo("BANK_TRANSFER");
+        assertThatThrownBy(() -> service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(updated.version(),
+                        draftWithOptions(unchangedTerms, "WHEELCHAIR", "ONE_WAY", "NONE"))))
+                .isInstanceOf(AppointmentException.class)
+                .hasMessage("무통장입금 예약의 결제수단·이동 조건·쿠폰·입금액은 생성 후 변경할 수 없습니다.");
+        assertThat(appointmentRepository.current.orElseThrow().finalPrice()).isEqualTo(69_000);
+    }
+
+    @Test
+    void existingAppointmentCannotApplyAnotherCoupon() {
+        appointmentRepository.current = Optional.of(existingAppointment("REQUESTED", 0));
+        assertThatThrownBy(() -> service.updateAppointment(patient(), APPOINTMENT_ID,
+                new AppointmentService.UpdateAppointmentCommand(0,
+                        draftWithOptions(draft(), "INDEPENDENT", "ONE_WAY", "FIRST_VISIT"))))
+                .isInstanceOf(AppointmentException.class)
+                .hasMessage("접수된 예약의 쿠폰은 변경할 수 없습니다.");
     }
 
     @Test
@@ -110,7 +269,7 @@ class DefaultAppointmentServiceTests {
 
         var created = service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(), draft()));
+                confirmedCreate(UUID.randomUUID(), draft()));
 
         assertThat(created.publicCode()).isEqualTo("BD-UNIQUE");
         assertThat(appointmentRepository.insertCount).isEqualTo(2);
@@ -119,7 +278,7 @@ class DefaultAppointmentServiceTests {
     @Test
     void repeatedClientRequestIdReturnsTheExistingAppointment() {
         UUID clientRequestId = UUID.fromString("c521b77c-2655-4604-9883-c92bc4d828f7");
-        var command = new AppointmentService.CreateAppointmentCommand(clientRequestId, draft());
+        var command = confirmedCreate(clientRequestId, draft());
 
         var first = service.createAppointment(patient(), command);
         var second = service.createAppointment(patient(), command);
@@ -131,7 +290,7 @@ class DefaultAppointmentServiceTests {
     @Test
     void originalCreateRetryStillMatchesAfterAppointmentEdit() {
         UUID clientRequestId = UUID.fromString("61328893-eacb-4b0c-a716-8b95fbe253ee");
-        var original = new AppointmentService.CreateAppointmentCommand(clientRequestId, draft());
+        var original = confirmedCreate(clientRequestId, draft());
         var created = service.createAppointment(patient(), original);
 
         service.updateAppointment(
@@ -151,7 +310,7 @@ class DefaultAppointmentServiceTests {
     @Test
     void exactCreateRetryDoesNotResolveChangedProfilesAgain() {
         UUID clientRequestId = UUID.fromString("94ecb4f3-7a6c-4458-af68-8ec78a984d45");
-        var command = new AppointmentService.CreateAppointmentCommand(clientRequestId, draft());
+        var command = confirmedCreate(clientRequestId, draft());
         var created = service.createAppointment(patient(), command);
         int lookupCountAfterCreate = profileRepository.lookupCount;
         profileRepository.add(new AppUserProfile(
@@ -179,7 +338,7 @@ class DefaultAppointmentServiceTests {
     @Test
     void exactCreateRetryAfterAppointmentTimeReturnsExisting() {
         UUID clientRequestId = UUID.fromString("de0e43fb-7333-4f7c-8c05-a72eff342faf");
-        var command = new AppointmentService.CreateAppointmentCommand(clientRequestId, draft());
+        var command = confirmedCreate(clientRequestId, draft());
         var created = service.createAppointment(patient(), command);
         var laterService = new DefaultAppointmentService(
                 appointmentRepository,
@@ -198,7 +357,7 @@ class DefaultAppointmentServiceTests {
         UUID clientRequestId = UUID.fromString("81434b49-5475-4437-80bf-df60269981ef");
         var created = service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(clientRequestId, draft()));
+                confirmedCreate(clientRequestId, draft()));
         AppointmentService.AppointmentDraft editedDraft = draftWithMeetingPlace("별관 2층");
         service.updateAppointment(
                 patient(),
@@ -207,7 +366,7 @@ class DefaultAppointmentServiceTests {
 
         assertThatThrownBy(() -> service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(clientRequestId, editedDraft)))
+                confirmedCreate(clientRequestId, editedDraft)))
                 .isInstanceOf(AppointmentException.class)
                 .hasMessage("같은 clientRequestId를 다른 예약 내용으로 다시 사용할 수 없습니다.");
     }
@@ -221,7 +380,7 @@ class DefaultAppointmentServiceTests {
 
         assertThatThrownBy(() -> service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(clientRequestId, draft())))
+                confirmedCreate(clientRequestId, draft())))
                 .isInstanceOf(AppointmentException.class)
                 .hasMessage("같은 clientRequestId를 다른 예약 내용으로 다시 사용할 수 없습니다.");
     }
@@ -230,7 +389,7 @@ class DefaultAppointmentServiceTests {
     void bankTransferAppointmentStartsInAwaitingDeposit() {
         var created = service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(
+                confirmedCreate(
                         UUID.randomUUID(),
                         draftWithPaymentMethod("BANK_TRANSFER")));
 
@@ -243,11 +402,11 @@ class DefaultAppointmentServiceTests {
         UUID clientRequestId = UUID.fromString("ecda4a53-fc5f-4128-98c6-6030acb19b08");
         service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(clientRequestId, draft()));
+                confirmedCreate(clientRequestId, draft()));
 
         assertThatThrownBy(() -> service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(
+                confirmedCreate(
                         clientRequestId,
                         draftWithPaymentMethod("BANK_TRANSFER"))))
                 .isInstanceOf(AppointmentException.class)
@@ -259,11 +418,11 @@ class DefaultAppointmentServiceTests {
         UUID clientRequestId = UUID.fromString("193833c4-709a-487d-8310-32cab93888ce");
         service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(clientRequestId, draft()));
+                confirmedCreate(clientRequestId, draft()));
 
         assertThatThrownBy(() -> service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(
+                confirmedCreate(
                         clientRequestId,
                         draftWithLinkedGuardian(
                                 "다른 보호자",
@@ -277,7 +436,7 @@ class DefaultAppointmentServiceTests {
     void bankTransferPaymentMethodCannotChangeDuringAppointmentEdit() {
         var created = service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(
+                confirmedCreate(
                         UUID.randomUUID(),
                         draftWithPaymentMethod("BANK_TRANSFER")));
 
@@ -286,7 +445,7 @@ class DefaultAppointmentServiceTests {
                 created.id(),
                 new AppointmentService.UpdateAppointmentCommand(created.version(), draft())))
                 .isInstanceOf(AppointmentException.class)
-                .hasMessage("무통장입금 예약의 결제수단과 입금액은 생성 후 변경할 수 없습니다.");
+                .hasMessage("무통장입금 예약의 결제수단·이동 조건·쿠폰·입금액은 생성 후 변경할 수 없습니다.");
     }
 
     @Test
@@ -396,7 +555,7 @@ class DefaultAppointmentServiceTests {
 
         assertThatThrownBy(() -> service.createAppointment(
                 manager,
-                new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(), draft())))
+                confirmedCreate(UUID.randomUUID(), draft())))
                 .isInstanceOf(AppointmentException.class)
                 .extracting(exception -> ((AppointmentException) exception).error())
                 .isEqualTo("appointment_role_not_supported");
@@ -411,7 +570,7 @@ class DefaultAppointmentServiceTests {
 
         assertThatThrownBy(() -> service.createAppointment(
                 guardian,
-                new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(), draft())))
+                confirmedCreate(UUID.randomUUID(), draft())))
                 .isInstanceOf(AppointmentException.class)
                 .extracting(exception -> ((AppointmentException) exception).error())
                 .isEqualTo("guardian_appointment_creation_not_supported");
@@ -613,7 +772,7 @@ class DefaultAppointmentServiceTests {
 
         assertThatThrownBy(() -> service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(), draft())))
+                confirmedCreate(UUID.randomUUID(), draft())))
                 .isInstanceOf(AppointmentException.class)
                 .extracting(exception -> ((AppointmentException) exception).error())
                 .isEqualTo("appointment_profile_not_ready");
@@ -642,7 +801,7 @@ class DefaultAppointmentServiceTests {
 
         assertThatThrownBy(() -> service.createAppointment(
                 patient(),
-                new AppointmentService.CreateAppointmentCommand(UUID.randomUUID(), pastDraft)))
+                confirmedCreate(UUID.randomUUID(), pastDraft)))
                 .isInstanceOf(AppointmentException.class)
                 .extracting(exception -> ((AppointmentException) exception).error())
                 .isEqualTo("invalid_appointment_request");
@@ -848,7 +1007,17 @@ class DefaultAppointmentServiceTests {
                 "ROUND_TRIP",
                 "ANY",
                 "CARD",
-                "FAMILY");
+                "NONE");
+    }
+
+    private AppointmentService.AppointmentDraft draftWithOptions(
+            AppointmentService.AppointmentDraft source, String mobility, String trip, String coupon) {
+        return new AppointmentService.AppointmentDraft(
+                source.linkedParticipantName(), source.linkedParticipantPhone(), source.linkedParticipantEmail(),
+                source.patientConditionSummary(), source.medicationSummary(), source.hospitalName(),
+                source.departmentName(), source.hospitalLatitude(), source.hospitalLongitude(),
+                source.appointmentAt(), source.meetingPlace(), source.specialNotes(), mobility, trip,
+                source.managerGenderPreferenceCode(), source.paymentMethodCode(), coupon);
     }
 
     private AppointmentService.AppointmentDraft draftWithPaymentMethod(String paymentMethodCode) {
@@ -925,6 +1094,11 @@ class DefaultAppointmentServiceTests {
     }
 
     private AppointmentRecord existingAppointment(String status, long version, UUID managerUserId) {
+        return existingAppointment(status, version, managerUserId, "CARD", "NONE");
+    }
+
+    private AppointmentRecord existingAppointment(
+            String status, long version, UUID managerUserId, String paymentMethod, String coupon) {
         return new AppointmentRecord(
                 APPOINTMENT_ID,
                 "legacy-firestore-id",
@@ -952,11 +1126,11 @@ class DefaultAppointmentServiceTests {
                 "ANY",
                 status,
                 69_000,
-                0,
-                0,
-                69_000,
-                "CARD",
-                "NONE",
+                "FAMILY".equals(coupon) ? 37_000 : 0,
+                "FAMILY".equals(coupon) ? 10_000 : 0,
+                "FAMILY".equals(coupon) ? 96_000 : 69_000,
+                paymentMethod,
+                coupon,
                 "PENDING",
                 "",
                 null,

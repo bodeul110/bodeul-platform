@@ -124,7 +124,7 @@ final class ManagerGuideConsultationBinder {
             ManagerGuideConsultationDraft savedDraft
     ) {
         boolean consultationStep = "CONSULTATION_SUPPORT".equals(
-                model.getCurrentStepCode());
+                model.getPresentationStepCode());
         content.setVisibility(consultationStep ? View.VISIBLE : View.GONE);
         toolbar.setVisibility(consultationStep ? View.VISIBLE : View.GONE);
         if (!consultationStep) {

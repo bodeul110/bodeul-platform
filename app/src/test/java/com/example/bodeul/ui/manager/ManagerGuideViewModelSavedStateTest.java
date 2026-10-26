@@ -14,6 +14,22 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ManagerGuideViewModelSavedStateTest {
+    @Test
+    public void draftRetention_acceptsCanonicalAndLegacyMeaningSteps() {
+        assertTrue(ManagerGuideViewModel.isConsultationDraftStep(
+                "CONSULTATION_SUPPORT"));
+        assertTrue(ManagerGuideViewModel.isConsultationDraftStep(
+                "LEGACY_CORE_CONSULTATION"));
+        assertFalse(ManagerGuideViewModel.isConsultationDraftStep(
+                "LEGACY_CORE_PAYMENT"));
+
+        assertTrue(ManagerGuideViewModel.isPaymentDraftStep(
+                "PAYMENT_EVIDENCE"));
+        assertTrue(ManagerGuideViewModel.isPaymentDraftStep(
+                "LEGACY_CORE_PAYMENT"));
+        assertFalse(ManagerGuideViewModel.isPaymentDraftStep(
+                "LEGACY_CORE_CONSULTATION"));
+    }
 
     @Test
     public void reportDraftSurvivesViewModelRecreationState() {
@@ -92,6 +108,39 @@ public class ManagerGuideViewModelSavedStateTest {
         ManagerGuideViewModel.clearVitalsDraft(state, "session-b");
 
         assertNotNull(ManagerGuideViewModel.restoreVitalsDraft(state, "session-a"));
+    }
+
+    @Test
+    public void paymentDraftSurvivesProcessStateOnlyForItsSession() {
+        SavedStateHandle state = new SavedStateHandle();
+        ManagerGuidePaymentDraft draft = ManagerGuidePaymentDraft.fromInput(
+                "수납 창구에서 보호자 확인 필요",
+                "이전 서버 메모");
+
+        ManagerGuideViewModel.savePaymentDraft(state, "session-a", draft);
+
+        ManagerGuidePaymentDraft restored =
+                ManagerGuideViewModel.restorePaymentDraft(state, "session-a");
+        assertNotNull(restored);
+        assertEquals("수납 창구에서 보호자 확인 필요", restored.note);
+        assertEquals("이전 서버 메모", restored.baseline);
+        assertTrue(restored.hasUnsavedChanges());
+        assertNull(ManagerGuideViewModel.restorePaymentDraft(state, "session-b"));
+    }
+
+    @Test
+    public void paymentDraftClearDoesNotRemoveAnotherSessionsDraft() {
+        SavedStateHandle state = new SavedStateHandle();
+        ManagerGuideViewModel.savePaymentDraft(
+                state,
+                "session-a",
+                ManagerGuidePaymentDraft.fromInput("작성 중", "서버 메모"));
+
+        ManagerGuideViewModel.clearPaymentDraft(state, "session-b");
+        assertNotNull(ManagerGuideViewModel.restorePaymentDraft(state, "session-a"));
+
+        ManagerGuideViewModel.clearPaymentDraft(state, "session-a");
+        assertNull(ManagerGuideViewModel.restorePaymentDraft(state, "session-a"));
     }
 
     @Test

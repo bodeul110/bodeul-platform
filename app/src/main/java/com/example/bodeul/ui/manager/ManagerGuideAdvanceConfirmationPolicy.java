@@ -14,7 +14,8 @@ final class ManagerGuideAdvanceConfirmationPolicy {
             @Nullable String stepCode
     ) {
         return primaryAction == ManagerGuidePrimaryAction.ADVANCE
-                && ManagerGuideStepRegistry.isHospitalRoute(stepCode);
+                && (ManagerGuideStepRegistry.isHospitalRoute(stepCode)
+                        || ManagerGuideStepRegistry.isPharmacyRoute(stepCode));
     }
 
     static boolean canApplyConfirmation(

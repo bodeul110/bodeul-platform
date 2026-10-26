@@ -146,6 +146,14 @@ public class ManagerGuideCoordinatorPolicyTest {
     }
 
     @Test
+    public void externalMapFallbackQuery_usesOnlyTrimmedHospitalName() {
+        assertEquals(
+                "서울대학교병원",
+                ManagerGuideCoordinator.buildExternalMapFallbackQuery("  서울대학교병원  "));
+        assertEquals("", ManagerGuideCoordinator.buildExternalMapFallbackQuery(null));
+    }
+
+    @Test
     public void reportCompletionAction_requiresValidatedLastStepDecision() {
         CompanionSession lastStep = createSession(13);
         lastStep.applyServerGuideProgress(

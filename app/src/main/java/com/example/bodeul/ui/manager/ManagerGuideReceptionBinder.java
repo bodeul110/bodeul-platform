@@ -65,7 +65,8 @@ final class ManagerGuideReceptionBinder {
     }
 
     void bind(ManagerGuideScreenModel model, ManagerDashboard dashboard, boolean mutationInFlight) {
-        boolean receptionStep = "RECEPTION_QUEUE".equals(model.getCurrentStepCode());
+        boolean receptionStep = "RECEPTION_QUEUE".equals(
+                model.getPresentationStepCode());
         receptionContent.setVisibility(receptionStep ? View.VISIBLE : View.GONE);
         receptionToolbar.setVisibility(receptionStep ? View.VISIBLE : View.GONE);
         defaultToolbar.setVisibility(receptionStep ? View.GONE : View.VISIBLE);

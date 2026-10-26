@@ -2104,7 +2104,7 @@ public class MockBodeulRepository implements BodeulRepository {
                 "request-1",
                 "patient-1",
                 "guardian-1",
-                "서울내과병원",
+                "서울대학교병원",
                 "신경과",
                 "2026-04-15 10:30",
                 "본관 1층 안내 데스크",
@@ -2125,29 +2125,29 @@ public class MockBodeulRepository implements BodeulRepository {
                 "session-1",
                 "request-1",
                 "manager-1",
-                2,
+                1,
                 SessionStatus.MEETING,
-                "환자분과 만나 접수를 진행하고 있습니다.",
-                "서울내과병원 본관 1층 안내 데스크 근처입니다.",
+                "환자분과 만남을 준비하고 있습니다.",
+                "서울대학교병원 본관 1층 안내 데스크 근처입니다.",
                 "접수 번호표와 진료 안내를 확인했습니다.",
                 "복용 중인 약이 있습니다.",
                 "",
                 false,
-                37.56650,
-                126.97800,
+                37.579617,
+                126.999016,
                 1760503200000L,
                 false,
                 0L,
                 Arrays.asList(
                         new CompanionLocationHistoryEntry(
-                                37.56591,
-                                126.97795,
-                                "서울내과병원 앞에 도착했습니다.",
+                                37.579250,
+                                126.998750,
+                                "서울대학교병원 앞에 도착했습니다.",
                                 1760502600000L
                         ),
                         new CompanionLocationHistoryEntry(
-                                37.56650,
-                                126.97800,
+                                37.579617,
+                                126.999016,
                                 "본관 1층 안내 데스크로 이동했습니다.",
                                 1760503200000L
                         )
@@ -2163,16 +2163,17 @@ public class MockBodeulRepository implements BodeulRepository {
     private void seedHospitalGuides() {
         hospitalGuides.add(new HospitalGuide(
                 "guide-1",
-                "서울내과병원",
+                "서울대학교병원",
                 "신경과",
                 Arrays.asList(
-                        new GuideStep(1, "환자 접촉", "환자분 도착 여부를 확인하고 보호자에게 출발 상황을 공유합니다."),
-                        new GuideStep(2, "간편 등록", "접수 창구에서 예약 정보와 신분증을 확인합니다."),
-                        new GuideStep(3, "진료 접수", "진료과와 대기 순서를 확인하고 필요한 서류를 제출합니다."),
-                        new GuideStep(4, "진료 완료", "진료 결과와 다음 안내 사항을 메모합니다."),
-                        new GuideStep(5, "수납 처리", "수납 및 검사 예약 여부를 확인합니다."),
-                        new GuideStep(6, "약국 방문", "처방전을 수령하고 약 복용법을 정리합니다."),
-                        new GuideStep(7, "환자 귀가(서비스 종료)", "귀가 동선을 확인하고 보호자에게 최종 상황을 전달합니다.")
+                        // 일반 debug 앱에서도 서버의 7단계와 같은 화면 선택 계약을 사용한다.
+                        new GuideStep("LEGACY_CORE_PATIENT_CONTACT", 1, "환자 접촉", "환자분 도착 여부를 확인하고 보호자에게 출발 상황을 공유합니다."),
+                        new GuideStep("LEGACY_CORE_RECEPTION_PREPARATION", 2, "간편 등록", "접수 창구에서 예약 정보와 신분증을 확인합니다."),
+                        new GuideStep("LEGACY_CORE_RECEPTION", 3, "진료 접수", "진료과와 대기 순서를 확인하고 필요한 서류를 제출합니다."),
+                        new GuideStep("LEGACY_CORE_CONSULTATION", 4, "진료 완료", "진료 결과와 다음 안내 사항을 메모합니다."),
+                        new GuideStep("LEGACY_CORE_PAYMENT", 5, "수납 처리", "수납 및 검사 예약 여부를 확인합니다."),
+                        new GuideStep("LEGACY_CORE_PHARMACY", 6, "약국 방문", "처방전을 수령하고 약 복용법을 정리합니다."),
+                        new GuideStep("LEGACY_CORE_RETURN_AND_CLOSE", 7, "환자 귀가(서비스 종료)", "귀가 동선을 확인하고 보호자에게 최종 상황을 전달합니다.")
                 )
         ));
     }

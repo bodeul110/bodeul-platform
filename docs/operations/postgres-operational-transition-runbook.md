@@ -1,6 +1,6 @@
 # PostgreSQL 운영 전환 런북
 
-기준일: 2026-09-21
+기준일: 2026-09-27
 
 ## 목적
 
@@ -12,13 +12,13 @@
 
 | 범위 | 개발 | production | 남은 작업 |
 | --- | --- | --- | --- |
-| Supabase PostgreSQL | 개발 V23 결제 검증 기록, 소스 V1~V23 | V15 격리 복원은 8월 기록. 9월 21일 일시정지 | 재개 승인, 최신 migration·백업·최소권한·복원 확인 |
-| Spring Core API | Cloud Run preview, WIF·Secret Manager·DB·Kakao 개발 연동 검증 | Artifact Registry·WIF·DB secret 준비 | Kakao 운영 키, 첫 revision, smoke·rollback |
-| 관리자 Next.js | Preview 실연동 검증 기록과 개발 환경 표시 | 운영 환경 표시·Auth 계정 등록까지 확인 | 관리자 최소권한 DB 연결, MFA·세부 역할, 업무 smoke·rollback |
+| Supabase PostgreSQL | Pro 조직, Healthy, V23·실패 0건 | Pro 조직, Healthy, V23·실패 0건, 외부 dump·격리 복원 완료 | 제공자 자동 백업 복구 지점과 실제 서비스 데이터 검증 |
+| Spring Core API | `dev` 기반 Cloud Run preview, health 200·무인증 401 | 운영 revision 배포, health 200·무인증 401, Kakao Secret 등록 | 정상 운영 토큰·환경 교차 거부·Kakao 검색·rollback |
+| 관리자 Next.js | `dev` Preview, 개발 DB·Firebase 경계 | `master` Production, 전용 DB 연결, 최초 개인 `SUPER_ADMIN` MFA 로그인·대시보드 확인 | 업무 smoke·MFA 강제/복구·세부 역할별 거부·rollback |
 | Firebase | `bodeul-dev` Auth·FCM·App Check·Storage | `bodeul-prod-110` 분리와 결제·기본 리소스 준비 | release App Check와 운영 키·도메인 검증 |
 | 보관·파기 | V13, Core 첨부와 Firestore 전환 문서·매니저 증빙 fixture APPLY·cleanup, 최종 dry-run 검증 | migration·역할·복원과 읽기 전용 fixture 상태 검증 | 후속 기획 답변을 반영한 보관 정책·실제 job·고지 대조와 최신 schema 격리 fixture 검증 |
 
-완료 증거는 [Production 인프라 구축 기록](../reports/production-infrastructure-bootstrap-2026-07-17.md), [PostgreSQL 복원 리허설](../reports/postgres-production-backup-restore-rehearsal-2026-07-18.md), [개인정보 자동 파기 구현 기록](../reports/issue-222-data-retention-2026-07-19.md)을 따른다.
+최신 환경별 증거는 [9월 27일 개발·운영 분리 기록](../reports/dev-production-separation-2026-09-27.md)을 따른다. [Production 인프라 구축 기록](../reports/production-infrastructure-bootstrap-2026-07-17.md), [초기 PostgreSQL 복원 리허설](../reports/postgres-production-backup-restore-rehearsal-2026-07-18.md), [개인정보 자동 파기 구현 기록](../reports/issue-222-data-retention-2026-07-19.md)은 해당 시점의 이력이다.
 
 ## 데이터와 요청 경계
 
@@ -40,11 +40,11 @@
 
 ## production 전환 순서
 
-현재 운영 DB는 일시정지 상태이며 이번 문서 갱신에서 재개하지 않았다. 아래는 승인 후의 절차이지 자동 실행 지시가 아니다. 최신 migration 적용·백업은 앱 배포 전에 별도 검증한다.
+9월 27일 운영 DB 재개·V23·격리 복원, 서버 배포와 최초 관리자 로그인까지 완료했다. 아래 순서는 재배포·서비스 전환 시에도 유지할 점검 절차이며, 완료된 기반을 다시 생성하거나 자동으로 운영 데이터를 변경하라는 지시가 아니다.
 
-1. Supabase 조직을 Pro로 전환하고 spend cap, 일일 백업과 외부 주간 dump 경로를 확인한다.
-2. production Firebase가 발급한 token만 신뢰하도록 Supabase Third-Party Auth와 Realtime RLS를 검증한다.
-3. Kakao 운영 REST 키를 Secret Manager에 등록하고 Cloud Run 첫 production revision을 수동 배포한다.
+1. 완료된 Supabase Pro·V23·외부 dump 구성을 기준으로 spend cap과 제공자 일일 백업 복구 지점을 확인한다.
+2. production Firebase만 신뢰하도록 설정한 Third-Party Auth와 Realtime RLS를 실제 서명 token·socket으로 검증한다. SQL 권한 경계 검증은 완료했다.
+3. 운영 Secret과 Cloud Run revision을 확인한다. Kakao REST 키는 승인된 개발·운영 공용 키이며, 별도 Secret 항목을 사용해도 쿼터·폐기 영향은 공유한다.
 4. Core API의 health, Firebase 인증, DB 401·403·200, Kakao 검색과 attachment smoke를 실행한다.
 5. Vercel Production의 Firebase·App Check 값과 관리자 최소권한 DB 연결을 각각 확인한다. 일반 테이블 직접 쓰기는 금지하고 허용된 업무 함수만 실행한다.
 6. 관리자 서버의 인증, 역할 거부, 조회와 감사 이력을 격리 운영 데이터로 검증한다.

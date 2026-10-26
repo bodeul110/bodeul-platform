@@ -1,6 +1,6 @@
 # 비용과 쿼터 모니터링
 
-기준일: 2026-09-21 (요금표·설정 파일 대조, 실제 청구·결제 연결 재조회 아님)
+요금표 기준: 2026-09-21. 환경 상태 반영: 2026-09-27 (실제 청구·budget 수신자 재조회 아님)
 
 이 문서는 개발·production 인프라의 비용과 쿼터 점검 기준이다. 기존 BoDeul 기록의 budget은 알림용(Alerts-only)이며 자동 지출 차단을 확인한 설정이 아니다. Google Cloud의 별도 Spend cap budget과 혼동하지 않는다. 알림 수신자는 원인을 확인하고 대응해야 한다. [Google Cloud budget 문서](https://docs.cloud.google.com/billing/docs/how-to/budgets)
 
@@ -26,7 +26,7 @@
 | Google Cloud/Firebase | production budget 30,000 KRW | 사용량 기준 |
 | 승인 한도 | 세금·환율·소규모 초과 사용 포함 | 150,000 KRW |
 
-정상 운영 계획 범위는 월 100,000~130,000 KRW다. 150,000 KRW는 환율과 일시적 사용량을 감안한 승인 상한이며 자동 차단 장치가 아니다. 유료 전환일은 미정이다. 이전의 2026-11-16은 임시 일정이며 실제 운영 시점·이용 조건·현재 가입 등급을 확인해 결정한다. 도메인은 연 50,000 KRW 이내를 계획값으로 두며 신규 구매 완료를 의미하지 않는다.
+정상 운영 계획 범위는 월 100,000~130,000 KRW다. 150,000 KRW는 환율과 일시적 사용량을 감안한 승인 상한이며 자동 차단 장치가 아니다. Supabase Pro 전환과 개발·운영 DB 가동은 9월 27일 확인했다. Vercel 플랜·좌석과 실제 청구액은 별도 확인한다. 이전의 2026-11-16은 임시 일정이며 결제 실행일이 아니다. 도메인은 연 50,000 KRW 이내를 계획값으로 두며 신규 구매 완료를 의미하지 않는다.
 
 2026-09-21 공개 요금표 기준 Supabase Pro USD 25에 compute credit USD 10을 반영하고 Micro USD 10을 2개 사용하면 약 USD 35/월이다. Vercel Pro 개발자 2석은 약 USD 40/월이다. 추가 사용량·옵션·세금·환율은 별도이며 현재 계정의 실제 청구액이 아니다. [Supabase 요금](https://supabase.com/pricing), [Vercel 요금](https://vercel.com/pricing)
 
@@ -73,6 +73,7 @@ PostgreSQL 연결 수·DB 크기·느린 쿼리, Realtime 연결/메시지, Verc
 
 ## Kakao Local
 
+- 개발·운영이 승인된 같은 REST 키를 사용하므로 쿼터와 키 폐기 영향은 공유한다. Secret Manager 항목 분리를 쿼터 분리로 해석하지 않는다.
 - Kakao Developers에서 Local 키워드 검색의 당일 사용량과 제공량을 확인한다.
 - Core API 배포 또는 장소 검색 부하 검증 직후에는 쿼터와 429 오류를 함께 확인한다.
 - `kakao_local_quota_exceeded`와 Core API 자체 `place_search_rate_limit_exceeded`를 구분한다.

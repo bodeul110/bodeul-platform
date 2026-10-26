@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="booking_main_app_bar_title">동행 예약</string>
+    <string name="booking_main_close">예약 화면 닫기</string>
+    <string name="booking_main_heading">동행이 필요한 병원을\n선택해 주세요.</string>
+    <string name="booking_main_heading_helper">환자님의 편안한 이동을 위해 보들이 함께합니다.</string>
+    <string name="booking_main_step_visit">STEP 01 · 병원과 일정</string>
+    <string name="booking_main_hospital_search">병원 이름 또는 지역 검색</string>
+    <string name="booking_main_hospital_selected_format">%1$s · %2$s</string>
+    <string name="booking_main_hospital_required">병원과 진료과를 선택해 주세요.</string>
+    <string name="booking_main_map_empty_title">병원을 먼저 선택해 주세요</string>
+    <string name="booking_main_map_empty_body">검색 결과에서 병원과 진료과를 선택하면 실제 좌표를 지도에서 확인합니다.</string>
+    <string name="booking_main_map_loading_body">선택한 병원의 위치를 확인하고 있습니다.</string>
+    <string name="booking_main_map_manual_body">직접 입력한 병원에는 확인된 좌표가 없어 지도 미리보기를 표시하지 않습니다.</string>
+    <string name="booking_main_map_error_body">지도 미리보기를 불러오지 못했습니다. 선택한 병원 정보는 예약에 그대로 저장됩니다.</string>
+    <string name="booking_main_visit_datetime_title">방문 일시</string>
+    <string name="booking_main_visit_datetime_action">방문 날짜와 시간 선택</string>
+    <string name="booking_main_visit_date_label">방문 날짜</string>
+    <string name="booking_main_visit_time_label">예약 시간</string>
+    <string name="booking_main_visit_date_empty">날짜 선택</string>
+    <string name="booking_main_visit_time_empty">시간 선택</string>
+    <string name="booking_main_visit_datetime_error">방문 날짜와 시간을 선택해 주세요.</string>
+    <string name="booking_main_quick_selection">빠른 일정 선택</string>
+    <string name="booking_main_meeting_title">만남 장소</string>
+    <string name="booking_main_meeting_helper">병원 안에서 매니저와 만나기 쉬운 위치를 선택해 주세요.</string>
+    <string name="booking_main_step_health">STEP 02 · 건강 정보</string>
+    <string name="booking_main_step_participant">STEP 03 · 연결 대상</string>
+    <string name="booking_main_step_options">STEP 04 · 동행 조건과 결제</string>
+    <string name="booking_main_request_title">전달 요청사항 (선택)</string>
+    <string name="booking_main_request_hint">예: 잘 안 들려하시니 귀 가까이에서 말씀해 주세요.</string>
+    <string name="booking_main_submit_helper">신청 후 배정된 매니저가 연락을 드릴 예정입니다.\n예약 확정 전까지는 비용이 발생하지 않습니다.</string>
+    <string name="booking_main_requester_title">신청자 정보</string>
+    <string name="booking_main_existing_requests_title">최근 예약 내역</string>
+</resources>
