@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/guardianBookingReviewRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/bodeul_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/guardian_booking_title"
+            android:textColor="@color/bodeul_text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/guardian_booking_boundary"
+            android:textColor="@color/bodeul_text_primary"
+            android:textSize="14sp" />
+        <ProgressBar
+            android:id="@+id/progressGuardianBooking"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/textGuardianBookingMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:accessibilityLiveRegion="polite"
+            android:textColor="@color/bodeul_text_primary"
+            android:textSize="16sp" />
+        <LinearLayout
+            android:id="@+id/layoutGuardianBookingDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/textGuardianBookingParticipants"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="14sp" />
+            <TextView
+                android:id="@+id/textGuardianBookingSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:lineSpacingExtra="6dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="16sp" />
+            <TextView
+                android:id="@+id/textGuardianBookingApproval"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/checkGuardianBookingReviewed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:saveEnabled="false"
+            android:text="@string/guardian_booking_reviewed" />
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/checkGuardianBookingAdult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:saveEnabled="false"
+            android:text="@string/guardian_booking_adult_confirmed" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingGrant"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/guardian_booking_grant" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingRevoke"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/guardian_booking_revoke" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingCreate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/guardian_booking_create" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingRetry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/guardian_booking_retry" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingRefresh"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/guardian_booking_refresh" />
+    </LinearLayout>
+</ScrollView>

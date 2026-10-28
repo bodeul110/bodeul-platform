@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_guardian_booking_banner">개발 미리보기 · 합성 요청 · 서버 연결 없음</string>
+    <string name="debug_guardian_booking_label">보호자 예약 승인·접수</string>
+</resources>

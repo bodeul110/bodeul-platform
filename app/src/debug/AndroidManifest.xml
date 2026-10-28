@@ -4,6 +4,11 @@
 
     <application>
         <activity
+            android:name="com.example.bodeul.debug.GuardianBookingPreviewActivity"
+            android:exported="true"
+            android:label="@string/debug_guardian_booking_label"
+            android:theme="@style/Theme.Bodeul" />
+        <activity
             android:name="com.example.bodeul.ui.booking.BookingHealthProfileActivity"
             android:exported="true"
             tools:replace="android:exported" />

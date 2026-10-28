@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guardian_booking_title">보호자 예약 확인</string>
+    <string name="guardian_booking_load_failed">요청을 확인하지 못했습니다. 참여 계정과 연결 상태를 확인한 뒤 다시 불러와 주세요.</string>
+    <string name="guardian_booking_preview_unavailable">예약 내용을 다시 승인할 수 없는 상태입니다. 조회된 기존 승인의 철회만 가능합니다.</string>
+    <string name="guardian_booking_mutation_failed">변경 결과를 확인하지 못했습니다. 다시 불러온 후 확인해 주세요.</string>
+    <string name="guardian_booking_confirmation_required">예약 내용 확인과 성인 환자 본인 확인이 모두 필요합니다.</string>
+    <string name="guardian_booking_granted">예약 생성을 승인했습니다.</string>
+    <string name="guardian_booking_revoked">생성 승인을 철회했습니다. 이미 접수된 예약은 취소되지 않습니다.</string>
+    <string name="guardian_booking_submitted">예약 요청을 접수했습니다.</string>
+    <string name="guardian_booking_create_uncertain">접수 결과를 확인하지 못했습니다. 같은 요청으로 결과를 재확인해 주세요. 새 요청을 만들지 마세요.</string>
+    <string name="guardian_booking_boundary">예약 생성 승인과 정보공유 동의는 별개입니다. 접수 후에도 상세 정보와 리포트는 별도 동의 범위에서만 볼 수 있습니다.</string>
+    <string name="guardian_booking_reviewed">예약 내용 전체와 지정 보호자를 확인했습니다.</string>
+    <string name="guardian_booking_adult_confirmed">의사결정이 가능한 성인 환자 본인입니다.</string>
+    <string name="guardian_booking_grant">이 내용으로 예약 생성 승인</string>
+    <string name="guardian_booking_revoke">생성 승인 철회</string>
+    <string name="guardian_booking_create">승인된 내용으로 예약 접수</string>
+    <string name="guardian_booking_retry">같은 요청으로 접수 결과 확인</string>
+    <string name="guardian_booking_refresh">다시 불러오기</string>
+    <string name="guardian_booking_close">닫기</string>
+    <string name="guardian_booking_active">유효한 생성 승인</string>
+    <string name="guardian_booking_inactive">유효한 생성 승인 없음</string>
+    <string name="guardian_booking_receipt">접수 번호: %1$s</string>
+    <string name="guardian_booking_request_summary">환자: %1$s\n연락처: %2$s\n이메일: %3$s\n병원: %4$s\n진료과: %5$s\n병원 좌표: %6$s\n예약 일시: %7$s\n만남 장소: %8$s\n환자 상태: %9$s\n복약: %10$s\n요청사항: %11$s\n이동 보조: %12$s\n이동 범위: %13$s\n매니저 성별: %14$s\n결제 수단: %15$s\n쿠폰: 없음\n예약 금액: %16$s원</string>
+    <string name="guardian_booking_participants">환자 식별자: %1$s\n보호자 식별자: %2$s\n요청 식별자: %3$s</string>
+    <string name="guardian_booking_approval_info">승인 버전: %1$d\n승인 시각: %2$s\n만료 시각: %3$s\n철회 시각: %4$s</string>
+    <string name="guardian_booking_empty_value">없음</string>
+    <string name="guardian_booking_patient">환자</string>
+    <string name="guardian_booking_guardian">보호자</string>
+    <string name="guardian_booking_independent">독립 보행</string>
+    <string name="guardian_booking_walking_aid">보행 보조</string>
+    <string name="guardian_booking_wheelchair">휠체어</string>
+    <string name="guardian_booking_one_way">편도</string>
+    <string name="guardian_booking_round_trip">왕복</string>
+    <string name="guardian_booking_any_gender">무관</string>
+    <string name="guardian_booking_female">여성</string>
+    <string name="guardian_booking_male">남성</string>
+    <string name="guardian_booking_bank_transfer">무통장입금</string>
+    <string name="guardian_booking_card">카드</string>
+    <string name="guardian_booking_easy_pay">간편 결제</string>
+    <string name="guardian_booking_on_site">현장 결제</string>
+</resources>
