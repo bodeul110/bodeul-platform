@@ -75,6 +75,15 @@ class DefaultGuardianBookingApprovalService implements GuardianBookingApprovalSe
     @Override
     @Transactional(readOnly = true)
     public ApprovalView get(AppUser actor, UUID patientId, UUID guardianId, UUID requestId) {
+        requireEnabled();
+        if (actor != null && actor.role() == AppUserRole.PATIENT && actor.id().equals(patientId)) {
+            requireActivePatient(actor);
+            ApprovalState current = repository.findCurrent(key(patientId, guardianId, requestId));
+            boolean revocationOnly = !hasActiveGuardian(guardianId);
+            // 본인이 남긴 승인에만 예외를 두며, 보호자 상태를 찾는 신규 조회는 허용하지 않는다.
+            if (revocationOnly && current.grant().isEmpty()) throw GuardianBookingException.denied();
+            return view(current, revocationOnly);
+        }
         requireParticipants(actor, patientId, guardianId);
         return view(repository.findCurrent(key(patientId, guardianId, requestId)));
     }
@@ -104,16 +113,8 @@ class DefaultGuardianBookingApprovalService implements GuardianBookingApprovalSe
     @Override
     @Transactional
     public ApprovalView revoke(AppUser patient, UUID guardianId, UUID requestId, long expectedVersion) {
-        requirePatient(patient);
-        requireEnabled();
         // 비활성 보호자라도 환자는 자신의 기존 승인을 철회할 수 있다.
-        AppUser currentPatient = currentUser(patient.id(), AppUserRole.PATIENT);
-        if (!currentPatient.equals(patient)) throw GuardianBookingException.denied();
-        try {
-            if (!accountStatus.isActive(patient.firebaseUid())) throw GuardianBookingException.denied();
-        } catch (FirebaseAccountStatus.UnavailableException exception) {
-            throw GuardianBookingException.unavailable();
-        }
+        requireActivePatient(patient);
         ApprovalState current = repository.lockCurrent(key(patient.id(), guardianId, requestId));
         requireVersion(current, expectedVersion);
         if (current.grant().isEmpty()) throw GuardianBookingException.conflict();
@@ -145,6 +146,28 @@ class DefaultGuardianBookingApprovalService implements GuardianBookingApprovalSe
     private AppUser currentUser(UUID id, AppUserRole role) {
         return users.findById(id).filter(user -> user.role() == role)
                 .orElseThrow(GuardianBookingException::denied);
+    }
+
+    private void requireActivePatient(AppUser patient) {
+        requirePatient(patient);
+        requireEnabled();
+        AppUser currentPatient = currentUser(patient.id(), AppUserRole.PATIENT);
+        if (!currentPatient.equals(patient)) throw GuardianBookingException.denied();
+        try {
+            if (!accountStatus.isActive(patient.firebaseUid())) throw GuardianBookingException.denied();
+        } catch (FirebaseAccountStatus.UnavailableException exception) {
+            throw GuardianBookingException.unavailable();
+        }
+    }
+
+    private boolean hasActiveGuardian(UUID guardianId) {
+        var guardian = users.findById(guardianId).filter(user -> user.role() == AppUserRole.GUARDIAN);
+        if (guardian.isEmpty()) return false;
+        try {
+            return accountStatus.isActive(guardian.get().firebaseUid());
+        } catch (FirebaseAccountStatus.UnavailableException exception) {
+            throw GuardianBookingException.unavailable();
+        }
     }
 
     private void requirePatient(AppUser user) {
@@ -180,11 +203,15 @@ class DefaultGuardianBookingApprovalService implements GuardianBookingApprovalSe
     }
 
     private ApprovalView view(ApprovalState state) {
+        return view(state, false);
+    }
+
+    private ApprovalView view(ApprovalState state, boolean revocationOnly) {
         Instant now = clock.instant();
         return state.grant().map(grant -> new ApprovalView(grant.id(), grant.version(), grant.policyVersion(),
                 grant.grantedAt(), grant.expiresAt(), grant.revokedAt(), grant.revokedAt() == null
                 && !now.isBefore(grant.grantedAt()) && now.isBefore(grant.expiresAt())
-                && POLICY_VERSION.equals(grant.policyVersion())))
-                .orElseGet(() -> new ApprovalView(null, 0, POLICY_VERSION, null, null, null, false));
+                && POLICY_VERSION.equals(grant.policyVersion()), revocationOnly))
+                .orElseGet(() -> new ApprovalView(null, 0, POLICY_VERSION, null, null, null, false, false));
     }
 }

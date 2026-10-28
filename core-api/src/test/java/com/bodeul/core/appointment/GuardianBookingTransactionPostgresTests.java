@@ -2,9 +2,11 @@ package com.bodeul.core.appointment;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -50,6 +52,7 @@ class GuardianBookingTransactionPostgresTests {
     private AppointmentService appointments;
     private TransactionTemplate transaction;
     private AppointmentService.CreateAppointmentCommand command;
+    private final Set<String> inactiveAccounts = new HashSet<>();
 
     @BeforeEach
     void setUp() {
@@ -78,7 +81,7 @@ class GuardianBookingTransactionPostgresTests {
         context.registerBean(JdbcClient.class, () -> JdbcClient.create(runtime));
         context.registerBean(DataSourceTransactionManager.class, () -> manager);
         context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
-        context.registerBean(FirebaseAccountStatus.class, () -> uid -> true);
+        context.registerBean(FirebaseAccountStatus.class, () -> uid -> !inactiveAccounts.contains(uid));
         context.registerBean(AppUserRepository.class, () -> new AppUserRepository() {
             public Optional<AppUser> findByFirebaseUid(String uid) { return Optional.empty(); }
             public Optional<AppUser> findById(UUID id) {
@@ -113,6 +116,29 @@ class GuardianBookingTransactionPostgresTests {
         assertThatThrownBy(() -> appointments.getAppointment(GUARDIAN, receipt.appointmentId())).isInstanceOf(AppointmentException.class);
         assertThat(appointments.getAppointment(PATIENT, receipt.appointmentId()).id()).isEqualTo(receipt.appointmentId());
         assertThatThrownBy(() -> appointments.createAppointment(GUARDIAN, command)).isInstanceOf(AppointmentException.class);
+    }
+
+    @Test
+    void patientCanReloadAndRevokeInactiveGuardiansApprovalWithRuntimeRole() {
+        var grant = grant();
+        inactiveAccounts.add(GUARDIAN.firebaseUid());
+        var recovered = approvals.get(PATIENT, PATIENT.id(), GUARDIAN.id(), command.clientRequestId());
+        assertThat(recovered.grantId()).isEqualTo(grant.grantId());
+        assertThat(recovered.revocationOnly()).isTrue();
+        assertThatThrownBy(() -> service.preview(PATIENT, GUARDIAN.id(), command)).isInstanceOf(GuardianBookingException.class);
+        assertThatThrownBy(() -> service.grant(PATIENT, GUARDIAN.id(), command, 1, true)).isInstanceOf(GuardianBookingException.class);
+        assertThatThrownBy(() -> create(grant)).isInstanceOf(GuardianBookingException.class);
+
+        var revoked = approvals.revoke(PATIENT, GUARDIAN.id(), command.clientRequestId(), recovered.version());
+        assertThat(revoked.version()).isEqualTo(2);
+        assertThat(revoked.active()).isFalse();
+        var reloaded = approvals.get(PATIENT, PATIENT.id(), GUARDIAN.id(), command.clientRequestId());
+        assertThat(reloaded.revocationOnly()).isTrue();
+        assertThat(reloaded.revokedAt()).isNotNull();
+        assertThat(reloaded.active()).isFalse();
+        assertThat(approvals.revoke(PATIENT, GUARDIAN.id(), command.clientRequestId(), 2).version()).isEqualTo(2);
+        assertThat(eventCount()).isEqualTo(2);
+        assertThat(bookingCount()).isZero();
     }
 
     @Test

@@ -4,6 +4,7 @@
 
 ## 최신 점검
 
+- [비활성 보호자의 기존 예약 승인 조회·철회 검증 (2026-10-28)](issue-419-revocation-recovery-2026-10-28.md)
 - [보호자 예약 Android 승인 연결 검증 (2026-10-28)](issue-419-android-approval-2026-10-28.md)
 - [보호자 예약 승인 API·트랜잭션 검증 (2026-09-29)](issue-419-booking-api-2026-09-29.md)
 - [보호자 예약 승인 저장·경합 검증 (2026-09-29)](issue-419-booking-approval-storage-2026-09-29.md)

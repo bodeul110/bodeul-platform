@@ -75,7 +75,19 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
 
     static Review loadRequest(GuardianBookingRequest request, Sender sender) throws Exception {
         boolean patient = identify(request, sender);
-        GuardianBookingApproval approval = parseApproval(sender.send("GET", statusPath(request), null));
+        JSONObject status = sender.send("GET", statusPath(request), null);
+        GuardianBookingApproval approval = parseApproval(status);
+        if (status.has("revocationOnly")) {
+            Object revocationOnly = status.get("revocationOnly");
+            if (!(revocationOnly instanceof Boolean)) throw new JSONException("예약 승인 조회 모드가 올바르지 않습니다.");
+            if ((Boolean) revocationOnly) {
+                if (!patient || approval.getGrantId() == null) {
+                    throw new JSONException("기존 환자 승인만 철회 모드로 조회할 수 있습니다.");
+                }
+                // 서버가 허용한 기존 승인만 표시하고, 비활성 보호자의 미리보기·재승인은 열지 않는다.
+                return new Review(request, approval, true, false);
+            }
+        }
         GuardianBookingRequest normalized = request;
         if (patient) {
             try {
