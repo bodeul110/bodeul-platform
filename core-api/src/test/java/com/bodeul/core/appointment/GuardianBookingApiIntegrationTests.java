@@ -51,10 +51,11 @@ class GuardianBookingApiIntegrationTests {
     @Autowired private ObjectMapper mapper;
     @Autowired private GuardianBookingService service;
     @Autowired private GuardianBookingApprovalService approvals;
+    @Autowired private GuardianBookingDraftService drafts;
     @Autowired private Environment environment;
 
     @BeforeEach
-    void resetMocks() { reset(service, approvals); }
+    void resetMocks() { reset(service, approvals, drafts); }
 
     @Test
     void featureFlagIsOffByDefault() {
@@ -69,7 +70,79 @@ class GuardianBookingApiIntegrationTests {
                     .andExpect(status().isUnauthorized());
         }
         mvc.perform(get(metadataPath())).andExpect(status().isUnauthorized());
-        verifyNoInteractions(service, approvals);
+        mvc.perform(get(BASE + "/drafts")).andExpect(status().isUnauthorized());
+        mvc.perform(get(draftPath())).andExpect(status().isUnauthorized());
+        for (String path : new String[]{BASE + "/drafts", draftPath() + "/approvals", draftPath() + "/create"}) {
+            mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(body().toString()))
+                    .andExpect(status().isUnauthorized());
+        }
+        verifyNoInteractions(service, approvals, drafts);
+    }
+
+    @Test
+    void draftSubmissionAndRetrievalUsePrincipalAndNoStore() throws Exception {
+        var summary = new GuardianBookingDraftRepository.DraftSummary(PATIENT.id(), GUARDIAN.id(), REQUEST,
+                Instant.parse("2026-10-28T00:00:00Z"), Instant.parse("2026-10-29T00:00:00Z"));
+        when(drafts.submit(eq(GUARDIAN), eq(PATIENT.id()), any())).thenReturn(summary);
+        when(drafts.list(PATIENT)).thenReturn(java.util.List.of(summary));
+        var display = new GuardianBookingService.ParticipantDisplay("테스트", "***-****-1234");
+        when(drafts.get(PATIENT, GUARDIAN.id(), REQUEST)).thenReturn(new GuardianBookingDraftService.DraftView(
+                summary, GuardianBookingTestFixtures.command(REQUEST, summary.expiresAt()), display, display));
+        mvc.perform(post(BASE + "/drafts").header("Authorization", "Bearer guardian")
+                        .contentType(MediaType.APPLICATION_JSON).content(body().put("guardianUserId", UUID.randomUUID().toString()).toString()))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.guardianUserId").value(GUARDIAN.id().toString()))
+                .andExpect(jsonPath("$.appointment").doesNotExist());
+        mvc.perform(get(BASE + "/drafts").header("Authorization", "Bearer patient"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].clientRequestId").value(REQUEST.toString()))
+                .andExpect(jsonPath("$[0].appointment").doesNotExist());
+        mvc.perform(get(draftPath()).header("Authorization", "Bearer patient"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.guardian.maskedPhone").value("***-****-1234"))
+                .andExpect(jsonPath("$.guardian.email").doesNotExist())
+                .andExpect(jsonPath("$.guardian.phone").doesNotExist());
+        verify(drafts).submit(eq(GUARDIAN), eq(PATIENT.id()), any());
+    }
+
+    @Test
+    void storedActionsAcceptOnlyReferenceVersionAndConsentNotReplacementBody() throws Exception {
+        when(drafts.grant(PATIENT, GUARDIAN.id(), REQUEST, 0, true)).thenReturn(view());
+        when(drafts.create(GUARDIAN, GUARDIAN.id(), REQUEST, GRANT, 1))
+                .thenReturn(new GuardianBookingService.Receipt(UUID.randomUUID(), "TEST"));
+        mvc.perform(post(draftPath() + "/approvals").header("Authorization", "Bearer patient")
+                        .contentType(MediaType.APPLICATION_JSON).content(body().toString()))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"));
+        String json = mvc.perform(post(draftPath() + "/create").header("Authorization", "Bearer guardian")
+                        .contentType(MediaType.APPLICATION_JSON).content(body().toString()))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(mapper.readTree(json).size()).isEqualTo(2);
+        verify(drafts).grant(PATIENT, GUARDIAN.id(), REQUEST, 0, true);
+        verify(drafts).create(GUARDIAN, GUARDIAN.id(), REQUEST, GRANT, 1);
+        verifyNoInteractions(service);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{\"expectedVersion\":\"1\",\"adultPatientConfirmed\":true}",
+            "{\"expectedVersion\":1,\"adultPatientConfirmed\":\"true\"}", "null"})
+    void storedApprovalInputsAreStrict(String body) throws Exception {
+        mvc.perform(post(draftPath() + "/approvals").header("Authorization", "Bearer patient")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest()).andExpect(header().string("Cache-Control", "no-store"));
+        verifyNoInteractions(drafts);
+    }
+
+    @Test
+    void unavailableOrExpiredDraftHasSanitizedNoStoreResponse() throws Exception {
+        when(drafts.get(PATIENT, GUARDIAN.id(), REQUEST)).thenThrow(GuardianBookingException.draftNotFound())
+                .thenThrow(new DataAccessResourceFailureException("secret original"));
+        for (int code : new int[]{404, 503}) {
+            String json = mvc.perform(get(draftPath()).header("Authorization", "Bearer patient"))
+                    .andExpect(status().is(code)).andExpect(header().string("Cache-Control", "no-store"))
+                    .andReturn().getResponse().getContentAsString();
+            assertThat(json).doesNotContain("secret original");
+        }
     }
 
     @Test
@@ -200,6 +273,7 @@ class GuardianBookingApiIntegrationTests {
     private String metadataPath() {
         return BASE + "/patients/" + PATIENT.id() + "/guardians/" + GUARDIAN.id() + "/requests/" + REQUEST;
     }
+    private String draftPath() { return BASE + "/drafts/guardians/" + GUARDIAN.id() + "/requests/" + REQUEST; }
     private ApprovalView view() { return new ApprovalView(GRANT, 1, "adult-patient-guardian-booking-v1", null, null, null, true, false); }
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -211,5 +285,6 @@ class GuardianBookingApiIntegrationTests {
         }
         @Bean GuardianBookingService bookingService() { return mock(GuardianBookingService.class); }
         @Bean GuardianBookingApprovalService bookingApprovals() { return mock(GuardianBookingApprovalService.class); }
+        @Bean GuardianBookingDraftService bookingDrafts() { return mock(GuardianBookingDraftService.class); }
     }
 }

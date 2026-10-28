@@ -65,6 +65,31 @@ class GuardianBookingServiceTests {
     }
 
     @Test
+    void draftReviewUsesProfilesAndOnlyExposesMaskedCounterpartDisplay() {
+        var review = service.reviewDraft(GUARDIAN, PATIENT.id(), GUARDIAN.id(), command);
+        assertThat(review.appointment().draft().linkedParticipantPhone()).isEqualTo("010-1234-5678");
+        assertThat(review.patient()).isEqualTo(new GuardianBookingService.ParticipantDisplay("테스트 환자", "***-****-5678"));
+        assertThat(review.guardian()).isEqualTo(new GuardianBookingService.ParticipantDisplay("테스트 보호자", "***-****-6666"));
+        verify(approvals).requireParticipants(GUARDIAN, PATIENT.id(), GUARDIAN.id());
+        verifyNoInteractions(appointments);
+        when(profiles.findById(PATIENT.id())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.reviewDraft(GUARDIAN, PATIENT.id(), GUARDIAN.id(), command))
+                .isInstanceOf(GuardianBookingException.class);
+    }
+
+    @Test
+    void receiptRecoveryRechecksParticipantsAndReturnsOnlyMinimalReceipt() {
+        var record = record();
+        when(appointments.findByClientRequestId(GUARDIAN.id(), REQUEST)).thenReturn(Optional.of(record));
+        assertThat(service.receiptForRequest(GUARDIAN, REQUEST)).contains(new GuardianBookingService.Receipt(record.id(), "TEST0001"));
+        verify(approvals).requireParticipants(GUARDIAN, PATIENT.id(), GUARDIAN.id());
+        doThrow(GuardianBookingException.denied()).when(approvals).requireParticipants(GUARDIAN, PATIENT.id(), GUARDIAN.id());
+        assertThatThrownBy(() -> service.receiptForRequest(GUARDIAN, REQUEST)).isInstanceOf(GuardianBookingException.class);
+        assertThatThrownBy(() -> service.receiptForRequest(PATIENT, REQUEST)).isInstanceOf(GuardianBookingException.class);
+        verify(appointments, never()).insert(any(), anyString(), anyString());
+    }
+
+    @Test
     void approvalDenialNeverInsertsBooking() {
         doThrow(GuardianBookingException.conflict()).when(approvals).lockForCreation(any(), any(), any(), any(), anyLong(), anyString());
         assertThatThrownBy(() -> service.create(GUARDIAN, PATIENT.id(), GRANT, 1, command)).isInstanceOf(GuardianBookingException.class);

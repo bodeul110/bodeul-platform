@@ -97,6 +97,37 @@ class JdbcAccountDeletionImpactRepositoryTests {
     }
 
     @Test
+    void missingDraftTableIsUnknownInsteadOfZero() {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Boolean.class))).thenReturn(false);
+        assertThat(repository.inspectBookingDrafts(USER_ID)).isEmpty();
+        verify(jdbcTemplate, never()).queryForObject(anyString(), any(MapSqlParameterSource.class), any(RowMapper.class));
+    }
+
+    @Test
+    void draftCountsIncludeExpiredOriginalsUntilPhysicalPurge() throws Exception {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Boolean.class))).thenReturn(true);
+        ResultSet row = mock(ResultSet.class);
+        when(row.getObject("draft_count", Long.class)).thenReturn(3L);
+        when(row.getObject("original_count", Long.class)).thenReturn(2L);
+        when(row.getObject("active_draft_count", Long.class)).thenReturn(1L);
+        stubQuery(row);
+        assertThat(repository.inspectBookingDrafts(USER_ID)).contains(new AccountDeletionImpactRepository.BookingDraftImpact(3, 2, 1));
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MapSqlParameterSource> parameters = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbcTemplate).queryForObject(sql.capture(), parameters.capture(), any(RowMapper.class));
+        assertThat(sql.getValue()).contains("patient_user_id = :userId or guardian_user_id = :userId", "expires_at > now()",
+                "count(*) filter (where appointment_body is not null)");
+        assertThat(parameters.getValue().getValue("userId")).isEqualTo(USER_ID);
+    }
+
+    @Test
+    void draftNullCountFailsClosed() throws Exception {
+        when(jdbcTemplate.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Boolean.class))).thenReturn(true);
+        stubQuery(mock(ResultSet.class));
+        assertThatThrownBy(() -> repository.inspectBookingDrafts(USER_ID)).isInstanceOf(DataRetrievalFailureException.class);
+    }
+
+    @Test
     void inspectRejectsNullCountInsteadOfTreatingItAsZero() throws Exception {
         ResultSet resultSet = mock(ResultSet.class);
         when(resultSet.getObject("profile_count", Long.class)).thenReturn(null);

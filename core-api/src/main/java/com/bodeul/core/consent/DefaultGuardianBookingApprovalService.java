@@ -3,7 +3,14 @@ package com.bodeul.core.consent;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import com.bodeul.core.auth.AppUserRepository;
 import com.bodeul.core.auth.AppUserRepository.AppUser;
@@ -15,9 +22,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Profile("database")
@@ -53,18 +63,47 @@ class DefaultGuardianBookingApprovalService implements GuardianBookingApprovalSe
 
     @Override
     public void requireParticipants(AppUser actor, UUID patientId, UUID guardianId) {
+        requireParticipants(actor, patientId, guardianId, users::findById, accountStatus::isActive);
+    }
+
+    @Override
+    public Set<ParticipantPair> eligibleParticipants(AppUser actor, Collection<ParticipantPair> participants) {
+        requireEnabled();
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalTransactionStateException("목록 참여자는 DB 트랜잭션 밖에서 확인해야 합니다.");
+        }
+        // 중복 초안·공유 참여자를 요청 안에서만 재사용한다. 비활성·누락 결과도 중복 조회하지 않는다.
+        var currentUsers = new HashMap<UUID, Optional<AppUser>>();
+        var activeAccounts = new HashMap<String, Boolean>();
+        Set<ParticipantPair> eligible = new HashSet<>();
+        for (ParticipantPair pair : new LinkedHashSet<>(participants)) {
+            try {
+                requireParticipants(actor, pair.patientId(), pair.guardianId(),
+                        id -> currentUsers.computeIfAbsent(id, users::findById),
+                        uid -> activeAccounts.computeIfAbsent(uid, accountStatus::isActive));
+                eligible.add(pair);
+            } catch (GuardianBookingException exception) {
+                if (exception.status() != HttpStatus.FORBIDDEN) throw exception;
+            }
+        }
+        return Set.copyOf(eligible);
+    }
+
+    private void requireParticipants(AppUser actor, UUID patientId, UUID guardianId,
+            Function<UUID, Optional<AppUser>> currentUsers, Function<String, Boolean> activeAccounts) {
         requireEnabled();
         if (actor == null || patientId == null || guardianId == null || patientId.equals(guardianId)
                 || !(actor.role() == AppUserRole.PATIENT && actor.id().equals(patientId)
                 || actor.role() == AppUserRole.GUARDIAN && actor.id().equals(guardianId))) {
             throw GuardianBookingException.denied();
         }
-        AppUser patient = currentUser(patientId, AppUserRole.PATIENT);
-        AppUser guardian = currentUser(guardianId, AppUserRole.GUARDIAN);
+        AppUser patient = currentUser(patientId, AppUserRole.PATIENT, currentUsers);
+        AppUser guardian = currentUser(guardianId, AppUserRole.GUARDIAN, currentUsers);
         AppUser currentActor = actor.role() == AppUserRole.PATIENT ? patient : guardian;
         if (!currentActor.equals(actor)) throw GuardianBookingException.denied();
         try {
-            if (!accountStatus.isActive(patient.firebaseUid()) || !accountStatus.isActive(guardian.firebaseUid())) {
+            if (!activeAccounts.apply(patient.firebaseUid()) || !activeAccounts.apply(guardian.firebaseUid())) {
                 throw GuardianBookingException.denied();
             }
         } catch (FirebaseAccountStatus.UnavailableException exception) {
@@ -144,7 +183,11 @@ class DefaultGuardianBookingApprovalService implements GuardianBookingApprovalSe
     }
 
     private AppUser currentUser(UUID id, AppUserRole role) {
-        return users.findById(id).filter(user -> user.role() == role)
+        return currentUser(id, role, users::findById);
+    }
+
+    private AppUser currentUser(UUID id, AppUserRole role, Function<UUID, Optional<AppUser>> currentUsers) {
+        return currentUsers.apply(id).filter(user -> user.role() == role)
                 .orElseThrow(GuardianBookingException::denied);
     }
 

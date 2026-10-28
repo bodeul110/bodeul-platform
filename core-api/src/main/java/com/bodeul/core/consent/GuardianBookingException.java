@@ -36,6 +36,21 @@ public final class GuardianBookingException extends RuntimeException {
                 "예약 승인 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
 
+    public static GuardianBookingException draftNotFound() {
+        return new GuardianBookingException(HttpStatus.NOT_FOUND, "guardian_booking_draft_not_found",
+                "확인할 수 있는 예약 요청이 없습니다. 만료 여부와 요청 계정을 확인해 주세요.");
+    }
+
+    public static GuardianBookingException draftConflict() {
+        return new GuardianBookingException(HttpStatus.CONFLICT, "guardian_booking_draft_conflict",
+                "이미 사용한 예약 요청 ID입니다. 내용을 변경하려면 새 요청으로 보내 주세요.");
+    }
+
+    public static GuardianBookingException draftLimitExceeded() {
+        return new GuardianBookingException(HttpStatus.TOO_MANY_REQUESTS, "guardian_booking_draft_limit",
+                "진행 중인 예약 요청이 많습니다. 기존 요청을 확인하거나 만료 후 다시 시도해 주세요.");
+    }
+
     public HttpStatus status() { return status; }
     public String error() { return error; }
 }

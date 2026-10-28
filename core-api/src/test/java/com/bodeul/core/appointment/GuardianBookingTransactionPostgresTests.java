@@ -2,6 +2,7 @@ package com.bodeul.core.appointment;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.*;
@@ -49,10 +51,13 @@ class GuardianBookingTransactionPostgresTests {
     private AnnotationConfigApplicationContext context;
     private GuardianBookingService service;
     private GuardianBookingApprovalService approvals;
+    private GuardianBookingDraftService drafts;
     private AppointmentService appointments;
     private TransactionTemplate transaction;
     private AppointmentService.CreateAppointmentCommand command;
     private final Set<String> inactiveAccounts = new HashSet<>();
+    private final Map<String, Integer> listAccountLookups = new HashMap<>();
+    private boolean checkingListAccounts;
 
     @BeforeEach
     void setUp() {
@@ -81,7 +86,15 @@ class GuardianBookingTransactionPostgresTests {
         context.registerBean(JdbcClient.class, () -> JdbcClient.create(runtime));
         context.registerBean(DataSourceTransactionManager.class, () -> manager);
         context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
-        context.registerBean(FirebaseAccountStatus.class, () -> uid -> !inactiveAccounts.contains(uid));
+        context.registerBean(FirebaseAccountStatus.class, () -> uid -> {
+            if (checkingListAccounts) {
+                assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+                assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isFalse();
+                assertThat(TransactionSynchronizationManager.hasResource(runtime)).isFalse();
+                listAccountLookups.merge(uid, 1, Integer::sum);
+            }
+            return !inactiveAccounts.contains(uid);
+        });
         context.registerBean(AppUserRepository.class, () -> new AppUserRepository() {
             public Optional<AppUser> findByFirebaseUid(String uid) { return Optional.empty(); }
             public Optional<AppUser> findById(UUID id) {
@@ -92,10 +105,12 @@ class GuardianBookingTransactionPostgresTests {
         });
         context.register(GuardianBookingPostgresConfiguration.class, BookingInventoryPostgresConfiguration.class,
                 GuardianBookingService.class, JdbcAppointmentRepository.class, JdbcAppUserProfileRepository.class,
-                AppointmentPublicCodeGenerator.class, DefaultAppointmentService.class);
+                AppointmentPublicCodeGenerator.class, DefaultAppointmentService.class,
+                GuardianBookingDraftService.class, JdbcGuardianBookingDraftRepository.class);
         context.refresh();
         service = context.getBean(GuardianBookingService.class);
         approvals = context.getBean(GuardianBookingApprovalService.class);
+        drafts = context.getBean(GuardianBookingDraftService.class);
         appointments = context.getBean(AppointmentService.class);
         command = GuardianBookingTestFixtures.command(UUID.randomUUID(), Instant.now().plusSeconds(172800));
     }
@@ -116,6 +131,200 @@ class GuardianBookingTransactionPostgresTests {
         assertThatThrownBy(() -> appointments.getAppointment(GUARDIAN, receipt.appointmentId())).isInstanceOf(AppointmentException.class);
         assertThat(appointments.getAppointment(PATIENT, receipt.appointmentId()).id()).isEqualTo(receipt.appointmentId());
         assertThatThrownBy(() -> appointments.createAppointment(GUARDIAN, command)).isInstanceOf(AppointmentException.class);
+    }
+
+    @Test
+    void storedDraftFlowsThroughApprovalAndCreationWithoutClientResubmittingOriginal() {
+        var submitted = drafts.submit(GUARDIAN, PATIENT.id(), command);
+        var view = drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId());
+        assertThat(view.request()).isEqualTo(submitted);
+        assertThat(view.appointment().draft().linkedParticipantPhone()).isEqualTo("010-1234-5678");
+        assertThat(view.guardian().maskedPhone()).isEqualTo("***-****-6666");
+        assertThat(drafts.list(PATIENT)).containsExactly(submitted);
+        assertThat(drafts.list(GUARDIAN)).containsExactly(submitted);
+        var grant = drafts.grant(PATIENT, GUARDIAN.id(), command.clientRequestId(), 0, true);
+        var receipt = drafts.create(GUARDIAN, GUARDIAN.id(), command.clientRequestId(), grant.grantId(), grant.version());
+        assertThat(drafts.create(GUARDIAN, GUARDIAN.id(), command.clientRequestId(), null, -1)).isEqualTo(receipt);
+        assertThat(bookingCount()).isEqualTo(1);
+        assertThat(owner.queryForObject("select count(*) from bodeul.guardian_sharing_consents where appointment_request_id = ?",
+                Integer.class, receipt.appointmentId())).isZero();
+        assertThatThrownBy(() -> appointments.getAppointment(GUARDIAN, receipt.appointmentId())).isInstanceOf(AppointmentException.class);
+        assertThat(BookingInventoryPostgresConfiguration.completeCounts(context, PATIENT.id(), PATIENT.firebaseUid()))
+                .containsEntry("guardianBookingDrafts", 1L).containsEntry("activeGuardianBookingDrafts", 1L);
+        assertThat(BookingInventoryPostgresConfiguration.completeCounts(context, GUARDIAN.id(), GUARDIAN.firebaseUid()))
+                .containsEntry("guardianBookingDrafts", 1L);
+    }
+
+    @Test
+    void draftOriginalCannotBeReadByUnrelatedOrInactiveAccounts() {
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        var other = new AppUser(UUID.randomUUID(), "other", AppUserRole.PATIENT);
+        assertThatThrownBy(() -> drafts.get(other, GUARDIAN.id(), command.clientRequestId()))
+                .isInstanceOfSatisfying(GuardianBookingException.class, error -> assertThat(error.status().value()).isEqualTo(404));
+        assertThat(drafts.list(other)).isEmpty();
+        inactiveAccounts.add(GUARDIAN.firebaseUid());
+        assertThatThrownBy(() -> drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId())).isInstanceOf(GuardianBookingException.class);
+        assertThat(drafts.list(PATIENT)).isEmpty();
+        assertThatThrownBy(() -> drafts.grant(PATIENT, GUARDIAN.id(), command.clientRequestId(), 0, true)).isInstanceOf(GuardianBookingException.class);
+        assertThat(eventCount()).isZero();
+    }
+
+    @Test
+    void draftListChecksEachFirebaseUidOnceWithoutHoldingDatabaseTransaction() {
+        for (int i = 0; i < 20; i++) {
+            drafts.submit(GUARDIAN, PATIENT.id(), GuardianBookingTestFixtures.command(UUID.randomUUID(),
+                    Instant.now().plusSeconds(172800)));
+        }
+        checkingListAccounts = true;
+        for (AppUser actor : java.util.List.of(PATIENT, GUARDIAN)) {
+            listAccountLookups.clear();
+            assertThat(drafts.list(actor)).hasSize(20);
+            assertThat(listAccountLookups).containsExactlyInAnyOrderEntriesOf(
+                    Map.of(PATIENT.firebaseUid(), 1, GUARDIAN.firebaseUid(), 1));
+        }
+        inactiveAccounts.add(GUARDIAN.firebaseUid());
+        listAccountLookups.clear();
+        assertThat(drafts.list(PATIENT)).isEmpty();
+        assertThat(listAccountLookups).containsExactlyInAnyOrderEntriesOf(
+                Map.of(PATIENT.firebaseUid(), 1, GUARDIAN.firebaseUid(), 1));
+    }
+
+    @Test
+    void draftListRejectsAmbientTransactionsBeforeAnyExternalAccountLookup() {
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        checkingListAccounts = true;
+        assertThatThrownBy(() -> transaction.execute(status -> drafts.list(PATIENT)))
+                .isInstanceOf(IllegalTransactionStateException.class);
+        assertThatThrownBy(() -> transaction.execute(status -> approvals.eligibleParticipants(PATIENT,
+                Set.of(new GuardianBookingApprovalService.ParticipantPair(PATIENT.id(), GUARDIAN.id())))))
+                .isInstanceOf(IllegalTransactionStateException.class);
+        assertThat(listAccountLookups).isEmpty();
+    }
+
+    @Test
+    void concurrentIdenticalDraftSubmissionsKeepOneOriginalAndOneExpiry() throws Exception {
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> { await(start); return drafts.submit(GUARDIAN, PATIENT.id(), command); });
+            var second = executor.submit(() -> { await(start); return drafts.submit(GUARDIAN, PATIENT.id(), command); });
+            start.countDown();
+            assertThat(first.get(15, TimeUnit.SECONDS)).isEqualTo(second.get(15, TimeUnit.SECONDS));
+        }
+        assertThat(owner.queryForObject("select count(*) from bodeul.guardian_booking_drafts where guardian_user_id = ?",
+                Integer.class, GUARDIAN.id())).isEqualTo(1);
+        var changed = new AppointmentService.CreateAppointmentCommand(command.clientRequestId(),
+                GuardianBookingTestFixtures.draft(Instant.now().plusSeconds(172800), "변경 병원", "ON_SITE"),
+                AppointmentPricePolicy.VERSION, 40000);
+        assertThatThrownBy(() -> drafts.submit(GUARDIAN, PATIENT.id(), changed))
+                .isInstanceOfSatisfying(GuardianBookingException.class, error -> assertThat(error.error()).isEqualTo("guardian_booking_draft_conflict"));
+        assertThat(drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId()).appointment().draft().hospitalName()).isEqualTo("검증 병원");
+    }
+
+    @Test
+    void concurrentDraftSubmissionsCannotExceedGuardianQuota() throws Exception {
+        for (int index = 0; index < 19; index++) {
+            drafts.submit(GUARDIAN, PATIENT.id(), GuardianBookingTestFixtures.command(UUID.randomUUID(), Instant.now().plusSeconds(172800)));
+        }
+        var start = new CountDownLatch(1);
+        java.util.concurrent.Callable<Boolean> submit = () -> {
+            await(start);
+            try {
+                drafts.submit(GUARDIAN, PATIENT.id(), GuardianBookingTestFixtures.command(UUID.randomUUID(), Instant.now().plusSeconds(172800)));
+                return true;
+            } catch (GuardianBookingException exception) {
+                assertThat(exception.status().value()).isEqualTo(429);
+                return false;
+            }
+        };
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(submit);
+            var second = executor.submit(submit);
+            start.countDown();
+            assertThat(first.get(15, TimeUnit.SECONDS)).isNotEqualTo(second.get(15, TimeUnit.SECONDS));
+        }
+        assertThat(owner.queryForObject("select count(*) from bodeul.guardian_booking_drafts where guardian_user_id = ?",
+                Integer.class, GUARDIAN.id())).isEqualTo(20);
+    }
+
+    @Test
+    void expiredDraftPurgePreservesActiveOriginalApprovalAndReceiptRecovery() {
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        var grant = drafts.grant(PATIENT, GUARDIAN.id(), command.clientRequestId(), 0, true);
+        var receipt = drafts.create(GUARDIAN, GUARDIAN.id(), command.clientRequestId(), grant.grantId(), grant.version());
+        owner.update("""
+                update bodeul.guardian_booking_drafts set created_at = now() - interval '25 hours',
+                    expires_at = now() - interval '1 hour' where guardian_user_id = ?
+                """, GUARDIAN.id());
+        var active = drafts.submit(GUARDIAN, PATIENT.id(), GuardianBookingTestFixtures.command(UUID.randomUUID(), Instant.now().plusSeconds(172800)));
+        assertThatThrownBy(() -> drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId()))
+                .isInstanceOfSatisfying(GuardianBookingException.class, error -> assertThat(error.status().value()).isEqualTo(404));
+        var retention = new JdbcTemplate(dataSource("bodeul_retention_runtime"));
+        assertThat(retention.queryForObject("select bodeul.preview_expired_guardian_booking_drafts(now() + interval '1 year')", Long.class)).isEqualTo(1);
+        assertThat(owner.queryForObject("select count(*) from bodeul.guardian_booking_drafts where guardian_user_id = ?",
+                Integer.class, GUARDIAN.id())).isEqualTo(2);
+        assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now() + interval '1 year', 1)", Long.class)).isEqualTo(1);
+        assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now(), 500)", Long.class)).isZero();
+        assertThat(owner.queryForObject("select appointment_body is null and purged_at is not null from bodeul.guardian_booking_drafts where guardian_user_id = ? and client_request_id = ?",
+                Boolean.class, GUARDIAN.id(), command.clientRequestId())).isTrue();
+        assertThat(drafts.list(PATIENT)).containsExactly(active);
+        assertThat(drafts.create(GUARDIAN, GUARDIAN.id(), command.clientRequestId(), null, -1)).isEqualTo(receipt);
+        assertThat(eventCount()).isEqualTo(1);
+        assertThat(bookingCount()).isEqualTo(1);
+        assertThatThrownBy(() -> drafts.submit(GUARDIAN, PATIENT.id(), command))
+                .isInstanceOfSatisfying(GuardianBookingException.class, error -> assertThat(error.status().value()).isEqualTo(404));
+        assertThat(BookingInventoryPostgresConfiguration.completeCounts(context, PATIENT.id(), PATIENT.firebaseUid()))
+                .containsEntry("guardianBookingDrafts", 2L).containsEntry("guardianBookingDraftOriginals", 1L)
+                .containsEntry("activeGuardianBookingDrafts", 1L);
+    }
+
+    @Test
+    void runtimeCannotReplaceDeleteOrDirectlyExposeStoredOriginal() {
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        var core = new JdbcTemplate(dataSource("bodeul_core_runtime"));
+        assertThatThrownBy(() -> core.update("update bodeul.guardian_booking_drafts set appointment_body = '{}'::jsonb"))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> core.update("delete from bodeul.guardian_booking_drafts"))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        for (String role : new String[]{"anon", "authenticated", "service_role", "bodeul_admin_runtime", "bodeul_retention_runtime"}) {
+            assertThat(owner.queryForObject("select has_table_privilege(?, 'bodeul.guardian_booking_drafts', 'SELECT')", Boolean.class, role)).isFalse();
+            assertThat(owner.queryForObject("select has_table_privilege(?, 'bodeul.guardian_booking_drafts', 'INSERT')", Boolean.class, role)).isFalse();
+        }
+        assertThatThrownBy(() -> core.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now(), 500)", Long.class))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        var retention = new JdbcTemplate(dataSource("bodeul_retention_runtime"));
+        assertThatThrownBy(() -> retention.queryForList("select * from bodeul.guardian_booking_drafts"))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now(), 501)", Long.class))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(null, 1)", Long.class))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> retention.queryForObject("select bodeul.preview_expired_guardian_booking_drafts(null)", Long.class))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+    }
+
+    @Test
+    void draftInsertRollsBackAndDatabaseRejectsInvalidExpiryAndBodyKey() {
+        transaction.executeWithoutResult(status -> {
+            drafts.submit(GUARDIAN, PATIENT.id(), command);
+            status.setRollbackOnly();
+        });
+        assertThat(drafts.list(PATIENT)).isEmpty();
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        assertThatThrownBy(() -> owner.update("update bodeul.guardian_booking_drafts set expires_at = created_at + interval '25 hours' where guardian_user_id = ?", GUARDIAN.id()))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> owner.update("update bodeul.guardian_booking_drafts set appointment_body = '{}'::jsonb where guardian_user_id = ?", GUARDIAN.id()))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThat(drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId()).appointment().clientRequestId()).isEqualTo(command.clientRequestId());
+    }
+
+    @Test
+    void nonemptyDraftRollbackPreservesOriginalFunctionsAndOtherData() throws Exception {
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        String rollback = java.nio.file.Files.readString(java.nio.file.Path.of("db/rollback/V26__remove_guardian_booking_drafts.sql"));
+        assertThatThrownBy(() -> owner.execute(rollback)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThat(drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId()).appointment().clientRequestId()).isEqualTo(command.clientRequestId());
+        assertThat(owner.queryForObject("select to_regprocedure('bodeul.purge_expired_guardian_booking_drafts(timestamptz,integer)') is not null", Boolean.class)).isTrue();
+        assertThat(owner.queryForObject("select to_regclass('bodeul.guardian_booking_approvals') is not null", Boolean.class)).isTrue();
     }
 
     @Test
@@ -303,6 +512,7 @@ class GuardianBookingTransactionPostgresTests {
     private int bookingCount() { return owner.queryForObject("select count(*) from bodeul.appointment_requests where requester_user_id = ?", Integer.class, GUARDIAN.id()); }
     private int eventCount() { return owner.queryForObject("select count(*) from bodeul.guardian_booking_approval_events where patient_user_id = ?", Integer.class, PATIENT.id()); }
     private void clearFixtures() {
+        owner.update("delete from bodeul.guardian_booking_drafts where patient_user_id = ?", PATIENT.id());
         owner.update("delete from bodeul.guardian_booking_approval_events where patient_user_id = ?", PATIENT.id());
         owner.update("delete from bodeul.guardian_booking_approvals where patient_user_id = ?", PATIENT.id());
         owner.update("delete from bodeul.appointment_requests where requester_user_id = ?", GUARDIAN.id());

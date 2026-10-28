@@ -46,6 +46,21 @@ export BOOKING_TEST_DB_PASSWORD="$PGPASSWORD"
 # 전용 DB에 만든 합성 데이터만 비우고 빈 schema rollback을 검사한다. 실제 이력 삭제 절차가 아니다.
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 truncate bodeul.guardian_booking_approval_events, bodeul.guardian_booking_approvals;
+truncate bodeul.guardian_booking_drafts;
+SQL
+psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V26__remove_guardian_booking_drafts.sql
+psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
+do $$
+begin
+    if to_regclass('bodeul.guardian_booking_drafts') is not null
+            or to_regprocedure('bodeul.purge_expired_guardian_booking_drafts(timestamptz,integer)') is not null
+            or to_regprocedure('bodeul.preview_expired_guardian_booking_drafts(timestamptz)') is not null
+            or to_regclass('bodeul.guardian_booking_approvals') is null
+            or to_regclass('bodeul.appointment_requests') is null then
+        raise exception 'V26 rollback의 객체 경계가 일치하지 않습니다.';
+    end if;
+end;
+$$;
 SQL
 psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V25__remove_guardian_booking_approval_audit_index.sql
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'

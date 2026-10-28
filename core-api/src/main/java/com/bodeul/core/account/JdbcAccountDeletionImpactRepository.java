@@ -79,6 +79,26 @@ class JdbcAccountDeletionImpactRepository implements AccountDeletionImpactReposi
         return Optional.of(impact);
     }
 
+    @Override
+    public Optional<BookingDraftImpact> inspectBookingDrafts(UUID userId) {
+        Boolean schemaReady = jdbcTemplate.queryForObject(
+                "select to_regclass('bodeul.guardian_booking_drafts') is not null",
+                new MapSqlParameterSource(), Boolean.class);
+        if (schemaReady == null) throw new DataRetrievalFailureException("예약 원문 저장소 적용 상태를 확인할 수 없습니다.");
+        if (!schemaReady) return Optional.empty();
+        BookingDraftImpact impact = jdbcTemplate.queryForObject("""
+                select count(*) as draft_count,
+                       count(*) filter (where appointment_body is not null) as original_count,
+                       count(*) filter (where expires_at > now()) as active_draft_count
+                from bodeul.guardian_booking_drafts
+                where patient_user_id = :userId or guardian_user_id = :userId
+                """, new MapSqlParameterSource("userId", userId),
+                (resultSet, row) -> new BookingDraftImpact(requiredCount(resultSet, "draft_count"),
+                        requiredCount(resultSet, "original_count"), requiredCount(resultSet, "active_draft_count")));
+        if (impact == null) throw new DataRetrievalFailureException("예약 원문 영향도 집계를 확인할 수 없습니다.");
+        return Optional.of(impact);
+    }
+
     private long requiredCount(ResultSet resultSet, String column) throws SQLException {
         Long count = resultSet.getObject(column, Long.class);
         if (count == null || count < 0) {

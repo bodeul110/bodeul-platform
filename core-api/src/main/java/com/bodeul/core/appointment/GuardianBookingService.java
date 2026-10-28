@@ -2,6 +2,7 @@ package com.bodeul.core.appointment;
 
 import java.time.Clock;
 import java.time.ZoneId;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -53,6 +54,29 @@ class GuardianBookingService {
         requireProfile(guardianId, AppUserRole.GUARDIAN);
         return new CreateAppointmentCommand(command.clientRequestId(), draft.toDraft(),
                 AppointmentPricePolicy.VERSION, AppointmentPricePolicy.BASE_PRICE);
+    }
+
+    @Transactional(readOnly = true)
+    public DraftReview reviewDraft(AppUser actor, UUID patientId, UUID guardianId, CreateAppointmentCommand command) {
+        approvals.requireParticipants(actor, patientId, guardianId);
+        NormalizedDraft draft = normalize(command);
+        requireNewRequest(command, draft);
+        ParticipantSnapshot patient = requirePatientProfile(patientId, draft);
+        ParticipantSnapshot guardian = requireProfile(guardianId, AppUserRole.GUARDIAN);
+        return new DraftReview(new CreateAppointmentCommand(command.clientRequestId(), draft.toDraft(),
+                AppointmentPricePolicy.VERSION, AppointmentPricePolicy.BASE_PRICE), display(patient), display(guardian));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Receipt> receiptForRequest(AppUser guardian, UUID requestId) {
+        requireRole(guardian, AppUserRole.GUARDIAN);
+        if (requestId == null) throw GuardianBookingException.invalid("예약 요청 ID가 필요합니다.");
+        return appointments.findByClientRequestId(guardian.id(), requestId).map(record -> {
+            if (!guardian.id().equals(record.guardianUserId()) || !guardian.id().equals(record.requesterUserId())
+                    || record.requesterRole() != AppUserRole.GUARDIAN) throw GuardianBookingException.denied();
+            approvals.requireParticipants(guardian, record.patientUserId(), guardian.id());
+            return receipt(record);
+        });
     }
 
     @Transactional
@@ -144,10 +168,16 @@ class GuardianBookingService {
         return new ParticipantSnapshot(name, phone, email);
     }
 
-    private String fingerprint(UUID guardianId, CreateAppointmentCommand command, NormalizedDraft draft) {
+    static String fingerprint(UUID guardianId, CreateAppointmentCommand command, NormalizedDraft draft) {
         return AppointmentCreateFingerprint.forGuardianApproval(AppointmentDraftNormalizer.toFingerprintRequest(
                 new AppUser(guardianId, "", AppUserRole.GUARDIAN), command.clientRequestId(), draft),
                 command.pricePolicyVersion(), command.expectedFinalPrice());
+    }
+
+    private ParticipantDisplay display(ParticipantSnapshot profile) {
+        String digits = profile.phone().replaceAll("[^0-9]", "");
+        return new ParticipantDisplay(profile.name(), digits.length() >= 4
+                ? "***-****-" + digits.substring(digits.length() - 4) : "****");
     }
 
     private Receipt retryReceipt(AppointmentRecord record, UUID patientId, UUID guardianId, String fingerprint) {
@@ -183,4 +213,6 @@ class GuardianBookingService {
     }
 
     record Receipt(UUID appointmentId, String publicCode) { }
+    record ParticipantDisplay(String name, String maskedPhone) { }
+    record DraftReview(CreateAppointmentCommand appointment, ParticipantDisplay patient, ParticipantDisplay guardian) { }
 }
