@@ -47,7 +47,9 @@ export BOOKING_TEST_DB_PASSWORD="$PGPASSWORD"
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 truncate bodeul.guardian_booking_approval_events, bodeul.guardian_booking_approvals;
 truncate bodeul.guardian_booking_drafts;
+truncate bodeul.retention_job_runs;
 SQL
+psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V27__remove_guardian_booking_retention_counts.sql
 psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V26__remove_guardian_booking_drafts.sql
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 do $$
