@@ -256,13 +256,16 @@ class GuardianBookingTransactionPostgresTests {
                     expires_at = now() - interval '1 hour' where guardian_user_id = ?
                 """, GUARDIAN.id());
         var active = drafts.submit(GUARDIAN, PATIENT.id(), GuardianBookingTestFixtures.command(UUID.randomUUID(), Instant.now().plusSeconds(172800)));
+        owner.update("update bodeul.guardian_booking_drafts set expires_at = now() + interval '3 minutes' where guardian_user_id = ? and client_request_id = ?",
+                GUARDIAN.id(), active.clientRequestId());
+        active = drafts.get(PATIENT, GUARDIAN.id(), active.clientRequestId()).request();
         assertThatThrownBy(() -> drafts.get(PATIENT, GUARDIAN.id(), command.clientRequestId()))
                 .isInstanceOfSatisfying(GuardianBookingException.class, error -> assertThat(error.status().value()).isEqualTo(404));
         var retention = new JdbcTemplate(dataSource("bodeul_retention_runtime"));
         assertThat(retention.queryForObject("select bodeul.preview_expired_guardian_booking_drafts(now() + interval '1 year')", Long.class)).isEqualTo(1);
         assertThat(owner.queryForObject("select count(*) from bodeul.guardian_booking_drafts where guardian_user_id = ?",
                 Integer.class, GUARDIAN.id())).isEqualTo(2);
-        UUID jobId = retention.queryForObject("select bodeul.begin_retention_job('APPLY', now() + interval '1 year', now())", UUID.class);
+        UUID jobId = retention.queryForObject("select bodeul.begin_retention_job('APPLY', now() + interval '4 minutes', now())", UUID.class);
         assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(?, 1)", Long.class, jobId)).isEqualTo(1);
         assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(?, 500)", Long.class, jobId)).isZero();
         assertThat(owner.queryForObject("select appointment_body is null and purged_at is not null from bodeul.guardian_booking_drafts where guardian_user_id = ? and client_request_id = ?",
