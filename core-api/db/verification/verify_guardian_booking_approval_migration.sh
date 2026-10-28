@@ -42,6 +42,7 @@ export BOOKING_TEST_DB_URL="jdbc:postgresql://${PGHOST}:${PGPORT}/${database}"
 export BOOKING_TEST_DB_USER="$PGUSER"
 export BOOKING_TEST_DB_PASSWORD="$PGPASSWORD"
 ./gradlew guardianBookingApprovalPostgresTest --console=plain
+node --test ../functions/postgres-tests/guardian-booking-retention.test.js
 
 # 전용 DB에 만든 합성 데이터만 비우고 빈 schema rollback을 검사한다. 실제 이력 삭제 절차가 아니다.
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
