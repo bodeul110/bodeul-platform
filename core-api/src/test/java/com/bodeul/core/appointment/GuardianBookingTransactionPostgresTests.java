@@ -254,6 +254,8 @@ class GuardianBookingTransactionPostgresTests {
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);
         assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(null, 1)", Long.class))
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);
+        assertThatThrownBy(() -> retention.queryForObject("select bodeul.preview_expired_guardian_booking_drafts(null)", Long.class))
+                .isInstanceOf(org.springframework.dao.DataAccessException.class);
     }
 
     @Test

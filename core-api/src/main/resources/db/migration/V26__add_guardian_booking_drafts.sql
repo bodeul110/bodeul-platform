@@ -42,9 +42,14 @@ create policy guardian_booking_drafts_core_insert on bodeul.guardian_booking_dra
     for insert to bodeul_core_runtime with check (true);
 
 create function bodeul.preview_expired_guardian_booking_drafts(p_as_of timestamptz)
-returns bigint language sql stable security definer set search_path = pg_catalog, bodeul as $$
-    select count(*) from bodeul.guardian_booking_drafts
-    where appointment_body is not null and expires_at <= least(p_as_of, now()) and p_as_of is not null;
+returns bigint language plpgsql stable security definer set search_path = pg_catalog, bodeul as $$
+begin
+    if p_as_of is null then
+        raise exception '원문 파기 기준 시각을 확인해 주세요.';
+    end if;
+    return (select count(*) from bodeul.guardian_booking_drafts
+        where appointment_body is not null and expires_at <= least(p_as_of, now()));
+end;
 $$;
 
 create function bodeul.purge_expired_guardian_booking_drafts(p_as_of timestamptz, p_limit integer)

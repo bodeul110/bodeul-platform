@@ -18,7 +18,8 @@ Core API의 초안 Repository·Service·Controller, V26과 rollback, 격리 Post
 
 - 로컬 JDK 21 `core-api check`: 583건 통과, 실패·오류·건너뜀 0건.
 - 권한·feature OFF·만료·멱등성·한도·원문 fingerprint·입력 타입·no-store·접수증 복구·삭제 영향도 회귀 검사를 포함한다.
-- PostgreSQL 실제 권한·동시성·파기·rollback은 기존 CI의 일회용 PostgreSQL 17에서 확인하도록 확장했다. 로컬 Docker daemon이 실행 중이 아니므로 로컬 DB 검증으로 기록하지 않는다. CI 결과는 실행 후 별도 기록한다.
+- PostgreSQL 실제 권한·동시성·파기·rollback은 기존 CI의 일회용 PostgreSQL 17에서 확인하도록 확장했다. 로컬 Docker daemon이 실행 중이 아니므로 로컬 DB 검증으로 기록하지 않는다. 최종 커밋의 CI 결과와 실행 증적은 [PR #500](https://github.com/bodeul110/bodeul-platform/pull/500)의 체크와 검증 댓글에서 확인한다.
+- 수정한 문서 7개의 로컬 링크 434개를 검사했고 끊긴 경로는 없었다.
 
 ## 남은 범위
 
