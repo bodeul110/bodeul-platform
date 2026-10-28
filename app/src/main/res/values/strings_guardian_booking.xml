@@ -9,6 +9,8 @@
     <string name="guardian_booking_revoked">생성 승인을 철회했습니다. 이미 접수된 예약은 취소되지 않습니다.</string>
     <string name="guardian_booking_submitted">예약 요청을 접수했습니다.</string>
     <string name="guardian_booking_create_uncertain">접수 결과를 확인하지 못했습니다. 같은 요청으로 결과를 재확인해 주세요. 새 요청을 만들지 마세요.</string>
+    <string name="guardian_booking_create_rejected">예약 요청을 접수하지 못했습니다. 로그인과 승인 상태를 확인하고 다시 불러와 주세요.</string>
+    <string name="guardian_booking_retry_rejected">이번 재확인 요청은 처리되지 않았지만 앞선 요청의 접수 여부는 아직 알 수 없습니다. 로그인과 연결 상태를 확인한 뒤 같은 요청으로 재확인해 주세요. 새 요청을 만들지 마세요.</string>
     <string name="guardian_booking_boundary">예약 생성 승인과 정보공유 동의는 별개입니다. 접수 후에도 상세 정보와 리포트는 별도 동의 범위에서만 볼 수 있습니다.</string>
     <string name="guardian_booking_reviewed">예약 내용 전체와 지정 보호자를 확인했습니다.</string>
     <string name="guardian_booking_adult_confirmed">의사결정이 가능한 성인 환자 본인입니다.</string>

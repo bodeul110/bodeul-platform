@@ -5,6 +5,8 @@ import static org.junit.Assert.*;
 
 import com.example.bodeul.R;
 import com.example.bodeul.data.GuardianBookingRepository;
+import com.example.bodeul.data.GuardianBookingRepository.CreateFailure;
+import com.example.bodeul.data.GuardianBookingRepository.CreateResult;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.GuardianBookingApproval;
 import com.example.bodeul.domain.model.GuardianBookingReceipt;
@@ -177,7 +179,7 @@ public class GuardianBookingCoordinatorTest {
         GuardianBookingRequest original = repository.mutationRequest;
         coordinator.create();
         assertEquals(1, repository.creates);
-        repository.receiptCallback.onError("접수 응답 없음");
+        repository.receiptCallback.onSuccess(CreateResult.failed(CreateFailure.UNKNOWN));
         assertEquals(Phase.UNCERTAIN, coordinator.state().phase);
         assertNull(coordinator.state().review);
         coordinator.refresh();
@@ -186,7 +188,7 @@ public class GuardianBookingCoordinatorTest {
         assertEquals(2, repository.creates);
         assertSame(original, repository.mutationRequest);
         assertSame(approved, repository.sentApproval);
-        repository.receiptCallback.onSuccess(new GuardianBookingReceipt(REQUEST, "TEST-1"));
+        repository.receiptCallback.onSuccess(CreateResult.accepted(new GuardianBookingReceipt(REQUEST, "TEST-1")));
         assertEquals(Phase.SUBMITTED, coordinator.state().phase);
         assertEquals("TEST-1", coordinator.state().receipt.getPublicCode());
         assertNull(coordinator.state().review);
@@ -215,9 +217,82 @@ public class GuardianBookingCoordinatorTest {
         load(false, active(1));
         coordinator.create();
         coordinator.dispose();
-        repository.receiptCallback.onSuccess(new GuardianBookingReceipt(REQUEST, "TEST-1"));
+        repository.receiptCallback.onSuccess(CreateResult.accepted(new GuardianBookingReceipt(REQUEST, "TEST-1")));
         assertEquals(Phase.CLOSED, coordinator.state().phase);
         assertNull(coordinator.state().receipt);
+    }
+
+    @Test
+    public void rejectedCreate_canRefreshAndSubmitLatestApprovalWithoutChangingRequestId() {
+        load(false, active(1));
+        coordinator.create();
+        GuardianBookingRequest original = repository.mutationRequest;
+        RepositoryCallback<CreateResult> old = repository.receiptCallback;
+        old.onSuccess(CreateResult.failed(CreateFailure.REJECTED));
+        assertEquals(Phase.ERROR, coordinator.state().phase);
+        assertNull(coordinator.state().review);
+        assertEquals(R.string.guardian_booking_create_rejected, coordinator.state().message);
+        coordinator.retryCreate();
+        assertEquals(1, repository.creates);
+        coordinator.refresh();
+        assertEquals(2, repository.loads);
+        old.onSuccess(CreateResult.failed(CreateFailure.UNKNOWN));
+        assertEquals(Phase.LOADING, coordinator.state().phase);
+        GuardianBookingApproval current = active(2);
+        repository.loadCallback.onSuccess(new GuardianBookingRepository.Review(original, current, false));
+        coordinator.create();
+        assertEquals(2, repository.creates);
+        assertSame(original, repository.mutationRequest);
+        assertSame(current, repository.sentApproval);
+        repository.receiptCallback.onSuccess(CreateResult.accepted(new GuardianBookingReceipt(REQUEST, "TEST-2")));
+        assertEquals(Phase.SUBMITTED, coordinator.state().phase);
+    }
+
+    @Test
+    public void failureBeforeCreatePost_canReloadRatherThanTrappingInRetry() {
+        load(false, active(1));
+        coordinator.create();
+        repository.receiptCallback.onSuccess(CreateResult.failed(CreateFailure.NOT_SENT));
+        assertEquals(Phase.ERROR, coordinator.state().phase);
+        coordinator.retryCreate();
+        assertEquals(1, repository.creates);
+        coordinator.refresh();
+        assertEquals(2, repository.loads);
+    }
+
+    @Test
+    public void rejectionAfterLostResponse_doesNotEraseEarlierUncertainAttempt() {
+        GuardianBookingApproval originalApproval = active(1);
+        load(false, originalApproval);
+        coordinator.create();
+        GuardianBookingRequest original = repository.mutationRequest;
+        repository.receiptCallback.onSuccess(CreateResult.failed(CreateFailure.UNKNOWN));
+        for (CreateFailure failure : new CreateFailure[]{CreateFailure.REJECTED, CreateFailure.NOT_SENT}) {
+            coordinator.retryCreate();
+            repository.receiptCallback.onSuccess(CreateResult.failed(failure));
+            assertEquals(Phase.UNCERTAIN, coordinator.state().phase);
+            assertEquals(R.string.guardian_booking_retry_rejected, coordinator.state().message);
+            coordinator.refresh();
+            assertEquals(1, repository.loads);
+            assertSame(original, repository.mutationRequest);
+            assertSame(originalApproval, repository.sentApproval);
+        }
+        coordinator.retryCreate();
+        repository.receiptCallback.onSuccess(CreateResult.accepted(new GuardianBookingReceipt(REQUEST, "TEST-1")));
+        assertEquals(Phase.SUBMITTED, coordinator.state().phase);
+    }
+
+    @Test
+    public void untypedOrMissingCreateResult_cannotBeAssumedNotCreated() {
+        load(false, active(1));
+        coordinator.create();
+        repository.receiptCallback.onError("분류되지 않은 오류");
+        assertEquals(Phase.UNCERTAIN, coordinator.state().phase);
+        coordinator.retryCreate();
+        repository.receiptCallback.onSuccess(null);
+        assertEquals(Phase.UNCERTAIN, coordinator.state().phase);
+        coordinator.refresh();
+        assertEquals(1, repository.loads);
     }
 
     private void load(boolean patient, GuardianBookingApproval approval) {
@@ -232,7 +307,7 @@ public class GuardianBookingCoordinatorTest {
         GuardianBookingApproval sentApproval;
         RepositoryCallback<Review> loadCallback;
         RepositoryCallback<GuardianBookingApproval> approvalCallback;
-        RepositoryCallback<GuardianBookingReceipt> receiptCallback;
+        RepositoryCallback<CreateResult> receiptCallback;
 
         @Override
         public void load(GuardianBookingRequest request, RepositoryCallback<Review> callback) {
@@ -260,7 +335,7 @@ public class GuardianBookingCoordinatorTest {
 
         @Override
         public void create(GuardianBookingRequest request, GuardianBookingApproval approval,
-                RepositoryCallback<GuardianBookingReceipt> callback) {
+                RepositoryCallback<CreateResult> callback) {
             creates++;
             mutationRequest = request;
             sentApproval = approval;

@@ -4,6 +4,9 @@ import static com.example.bodeul.GuardianBookingTestData.*;
 import static org.junit.Assert.*;
 
 import com.example.bodeul.data.GuardianBookingRepository.Review;
+import com.example.bodeul.data.GuardianBookingRepository.CreateFailure;
+import com.example.bodeul.data.GuardianBookingRepository.CreateResult;
+import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.GuardianBookingApproval;
 import com.example.bodeul.domain.model.GuardianBookingReceipt;
 import com.example.bodeul.domain.model.GuardianBookingRequest;
@@ -147,9 +150,8 @@ public class CoreApiGuardianBookingRepositoryTest {
         assertThrows(CoreApiAuthenticatedClient.ApiException.class, () ->
                 CoreApiGuardianBookingRepository.revokeRequest(request(), 1,
                         (method, path, body) -> me(false)));
-        assertThrows(CoreApiAuthenticatedClient.ApiException.class, () ->
-                CoreApiGuardianBookingRepository.createRequest(request(), active(1),
-                        (method, path, body) -> me(true)));
+        assertEquals(CreateFailure.NOT_SENT, CoreApiGuardianBookingRepository.createRequest(
+                request(), active(1), (method, path, body) -> me(true)).failure);
     }
 
     @Test
@@ -186,26 +188,102 @@ public class CoreApiGuardianBookingRepositoryTest {
             assertEquals(7, body.getLong("approvalVersion"));
             return new JSONObject().put("appointmentId", REQUEST.toString()).put("publicCode", "TEST-1");
         };
-        assertThrows(IOException.class, () -> CoreApiGuardianBookingRepository.createRequest(request(), active(7), sender));
+        assertEquals(CreateFailure.UNKNOWN,
+                CoreApiGuardianBookingRepository.createRequest(request(), active(7), sender).failure);
         assertEquals(1, bodies.size());
-        GuardianBookingReceipt receipt = CoreApiGuardianBookingRepository.createRequest(request(), active(7), sender);
+        GuardianBookingReceipt receipt = CoreApiGuardianBookingRepository.createRequest(request(), active(7), sender).receipt;
         assertEquals(bodies.get(0), bodies.get(1));
         assertEquals("TEST-1", receipt.getPublicCode());
         assertEquals(REQUEST, receipt.getAppointmentId());
     }
 
     @Test
-    public void create_httpErrorsNeverFallBackToLegacyOrReadDetail() {
-        for (int status : new int[]{401, 403, 404, 405, 409, 503}) {
+    public void create_definiteHttpRejectionsRemainTypedWithoutLegacyFallback() {
+        for (int status : new int[]{400, 401, 403, 404, 405, 409, 422}) {
             List<String> paths = new ArrayList<>();
-            assertThrows(CoreApiAuthenticatedClient.ApiException.class, () ->
-                    CoreApiGuardianBookingRepository.createRequest(request(), active(1), (method, path, body) -> {
+            CreateResult result = CoreApiGuardianBookingRepository.createRequest(
+                    request(), active(1), (method, path, body) -> {
                         paths.add(path);
                         if (path.equals("/api/auth/me")) return me(false);
                         throw new CoreApiAuthenticatedClient.ApiException(status, "합성 오류");
-                    }));
+                    });
+            assertEquals(CreateFailure.REJECTED, result.failure);
+            assertNull(result.receipt);
             assertEquals(List.of("/api/auth/me", CoreApiGuardianBookingRepository.ROOT + "/create"), paths);
         }
+    }
+
+    @Test
+    public void create_timeoutServerErrorsAndUnknownHttpStatuses_doNotProveRejection() {
+        for (int status : new int[]{408, 429, 500, 502, 503, 504, 599}) {
+            CreateResult result = CoreApiGuardianBookingRepository.createRequest(
+                    request(), active(1), (method, path, body) -> {
+                        if (path.equals("/api/auth/me")) return me(false);
+                        throw new CoreApiAuthenticatedClient.ApiException(status, "합성 오류");
+                    });
+            assertEquals(CreateFailure.UNKNOWN, result.failure);
+            assertNull(result.receipt);
+        }
+    }
+
+    @Test
+    public void create_missingApprovalAndFailedIdentity_neverSendCreate() {
+        CoreApiGuardianBookingRepository.Sender unexpected = (method, path, body) -> {
+            throw new AssertionError("승인 없이는 요청을 전송하지 않아야 합니다.");
+        };
+        assertEquals(CreateFailure.NOT_SENT,
+                CoreApiGuardianBookingRepository.createRequest(request(), null, unexpected).failure);
+        assertEquals(CreateFailure.NOT_SENT,
+                CoreApiGuardianBookingRepository.createRequest(request(), inactive(), unexpected).failure);
+        for (Exception error : List.of(new IOException(),
+                new CoreApiAuthenticatedClient.ApiException(403, "역할 거부"),
+                new CoreApiAuthenticatedClient.ApiException(503, "조회 장애"))) {
+            List<String> paths = new ArrayList<>();
+            CreateResult result = CoreApiGuardianBookingRepository.createRequest(
+                    request(), active(1), (method, path, body) -> {
+                        paths.add(path);
+                        throw error;
+                    });
+            assertEquals(CreateFailure.NOT_SENT, result.failure);
+            assertEquals(List.of("/api/auth/me"), paths);
+        }
+    }
+
+    @Test
+    public void create_brokenSuccessReceiptIsUnknownNotRejected() throws Exception {
+        for (JSONObject invalid : List.of(new JSONObject(),
+                new JSONObject().put("appointmentId", REQUEST.toString()).put("publicCode", ""),
+                new JSONObject().put("appointmentId", "invalid").put("publicCode", "TEST-1"))) {
+            CreateResult result = CoreApiGuardianBookingRepository.createRequest(
+                    request(), active(1), (method, path, body) ->
+                            path.equals("/api/auth/me") ? me(false) : invalid);
+            assertEquals(CreateFailure.UNKNOWN, result.failure);
+            assertNull(result.receipt);
+        }
+    }
+
+    @Test
+    public void createCallback_preservesOutcomeAndClassifiesAuthenticationPreparationFailure() {
+        List<CreateResult> results = new ArrayList<>();
+        RepositoryCallback<CreateResult> callback = CoreApiGuardianBookingRepository.createCallback(
+                new RepositoryCallback<CreateResult>() {
+                    @Override
+                    public void onSuccess(CreateResult result) { results.add(result); }
+
+                    @Override
+                    public void onError(String ignored) { fail("접수 결과는 타입을 유지해야 합니다."); }
+                });
+        callback.onError("인증 준비 실패");
+        assertEquals(CreateFailure.NOT_SENT, results.get(0).failure);
+        CreateResult rejected = CreateResult.failed(CreateFailure.REJECTED);
+        CreateResult unknown = CreateResult.failed(CreateFailure.UNKNOWN);
+        CreateResult accepted = CreateResult.accepted(new GuardianBookingReceipt(REQUEST, "TEST-1"));
+        callback.onSuccess(rejected);
+        callback.onSuccess(unknown);
+        callback.onSuccess(accepted);
+        assertSame(rejected, results.get(1));
+        assertSame(unknown, results.get(2));
+        assertSame(accepted, results.get(3));
     }
 
     @Test

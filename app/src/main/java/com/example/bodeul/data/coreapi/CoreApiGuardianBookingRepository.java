@@ -50,8 +50,21 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
 
     @Override
     public void create(GuardianBookingRequest request, GuardianBookingApproval approval,
-            RepositoryCallback<GuardianBookingReceipt> callback) {
-        execute(sender -> createRequest(request, approval, sender), callback);
+            RepositoryCallback<CreateResult> callback) {
+        execute(sender -> createRequest(request, approval, sender), createCallback(callback));
+    }
+
+    static RepositoryCallback<CreateResult> createCallback(RepositoryCallback<CreateResult> callback) {
+        return new RepositoryCallback<CreateResult>() {
+            @Override
+            public void onSuccess(CreateResult result) { callback.onSuccess(result); }
+
+            @Override
+            public void onError(String ignored) {
+                // createRequest가 전송 중 오류를 모두 분류하므로 여기에는 인증 준비 실패만 온다.
+                callback.onSuccess(CreateResult.failed(CreateFailure.NOT_SENT));
+            }
+        };
     }
 
     private <T> void execute(Operation<T> operation, RepositoryCallback<T> callback) {
@@ -95,19 +108,34 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
                 new JSONObject().put("expectedVersion", version)));
     }
 
-    static GuardianBookingReceipt createRequest(GuardianBookingRequest request,
-            GuardianBookingApproval approval, Sender sender) throws Exception {
-        if (approval == null || approval.getGrantId() == null || approval.getVersion() < 1) {
-            throw new JSONException("예약 생성 승인을 확인해 주세요.");
+    static CreateResult createRequest(GuardianBookingRequest request,
+            GuardianBookingApproval approval, Sender sender) {
+        boolean submitted = false;
+        try {
+            if (approval == null || approval.getGrantId() == null || approval.getVersion() < 1) {
+                return CreateResult.failed(CreateFailure.NOT_SENT);
+            }
+            requireActor(request, false, sender);
+            JSONObject body = new JSONObject().put("patientUserId", request.getPatientId().toString())
+                    .put("grantId", approval.getGrantId().toString())
+                    .put("approvalVersion", approval.getVersion())
+                    .put("appointment", appointmentBody(request));
+            submitted = true;
+            JSONObject receipt = sender.send("POST", ROOT + "/create", body);
+            return CreateResult.accepted(new GuardianBookingReceipt(
+                    uuid(receipt, "appointmentId"), text(receipt, "publicCode")));
+        } catch (CoreApiAuthenticatedClient.ApiException error) {
+            if (!submitted) return CreateResult.failed(CreateFailure.NOT_SENT);
+            // 시간 초과·5xx는 커밋 여부를 단정할 수 없어 확정 거부 목록에 넣지 않는다.
+            boolean rejected = switch (error.getStatusCode()) {
+                case 400, 401, 403, 404, 405, 409, 422 -> true;
+                default -> false;
+            };
+            return CreateResult.failed(rejected ? CreateFailure.REJECTED : CreateFailure.UNKNOWN);
+        } catch (Exception error) {
+            // 전송 후 단절·잘못된 성공 응답도 미생성으로 간주하지 않는다.
+            return CreateResult.failed(submitted ? CreateFailure.UNKNOWN : CreateFailure.NOT_SENT);
         }
-        requireActor(request, false, sender);
-        JSONObject body = new JSONObject().put("patientUserId", request.getPatientId().toString())
-                .put("grantId", approval.getGrantId().toString())
-                .put("approvalVersion", approval.getVersion())
-                .put("appointment", appointmentBody(request));
-        // 접수 결과가 불명확해도 새 ID를 만들거나 상세 조회로 성공을 추측하지 않는다.
-        JSONObject receipt = sender.send("POST", ROOT + "/create", body);
-        return new GuardianBookingReceipt(uuid(receipt, "appointmentId"), text(receipt, "publicCode"));
     }
 
     private static boolean identify(GuardianBookingRequest request, Sender sender) throws Exception {

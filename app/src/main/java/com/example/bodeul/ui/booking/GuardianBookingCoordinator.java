@@ -2,6 +2,7 @@ package com.example.bodeul.ui.booking;
 
 import com.example.bodeul.R;
 import com.example.bodeul.data.GuardianBookingRepository;
+import com.example.bodeul.data.GuardianBookingRepository.CreateFailure;
 import com.example.bodeul.data.GuardianBookingRepository.Review;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.GuardianBookingApproval;
@@ -111,13 +112,24 @@ public final class GuardianBookingCoordinator {
     }
 
     private void submitSameRequest() {
+        boolean retryingUnknownResult = phase == Phase.UNCERTAIN;
         long token = begin(Phase.SAVING);
         repository.create(request, attemptedApproval, callback(token, value -> {
-            if (value == null) {
+            if (value == null || value.failure == CreateFailure.UNKNOWN) {
                 uncertain();
                 return;
             }
-            receipt = value;
+            if (value.failure != null) {
+                if (retryingUnknownResult) {
+                    // 이번 거부만으로 앞선 응답 유실 요청의 미생성을 증명할 수는 없다.
+                    uncertain(R.string.guardian_booking_retry_rejected);
+                } else {
+                    attemptedApproval = null;
+                    fail(R.string.guardian_booking_create_rejected);
+                }
+                return;
+            }
+            receipt = value.receipt;
             review = null;
             attemptedApproval = null;
             request = null;
@@ -128,9 +140,13 @@ public final class GuardianBookingCoordinator {
     }
 
     private void uncertain() {
+        uncertain(R.string.guardian_booking_create_uncertain);
+    }
+
+    private void uncertain(int errorMessage) {
         review = null;
         phase = Phase.UNCERTAIN;
-        message = R.string.guardian_booking_create_uncertain;
+        message = errorMessage;
         publish();
     }
 

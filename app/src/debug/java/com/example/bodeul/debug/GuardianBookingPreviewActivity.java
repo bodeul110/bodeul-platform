@@ -123,16 +123,16 @@ public final class GuardianBookingPreviewActivity extends AppCompatActivity {
 
         @Override
         public void create(GuardianBookingRequest request, GuardianBookingApproval candidate,
-                RepositoryCallback<GuardianBookingReceipt> callback) {
+                RepositoryCallback<CreateResult> callback) {
             if (patient || (receipt == null && (!approval.canCreateAt(Instant.now())
                     || candidate.getVersion() != approval.getVersion()
                     || !candidate.getGrantId().equals(approval.getGrantId())))) {
-                callback.onError("합성 접수 조건이 맞지 않습니다.");
+                callback.onSuccess(CreateResult.failed(CreateFailure.REJECTED));
                 return;
             }
             if (receipt == null) receipt = new GuardianBookingReceipt(
                     UUID.fromString("40000000-0000-0000-0000-000000000004"), "TEST-0001");
-            callback.onSuccess(receipt);
+            callback.onSuccess(CreateResult.accepted(receipt));
         }
     }
 }

@@ -11,7 +11,28 @@ public interface GuardianBookingRepository {
     void revoke(GuardianBookingRequest request, long expectedVersion,
             RepositoryCallback<GuardianBookingApproval> callback);
     void create(GuardianBookingRequest request, GuardianBookingApproval approval,
-            RepositoryCallback<GuardianBookingReceipt> callback);
+            RepositoryCallback<CreateResult> callback);
+
+    enum CreateFailure { NOT_SENT, REJECTED, UNKNOWN }
+
+    /** 전송 전 실패·확정 거부·전송 후 불명확한 결과를 문자열 안내와 분리한다. */
+    final class CreateResult {
+        public final GuardianBookingReceipt receipt;
+        public final CreateFailure failure;
+
+        private CreateResult(GuardianBookingReceipt receipt, CreateFailure failure) {
+            this.receipt = receipt;
+            this.failure = failure;
+        }
+
+        public static CreateResult accepted(GuardianBookingReceipt receipt) {
+            return new CreateResult(java.util.Objects.requireNonNull(receipt), null);
+        }
+
+        public static CreateResult failed(CreateFailure failure) {
+            return new CreateResult(null, java.util.Objects.requireNonNull(failure));
+        }
+    }
 
     final class Review {
         public final GuardianBookingRequest request;

@@ -8,6 +8,8 @@
 
 환자는 정규화된 본문과 두 확인 항목을 검토한 뒤 승인할 수 있다. 보호자는 유효한 승인으로 접수하며 결과는 최소 접수 코드만 표시한다. 조회 실패를 미승인으로 처리하지 않고, 생성 응답 유실 뒤에는 동일 본문·승인·요청 ID로만 재시도한다. 중복 클릭, 이전 화면의 지연 응답과 철회 후 권한 확대도 차단한다.
 
+PR #498 리뷰에서 생성 거부도 응답 유실로 취급해 오래된 승인 재시도에 갇히는 문제가 확인됐다. 생성 결과를 POST 전 실패·확정 거부·불명확으로 구분해, 첫 시도의 403/409 등 거부 뒤에는 최신 승인을 다시 조회하도록 수정했다. 이미 응답이 유실된 경우에는 뒤이은 재시도 거부가 앞선 미생성의 증거가 아니므로 동일 요청 복구를 유지한다. 공용 HTTP 인증 클라이언트는 변경하지 않았다.
+
 ## 변경된 범위
 
 - Android 모델·Repository·Coordinator·Binder·문자열·레이아웃 및 단위 테스트
@@ -20,12 +22,14 @@ Core API·DB schema·데이터·기능 플래그·배포·의존성·관리자 �
 
 | 검증 | 결과 |
 | --- | --- |
-| `gradlew.bat assembleDebug testDebugUnitTest` | 성공. 전체 단위 테스트 351건, 실패·오류·건너뜀 0건. 이 변경의 신규 테스트는 Repository 16건·Coordinator 14건 |
+| `gradlew.bat assembleDebug testDebugUnitTest` | 성공. 리뷰 반영 후 전체 단위 테스트 359건, 실패·오류·건너뜀 0건. 이 PR의 신규 테스트는 Repository 20건·Coordinator 18건 |
 | `gradlew.bat :app:verifyReleaseAppCheckClasspath` | 성공. release App Check provider 의존성 경계 유지 |
-| `connectedDebugAndroidTest`의 `GuardianBookingPreviewTest` 지정 실행 | Android 11/API 30 소형 AVD에서 4건 통과. 환자 확인→승인→보호자 접수, 철회 후 접수 차단, 화면 재생성·재진입 상태 폐기 |
+| `connectedDebugAndroidTest`의 `GuardianBookingPreviewTest` 지정 실행 | Android 11/API 30 소형 AVD에서 6건 통과. 환자 확인→승인→보호자 접수, 철회 후 접수 차단, 화면 재생성·재진입 상태 폐기, 생성 거부 후 최신 승인 재조회·접수, 응답 유실 뒤 재시도 거부에도 동일 요청 복구 유지 |
 | 화면 직접 확인 | 720×1280, 320 dpi에서 전체 본문 스크롤과 확인란·버튼 표시 확인. 합성 데이터만 사용 |
 
 단위 테스트는 인증된 실제 HTTP 통신이 아니라 JSON 요청·응답 및 오류 계약을 검증한다. 계측 테스트는 인메모리 합성 Repository를 사용하며 원격 계정·예약·DB 쓰기 검증이 아니다. ADB에 실기기가 없어 실제 휴대폰 검증은 하지 않았다. 검증용 AVD는 read-only·스냅샷 저장 없이 실행했다.
+
+리뷰 반영 회귀 테스트는 HTTP 400·401·403·404·405·409·422의 확정 거부, 408·429·5xx의 불명확 처리, POST 전 인증·참여자 확인 실패, 잘못된 성공 응답, 늦은 중복 콜백과 승인 버전 갱신을 구분해 검증한다. 화면 테스트에서도 확정 거부 후에는 재조회 버튼을, 응답 유실 후에는 동일 요청 재시도 버튼만 노출하는지 확인했다.
 
 ## 남은 범위
 
