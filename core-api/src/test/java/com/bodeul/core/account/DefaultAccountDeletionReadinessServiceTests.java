@@ -21,6 +21,9 @@ class DefaultAccountDeletionReadinessServiceTests {
             public Optional<BookingApprovalImpact> inspectBookingApprovals(UUID userId) {
                 return Optional.of(new BookingApprovalImpact(2, 0, 4));
             }
+            public Optional<BookingDraftImpact> inspectBookingDrafts(UUID userId) {
+                return Optional.of(new BookingDraftImpact(3, 2, 1));
+            }
         };
         FirebaseAccountDeletionImpactRepository firebaseRepository = firebaseUid -> firestoreImpact();
         var service = new DefaultAccountDeletionReadinessService(
@@ -46,6 +49,9 @@ class DefaultAccountDeletionReadinessServiceTests {
                 .containsEntry("guardianBookingApprovals", 2L)
                 .containsEntry("activeGuardianBookingApprovals", 0L)
                 .containsEntry("guardianBookingApprovalAudits", 4L)
+                .containsEntry("guardianBookingDrafts", 3L)
+                .containsEntry("guardianBookingDraftOriginals", 2L)
+                .containsEntry("activeGuardianBookingDrafts", 1L)
                 .doesNotContainKey("activeLegalHolds");
         assertThat(result.sources().get(1).source())
                 .isEqualTo(AccountDeletionReadinessService.Source.FIRESTORE);
@@ -115,6 +121,8 @@ class DefaultAccountDeletionReadinessServiceTests {
         };
         var result = new DefaultAccountDeletionReadinessService(Optional.of(repository), Optional.empty()).inspect(USER_ID, FIREBASE_UID);
         assertThat(result.observationCodes()).contains(AccountDeletionReadinessService.ObservationCode.ACTIVE_BOOKING_APPROVAL_PRESENT);
+        assertThat(result.sources().getFirst().status()).isEqualTo(AccountDeletionReadinessService.SourceStatus.PARTIAL);
+        assertThat(result.sources().getFirst().counts()).doesNotContainKey("guardianBookingDrafts");
         assertThat(result.decision()).isEqualTo(AccountDeletionReadinessService.Decision.NOT_EVALUATED);
         assertThat(result.deletionExecuted()).isFalse();
     }
@@ -131,6 +139,20 @@ class DefaultAccountDeletionReadinessServiceTests {
         assertThat(result.sources().getFirst().status()).isEqualTo(AccountDeletionReadinessService.SourceStatus.ERROR);
         assertThat(result.sources().getFirst().counts()).isEmpty();
         assertThat(result.toString()).doesNotContain("secret endpoint");
+    }
+
+    @Test
+    void draftInventoryFailureDoesNotPretendPostgresInventoryIsComplete() {
+        AccountDeletionImpactRepository repository = new AccountDeletionImpactRepository() {
+            public PostgreSqlImpact inspect(UUID userId) { return impact(1, 0, 0, 0); }
+            public Optional<BookingDraftImpact> inspectBookingDrafts(UUID userId) {
+                throw new DataAccessResourceFailureException("secret original");
+            }
+        };
+        var result = new DefaultAccountDeletionReadinessService(Optional.of(repository), Optional.empty()).inspect(USER_ID, FIREBASE_UID);
+        assertThat(result.sources().getFirst().status()).isEqualTo(AccountDeletionReadinessService.SourceStatus.ERROR);
+        assertThat(result.sources().getFirst().counts()).isEmpty();
+        assertThat(result.toString()).doesNotContain("secret original");
     }
 
     @Test

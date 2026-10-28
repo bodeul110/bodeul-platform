@@ -1,6 +1,7 @@
 package com.bodeul.core.appointment;
 
 import java.util.UUID;
+import java.util.List;
 
 import com.bodeul.core.auth.AppUserRepository.AppUser;
 import com.bodeul.core.consent.GuardianBookingApprovalService;
@@ -24,10 +25,43 @@ import org.springframework.web.bind.annotation.RestController;
 class GuardianBookingController {
     private final GuardianBookingService service;
     private final GuardianBookingApprovalService approvals;
+    private final GuardianBookingDraftService drafts;
 
-    GuardianBookingController(GuardianBookingService service, GuardianBookingApprovalService approvals) {
+    GuardianBookingController(GuardianBookingService service, GuardianBookingApprovalService approvals,
+            GuardianBookingDraftService drafts) {
         this.service = service;
         this.approvals = approvals;
+        this.drafts = drafts;
+    }
+
+    @PostMapping("/drafts")
+    ResponseEntity<GuardianBookingDraftRepository.DraftSummary> submitDraft(@AuthenticationPrincipal AppUser actor,
+            @RequestBody SubmitDraftRequest request) {
+        return noStore(drafts.submit(actor, request.patientUserId(), command(request.appointment())));
+    }
+
+    @GetMapping("/drafts")
+    ResponseEntity<List<GuardianBookingDraftRepository.DraftSummary>> listDrafts(@AuthenticationPrincipal AppUser actor) {
+        return noStore(drafts.list(actor));
+    }
+
+    @GetMapping("/drafts/guardians/{guardianId}/requests/{requestId}")
+    ResponseEntity<GuardianBookingDraftService.DraftView> getDraft(@AuthenticationPrincipal AppUser actor,
+            @PathVariable UUID guardianId, @PathVariable UUID requestId) {
+        return noStore(drafts.get(actor, guardianId, requestId));
+    }
+
+    @PostMapping("/drafts/guardians/{guardianId}/requests/{requestId}/approvals")
+    ResponseEntity<ApprovalView> grantStoredDraft(@AuthenticationPrincipal AppUser actor,
+            @PathVariable UUID guardianId, @PathVariable UUID requestId, @RequestBody StoredGrantRequest request) {
+        return noStore(drafts.grant(actor, guardianId, requestId,
+                version(request.expectedVersion()), confirmed(request.adultPatientConfirmed())));
+    }
+
+    @PostMapping("/drafts/guardians/{guardianId}/requests/{requestId}/create")
+    ResponseEntity<GuardianBookingService.Receipt> createStoredDraft(@AuthenticationPrincipal AppUser actor,
+            @PathVariable UUID guardianId, @PathVariable UUID requestId, @RequestBody StoredCreateRequest request) {
+        return noStore(drafts.create(actor, guardianId, requestId, request.grantId(), version(request.approvalVersion())));
     }
 
     @PostMapping("/preview")
@@ -91,4 +125,7 @@ class GuardianBookingController {
     record RevokeRequest(JsonNode expectedVersion) { }
     record CreateRequest(UUID patientUserId, UUID grantId, JsonNode approvalVersion,
                          AppointmentController.CreateAppointmentRequest appointment) { }
+    record SubmitDraftRequest(UUID patientUserId, AppointmentController.CreateAppointmentRequest appointment) { }
+    record StoredGrantRequest(JsonNode expectedVersion, JsonNode adultPatientConfirmed) { }
+    record StoredCreateRequest(UUID grantId, JsonNode approvalVersion) { }
 }

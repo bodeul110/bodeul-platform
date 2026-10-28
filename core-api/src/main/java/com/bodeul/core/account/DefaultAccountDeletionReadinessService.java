@@ -114,9 +114,11 @@ class DefaultAccountDeletionReadinessService implements AccountDeletionReadiness
 
         final AccountDeletionImpactRepository.PostgreSqlImpact impact;
         final Optional<AccountDeletionImpactRepository.BookingApprovalImpact> booking;
+        final Optional<AccountDeletionImpactRepository.BookingDraftImpact> drafts;
         try {
             impact = impactRepository.orElseThrow().inspect(userId);
             booking = impactRepository.orElseThrow().inspectBookingApprovals(userId);
+            drafts = impactRepository.orElseThrow().inspectBookingDrafts(userId);
         } catch (DataAccessException exception) {
             blockerCodes.add(BlockerCode.SOURCE_UNAVAILABLE);
             return new SourceInventory(Source.POSTGRESQL, SourceStatus.ERROR, Map.of());
@@ -130,8 +132,13 @@ class DefaultAccountDeletionReadinessService implements AccountDeletionReadiness
             allCounts.put("guardianBookingApprovalAudits", value.auditCount());
             if (value.activeApprovalCount() > 0) observationCodes.add(ObservationCode.ACTIVE_BOOKING_APPROVAL_PRESENT);
         });
+        drafts.ifPresent(value -> {
+            allCounts.put("guardianBookingDrafts", value.draftCount());
+            allCounts.put("guardianBookingDraftOriginals", value.originalCount());
+            allCounts.put("activeGuardianBookingDrafts", value.activeDraftCount());
+        });
         return new SourceInventory(Source.POSTGRESQL,
-                booking.isPresent() ? SourceStatus.COMPLETE : SourceStatus.PARTIAL, allCounts);
+                booking.isPresent() && drafts.isPresent() ? SourceStatus.COMPLETE : SourceStatus.PARTIAL, allCounts);
     }
 
     private void addPostgresObservations(

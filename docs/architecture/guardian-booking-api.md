@@ -1,6 +1,6 @@
 # 보호자 예약 승인 API 연결
 
-기준일: 2026-09-29. Android 준비와 비활성 보호자의 기존 승인 조회·철회 경계는 2026-10-28에 보충했다.
+기준일: 2026-09-29. Android 준비, 비활성 보호자의 기존 승인 조회·철회, 서버 원문 전달 계약은 2026-10-28에 보충했다.
 
 ## 설계 판단
 
@@ -12,9 +12,9 @@
 
 ## 활성화 경계
 
-`bodeul.guardian-booking.enabled`의 기본값은 `false`다. 실제 개발 DB V24·V25 적용, Android 환자 확인 화면과 보호자 요청 전달, DEV 종단 검증 전에는 켜지 않는다. 기존 예약 POST에서 보호자 생성을 거부하는 계약과 보호자 수정·취소 제한은 유지한다. 운영 배포와 DB migration은 이 작업에 포함하지 않는다.
+`bodeul.guardian-booking.enabled`의 기본값은 `false`다. 실제 개발 DB V24~V26 적용, 만료 원문 파기 작업 연결, Android 환자 확인 화면과 보호자 요청 전달, DEV 종단 검증 전에는 켜지 않는다. 기존 예약 POST에서 보호자 생성을 거부하는 계약과 보호자 수정·취소 제한은 유지한다. 운영 배포와 DB migration은 이 작업에 포함하지 않는다.
 
-환경변수 이름은 `BODEUL_GUARDIAN_BOOKING_ENABLED`다. 이번 변경에서는 배포 환경변수를 추가하거나 runtime DB 권한을 늘리지 않는다. Firebase 계정 조회에는 해당 환경 runtime의 `firebaseauth.users.get` 권한과 명시된 `FIREBASE_PROJECT_ID`가 필요하다. 권한·연결 실패를 활성 계정으로 간주하지 않고 503으로 닫는다. 이 권한의 실제 Cloud Run 검증도 활성화 전 조건이다.
+환경변수 이름은 `BODEUL_GUARDIAN_BOOKING_ENABLED`다. 실제 배포 환경변수와 runtime DB 권한은 변경하지 않는다. V26 소스에는 새 원문 테이블의 Core 읽기·삽입과 파기 전용 role의 함수 실행 권한만 선언한다. Firebase 계정 조회에는 해당 환경 runtime의 `firebaseauth.users.get` 권한과 명시된 `FIREBASE_PROJECT_ID`가 필요하다. 권한·연결 실패를 활성 계정으로 간주하지 않고 503으로 닫는다. 이 권한의 실제 Cloud Run 검증도 활성화 전 조건이다.
 
 ## 입력과 응답
 
@@ -38,7 +38,29 @@
 
 버전과 확인 금액은 JSON 정수, 성인 확인은 JSON boolean만 받는다. 클라이언트가 보낸 시각·fingerprint·역할·승인 정책 값은 사용하지 않는다. 성인 여부는 환자의 자기선언이며 출생일 검증이나 법정대리인 증명 절차를 구현한 것은 아니다.
 
-환자에게 요청 본문을 전달하는 저장·알림 기능은 아직 없다. Android에는 전용 API Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면을 준비했지만 일반 사용자 진입점은 열지 않았다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. 실제 요청 전달과 검증된 상대방 표시 정보, DEV 종단 연결은 [Android 연결 설계](../design/guardian-booking-android.md)의 후속 범위다.
+서버의 원문 저장·목록·조회와 저장된 원문으로 승인·접수하는 경로는 아래와 같이 준비했다. Android에는 기존 직접 본문 전달 API의 Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면이 있으며, 새 원문 전달 API 연결과 일반 사용자 진입점은 아직 없다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. [Android 연결 설계](../design/guardian-booking-android.md)를 따른다.
+
+## 서버 원문 전달
+
+기본 경로는 위와 같다. 기존 본문 전달 API는 호환성을 위해 유지하고 새 저장 경로와 구분한다. 두 경로 모두 같은 예약 정규화·승인 행 잠금·INSERT 계약을 사용한다.
+
+| 메서드와 접미사 | 호출자 | 입력과 결과 |
+| --- | --- | --- |
+| `POST /drafts` | 보호자 | `patientUserId`, `appointment`; 불변 초안의 식별자·저장 시각·만료 시각만 반환 |
+| `GET /drafts` | 환자 또는 보호자 | 현재 당사자로 확인된 활성 요청 중 최신 50건의 식별자·시각만 반환. 원문·프로필은 목록에 넣지 않음 |
+| `GET /drafts/guardians/{guardianId}/requests/{requestId}` | 지정 환자 또는 작성 보호자 | `{request, appointment, patient, guardian}`. `appointment`는 정규화된 생성 command, 상대방 표시는 현재 프로필의 `{name, maskedPhone}` |
+| `POST /drafts/guardians/{guardianId}/requests/{requestId}/approvals` | 지정 환자 | `expectedVersion`, `adultPatientConfirmed`; 클라이언트 원문 대신 저장 원문으로 승인 |
+| `POST /drafts/guardians/{guardianId}/requests/{requestId}/create` | 작성 보호자 | `grantId`, `approvalVersion`; 저장 원문으로 접수하며 응답은 기존 최소 접수증만 반환 |
+
+`request`에는 `patientUserId`, `guardianUserId`, `clientRequestId`, `createdAt`, `expiresAt`만 포함한다. 서버 프로필은 상대방 표시용으로 이름과 전화번호 끝 4자리만 제공하며 이메일·Firebase UID는 추가하지 않는다. 원문 안의 환자 연락처는 보호자가 제출하고 서버 프로필 일치를 확인한 입력이다. 프로필 일치는 통신사 본인 인증이나 실명 확인을 의미하지 않는다.
+
+초안은 보호자·요청 ID별로 불변이며 같은 정규화 입력의 재시도는 만료를 연장하지 않는다. 다른 환자·본문으로 같은 ID를 쓰면 `409 guardian_booking_draft_conflict`, 활성 초안 20건을 넘는 보호자 저장은 `429 guardian_booking_draft_limit`이다. 동일 보호자의 저장을 트랜잭션 잠금으로 직렬화해 동시 요청에도 한도를 유지한다. 환자 ID를 알아도 입력한 이름·연락처가 현재 프로필과 맞지 않으면 저장되지 않으며 검색 API는 제공하지 않는다.
+
+조회 만료는 저장 후 최대 24시간과 예약 시각 중 이른 때다. 만료·파기·다른 당사자의 원문은 `404 guardian_booking_draft_not_found`로 응답한다. 비활성 상대방의 원문 조회·새 승인은 허용하지 않지만 기존 승인 메타데이터 조회·철회 예외는 그대로 유지한다. 인증·계정 조회 장애는 성공이나 빈 결과로 숨기지 않는다.
+
+접수 응답이 유실된 보호자는 같은 요청 경로의 `/create`를 재호출할 수 있다. 서버가 현재 참여자와 기존 접수 소유권을 확인한 뒤, 원문이 만료·파기되었더라도 접수증만 돌려준다. 새 INSERT, 새 동의, 예약 상세 열람은 발생하지 않는다.
+
+V26의 `preview_expired_guardian_booking_drafts(asOf)`는 파기 대상 건수만 조회하고, `purge_expired_guardian_booking_drafts(asOf, limit)`는 최대 500건의 만료 JSON 원문을 NULL로 제거한다. 미래 기준 시각으로 활성 원문을 지울 수 없으며 현재 DB 시각까지로 제한한다. 요청 ID 재사용을 막기 위해 참여자 UUID·fingerprint·시각은 남긴다. 원문 조회 만료가 물리적 파기 완료를 뜻하지 않으며 **자동 파기 작업에 연결하는 것은 후속 범위**다. 관리자·일반 클라이언트·Core runtime은 이 파기 함수를 실행할 수 없다. [설계 판단](../design/guardian-booking-draft-handoff.md)과 [검증 기록](../reports/issue-419-draft-handoff-2026-10-28.md)을 함께 확인한다.
 
 ## 비활성 보호자의 기존 승인 철회
 
@@ -59,6 +81,8 @@ Android는 환자 본인의 기존 승인에 명시적인 boolean `true`가 온 
 ## 개인정보와 영향도
 
 승인 저장소에는 요청 본문 원문을 보관하지 않는다. 승인·감사 이력은 기존 추가 전용 계약을 유지하며, 계정 삭제 영향도에 현재 승인·활성 승인·감사 건수를 포함한다. V24가 없는 환경은 이 부분을 미확인으로 표시하며 0건이나 전체 조사 완료로 처리하지 않는다. 승인 만료는 권한 종료이며 감사 삭제를 뜻하지 않는다. 감사 파기는 보존 정책과 별도 승인된 운영 절차의 대상이며 이 API에 삭제 권한을 추가하지 않는다.
+
+별도 V26 원문 저장소의 전체 최소 기록 수, 원문이 남은 수, 활성 원문 수도 계정 삭제 영향도에 포함한다. V26 미적용 환경은 기존 집계를 유지하되 PostgreSQL 원문 범위를 미확인으로 표시한다. 계정 삭제를 실제 실행하거나 파기된 원문의 최소 기록까지 자동 삭제하지 않는다. V26 rollback은 기록이 하나라도 남아 있으면 중단하며 기존 예약·승인·감사 테이블은 변경하지 않는다.
 
 관리자 웹의 테이블 권한과 응답은 바뀌지 않는다. 예약 생성 후에도 정보공유 동의를 자동 발급하지 않는다.
 

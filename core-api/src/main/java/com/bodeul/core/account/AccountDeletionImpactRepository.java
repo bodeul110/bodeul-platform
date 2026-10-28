@@ -13,6 +13,12 @@ interface AccountDeletionImpactRepository {
 
     record BookingApprovalImpact(long approvalCount, long activeApprovalCount, long auditCount) { }
 
+    default Optional<BookingDraftImpact> inspectBookingDrafts(UUID userId) {
+        return Optional.empty();
+    }
+
+    record BookingDraftImpact(long draftCount, long originalCount, long activeDraftCount) { }
+
     record PostgreSqlImpact(
             long profileCount,
             long appointmentCount,
