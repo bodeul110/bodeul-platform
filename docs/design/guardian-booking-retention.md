@@ -23,3 +23,7 @@
 개발 DB의 V24~V27 적용과 runtime 권한 확인, 새 경로 dry-run, 합성 원문 파기·재실행·정리 검증 후 실제 활성화 여부를 판단한다. Functions 배포·환경변수 변경·실제 DB migration·삭제 apply는 이 소스 구현과 별도 승인 작업이다.
 
 Android·관리자 웹 UI 및 역할은 바꾸지 않는다. 기존 월간 보고 컬럼 이름·권한은 유지하고 새 건수 필드만 추가한다. 관리자 서버는 새 원문이나 테이블 권한을 받지 않는다. 기존 집계 입력은 V27 이후에도 허용한다.
+
+## 회귀 검증
+
+`core-api`의 `db/verification/verify_guardian_booking_approval_migration.sh`는 CI의 새 로컬 PostgreSQL DB에서 Java 권한·rollback 테스트와 `functions/postgres-tests/guardian-booking-retention.test.js`를 실행한다. Node 22와 Functions lockfile의 의존성을 사용하며, 후자는 실제 파기 실행기와 원문 SQL·집계를 연결해 검증한다. 일반 Functions 단위 테스트와 별도이며 실제 개발·운영 DB에서는 실행하지 않는다.

@@ -18,7 +18,9 @@ V27은 기존 파기 실행 이력에 활성 점검 여부와 후보·파기·�
 - Java 21 `core-api check`: 598건 통과, 실패·오류·skip 0건.
 - Node 22.23.4 `npm --prefix functions test`: 98건 통과, 별도 Firestore/Storage emulator가 필요한 3건은 일반 단위 실행에서 skip.
 - 새 Functions 테스트 12건: 기본 OFF·이전 집계 호환, dry-run, 배치·상한·잠금 잔여, 미적용 DB, 부분 실패 후 재시도, 마지막 조회 실패, SQL 값 바인딩, 비정상 건수 거부, 월간 보고.
-- V27 실제 적용·역할별 권한·이력 보존 rollback과 재적용은 CI의 전용 PostgreSQL 17 DB에서 확인한다. 일반 `check`의 문자열 계약 테스트와 실제 DB 검증을 구분한다.
+- CI 전용 PostgreSQL 17: 보호자 예약 승인·원문·파기 계약 57건 통과(신규 파기 집계·권한·rollback 11건 포함). V27 실제 적용·역할별 권한·이력 보존 rollback과 재적용을 확인했다. 일반 `check`의 문자열 계약 테스트와 구분한다.
+- Node 22 실행기와 실제 PostgreSQL 연동 1건 통과: 만료된 합성 원문 503건과 유효 원문 1건으로 OFF·dry-run 무변경, 배치 파기, 0건 재실행, 월간 집계, 직접 조회·쓰기 차단을 확인했다. 다른 도메인의 파기와 Firebase·Storage는 대체 객체를 사용하므로 전체 운영 파기 E2E 성공을 뜻하지 않는다.
+- `e6fd3bb`의 [Core API CI](https://github.com/bodeul110/bodeul-platform/actions/runs/40678377438), Firebase Rules emulator, preflight, JavaScript CodeQL 통과. GitHub YAML 파싱, shell·Node 테스트 문법과 `git diff --check`도 통과했다. CI의 합성 데이터는 실행별 새 로컬 DB에만 생성했다.
 
 ## 남은 범위
 
