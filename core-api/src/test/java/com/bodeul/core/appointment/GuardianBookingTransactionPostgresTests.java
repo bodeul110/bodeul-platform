@@ -262,8 +262,9 @@ class GuardianBookingTransactionPostgresTests {
         assertThat(retention.queryForObject("select bodeul.preview_expired_guardian_booking_drafts(now() + interval '1 year')", Long.class)).isEqualTo(1);
         assertThat(owner.queryForObject("select count(*) from bodeul.guardian_booking_drafts where guardian_user_id = ?",
                 Integer.class, GUARDIAN.id())).isEqualTo(2);
-        assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now() + interval '1 year', 1)", Long.class)).isEqualTo(1);
-        assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now(), 500)", Long.class)).isZero();
+        UUID jobId = retention.queryForObject("select bodeul.begin_retention_job('APPLY', now() + interval '1 year', now())", UUID.class);
+        assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(?, 1)", Long.class, jobId)).isEqualTo(1);
+        assertThat(retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(?, 500)", Long.class, jobId)).isZero();
         assertThat(owner.queryForObject("select appointment_body is null and purged_at is not null from bodeul.guardian_booking_drafts where guardian_user_id = ? and client_request_id = ?",
                 Boolean.class, GUARDIAN.id(), command.clientRequestId())).isTrue();
         assertThat(drafts.list(PATIENT)).containsExactly(active);
@@ -292,11 +293,12 @@ class GuardianBookingTransactionPostgresTests {
         assertThatThrownBy(() -> core.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now(), 500)", Long.class))
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);
         var retention = new JdbcTemplate(dataSource("bodeul_retention_runtime"));
+        UUID jobId = retention.queryForObject("select bodeul.begin_retention_job('APPLY', now(), now())", UUID.class);
         assertThatThrownBy(() -> retention.queryForList("select * from bodeul.guardian_booking_drafts"))
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);
-        assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(now(), 501)", Long.class))
+        assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(?, 501)", Long.class, jobId))
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);
-        assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(null, 1)", Long.class))
+        assertThatThrownBy(() -> retention.queryForObject("select bodeul.purge_expired_guardian_booking_drafts(null::uuid, 1)", Long.class))
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);
         assertThatThrownBy(() -> retention.queryForObject("select bodeul.preview_expired_guardian_booking_drafts(null)", Long.class))
                 .isInstanceOf(org.springframework.dao.DataAccessException.class);

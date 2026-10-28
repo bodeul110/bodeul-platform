@@ -8,6 +8,50 @@ alter table bodeul.retention_job_runs
         guardian_draft_candidates >= 0 and guardian_drafts_purged >= 0 and guardian_drafts_remaining >= 0
     );
 
+-- 응답 유실·프로세스 종료에도 원문 파기와 건수 이력이 함께 커밋되게 한다.
+create function bodeul.purge_expired_guardian_booking_drafts(p_job_id uuid, p_limit integer)
+returns bigint
+language plpgsql
+security definer
+set search_path = pg_catalog, pg_temp
+as $$
+declare
+    v_job bodeul.retention_job_runs%rowtype;
+    v_candidates bigint;
+    v_purged bigint;
+    v_remaining bigint;
+begin
+    if p_job_id is null or p_limit is null or p_limit < 1 or p_limit > 500 then
+        raise exception '파기 실행 ID와 배치 크기를 확인해 주세요.' using errcode = '22023';
+    end if;
+    select * into v_job from bodeul.retention_job_runs where id = p_job_id for update;
+    if not found or v_job.mode <> 'APPLY' or v_job.status <> 'RUNNING' then
+        raise exception '진행 중인 적용 실행에서만 원문을 파기할 수 있습니다.' using errcode = '22023';
+    end if;
+
+    v_candidates := case when v_job.guardian_draft_checked then v_job.guardian_draft_candidates
+        else bodeul.preview_expired_guardian_booking_drafts(v_job.as_of) end;
+    v_purged := bodeul.purge_expired_guardian_booking_drafts(v_job.as_of, p_limit);
+    v_remaining := bodeul.preview_expired_guardian_booking_drafts(v_job.as_of);
+    update bodeul.retention_job_runs
+    set guardian_draft_checked = true,
+        guardian_draft_candidates = v_candidates,
+        guardian_drafts_purged = guardian_drafts_purged + v_purged,
+        guardian_drafts_remaining = v_remaining
+    where id = p_job_id;
+    return v_purged;
+end;
+$$;
+
+alter function bodeul.purge_expired_guardian_booking_drafts(uuid, integer) owner to bodeul_migration;
+revoke all on function bodeul.purge_expired_guardian_booking_drafts(uuid, integer)
+    from public, anon, authenticated, service_role, bodeul_core_runtime, bodeul_admin_runtime;
+grant execute on function bodeul.purge_expired_guardian_booking_drafts(uuid, integer)
+    to bodeul_retention_runtime;
+-- 이전 함수는 소유자 전용 내부 구현으로 남기고 집계 없는 runtime 파기를 막는다.
+revoke all on function bodeul.purge_expired_guardian_booking_drafts(timestamptz, integer)
+    from bodeul_retention_runtime;
+
 create or replace function bodeul.finish_retention_job(
     p_job_id uuid,
     p_status text,
@@ -118,10 +162,12 @@ begin
         manager_documents_deleted = (p_counts ->> 'managerDocumentsDeleted')::integer,
         manager_document_delete_failures = (p_counts ->> 'managerDocumentDeleteFailures')::integer,
         admin_audits_deleted = coalesce((p_counts ->> 'adminAuditsDeleted')::integer, 0),
-        guardian_draft_checked = p_counts ? 'guardianDraftCandidates',
-        guardian_draft_candidates = coalesce((p_counts ->> 'guardianDraftCandidates')::integer, 0),
-        guardian_drafts_purged = coalesce((p_counts ->> 'guardianDraftsPurged')::integer, 0),
-        guardian_drafts_remaining = coalesce((p_counts ->> 'guardianDraftsRemaining')::integer, 0),
+        guardian_draft_checked = run.guardian_draft_checked or p_counts ? 'guardianDraftCandidates',
+        guardian_draft_candidates = case when run.guardian_draft_checked then run.guardian_draft_candidates
+            else coalesce((p_counts ->> 'guardianDraftCandidates')::integer, 0) end,
+        guardian_drafts_purged = run.guardian_drafts_purged,
+        guardian_drafts_remaining = case when run.guardian_draft_checked then run.guardian_drafts_remaining
+            else coalesce((p_counts ->> 'guardianDraftsRemaining')::integer, 0) end,
         failure_stage = p_failure_stage
     where run.id = p_job_id and run.status = 'RUNNING';
 

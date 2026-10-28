@@ -11,6 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GuardianBookingRetentionMigrationContractTests {
     @Test
+    void purgeUsesLockedApplyJobAndFinalizationKeepsDatabaseCounts() throws Exception {
+        String sql = new ClassPathResource("db/migration/V27__add_guardian_booking_retention_counts.sql")
+                .getContentAsString(StandardCharsets.UTF_8);
+        assertThat(sql).contains("p_job_id uuid, p_limit integer", "where id = p_job_id for update",
+                "v_job.mode <> 'APPLY' or v_job.status <> 'RUNNING'",
+                "bodeul.purge_expired_guardian_booking_drafts(v_job.as_of, p_limit)",
+                "guardian_drafts_purged = guardian_drafts_purged + v_purged",
+                "guardian_drafts_purged = run.guardian_drafts_purged");
+        assertThat(sql).doesNotContain("guardian_drafts_purged = coalesce((p_counts");
+    }
+
+    @Test
     void migrationAddsOnlyCountHistoryWithoutChangingDraftsOrGivingTableAccess() throws Exception {
         String sql = new ClassPathResource("db/migration/V27__add_guardian_booking_retention_counts.sql")
                 .getContentAsString(StandardCharsets.UTF_8);

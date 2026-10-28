@@ -11,6 +11,10 @@ begin
 end;
 $$;
 
+drop function bodeul.purge_expired_guardian_booking_drafts(uuid, integer);
+grant execute on function bodeul.purge_expired_guardian_booking_drafts(timestamptz, integer)
+    to bodeul_retention_runtime;
+
 create or replace function bodeul.finish_retention_job(
     p_job_id uuid,
     p_status text,

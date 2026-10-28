@@ -302,13 +302,18 @@ test("보호자 원문 dry-run은 후보만 보고하고 원문과 Storage를 �
   }
 });
 
-test("보호자 원문은 같은 기준 시각의 500건 배치로 처리하고 잔여를 재조회한다", async () => {
+test("보호자 원문은 기준 시각을 가진 같은 실행 ID의 500건 배치로 처리한다", async () => {
   const batches = [500, 2];
   let previews = 0;
   const dependencies = guardianRetentionDependencies({
     async previewGuardianDrafts() { return previews++ === 0 ? 502 : 0; },
-    async purgeGuardianDrafts(asOf, limit) {
+    async beginJob(mode, asOf) {
+      assert.equal(mode, "APPLY");
       assert.equal(asOf.toISOString(), "2026-10-28T01:00:00.000Z");
+      return "5a246e0e-e543-4fd4-936e-58e07b478247";
+    },
+    async purgeGuardianDrafts(jobId, limit) {
+      assert.equal(jobId, "5a246e0e-e543-4fd4-936e-58e07b478247");
       assert.equal(limit, 500);
       return batches.shift();
     },
@@ -413,11 +418,13 @@ test("보호자 파기 SQL은 V27 집계 계약을 먼저 검사하고 값은 �
     return sql.includes("candidate_count") ? [{candidate_count: "7"}] : [{purged_count: "2"}];
   };
   const asOf = new Date("2026-10-28T01:00:00.000Z");
+  const jobId = "5a246e0e-e543-4fd4-936e-58e07b478247";
   assert.equal(await repository.previewGuardianDrafts(asOf), 7);
-  assert.equal(await repository.purgeGuardianDrafts(asOf, 500), 2);
+  assert.equal(await repository.purgeGuardianDrafts(jobId, 500), 2);
   assert.match(queries[0].sql, /guardian_drafts_remaining[\s\S]*limit 0/);
   assert.match(queries[1].sql, /preview_expired_guardian_booking_drafts/);
-  assert.deepEqual(queries[2].values, [asOf.toISOString(), 500]);
+  assert.deepEqual(queries[2].values, [jobId, 500]);
+  assert.match(queries[2].sql, /\?::uuid/);
   assert.equal(queries.some(({sql}) => sql.includes("appointment_body")), false);
 });
 
@@ -425,7 +432,7 @@ test("누락·음수·비정상 파기 건수는 0건 성공으로 숨기지 않
   const repository = Object.create(PostgresRetentionRepository.prototype);
   for (const value of [undefined, null, -1, 1.5, "", "NaN", "1.2", 501]) {
     repository.sql = async () => [{purged_count: value}];
-    await assert.rejects(repository.purgeGuardianDrafts(new Date(), 500),
+    await assert.rejects(repository.purgeGuardianDrafts("5a246e0e-e543-4fd4-936e-58e07b478247", 500),
         (error) => error.code === "GUARDIAN_DRAFT_COUNT_INVALID");
   }
 });

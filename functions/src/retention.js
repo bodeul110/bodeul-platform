@@ -193,10 +193,10 @@ class PostgresRetentionRepository {
     return guardianDraftCount(rows[0]?.candidate_count);
   }
 
-  async purgeGuardianDrafts(asOf, limit) {
+  async purgeGuardianDrafts(jobId, limit) {
     const rows = await this.sql`
       select bodeul.purge_expired_guardian_booking_drafts(
-        ${asOf.toISOString()}::timestamptz, ${limit}
+        ${jobId}::uuid, ${limit}
       ) as purged_count
     `;
     return guardianDraftCount(rows[0]?.purged_count, limit);
@@ -570,7 +570,7 @@ async function runRetentionJob({
         failureStage = "PURGE_GUARDIAN_DRAFTS";
         for (let batch = 0; batch < GUARDIAN_DRAFT_MAX_BATCHES; batch += 1) {
           const purged = guardianDraftCount(
-              await database.purgeGuardianDrafts(asOf, POSTGRES_BATCH_SIZE), POSTGRES_BATCH_SIZE,
+              await database.purgeGuardianDrafts(jobId, POSTGRES_BATCH_SIZE), POSTGRES_BATCH_SIZE,
           );
           summary.guardianDraftsPurged += purged;
           summary.guardianDraftsRemaining = Math.max(
