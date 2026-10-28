@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.bodeul.core.appointment.AppointmentService.CreateAppointmentCommand;
@@ -12,10 +13,15 @@ import com.bodeul.core.appointment.GuardianBookingDraftRepository.StoredDraft;
 import com.bodeul.core.auth.AppUserRepository.AppUser;
 import com.bodeul.core.auth.AppUserRole;
 import com.bodeul.core.consent.GuardianBookingApprovalService;
+import com.bodeul.core.consent.GuardianBookingApprovalService.ParticipantPair;
 import com.bodeul.core.consent.GuardianBookingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -192,14 +198,46 @@ class GuardianBookingDraftServiceTests {
     @Test
     void listContainsOnlyMetadataForCurrentlyEligibleParticipantsAndDoesNotHideOutage() {
         var summary = stored(command, NOW.plusSeconds(60)).summary();
+        var pair = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
         when(repository.listActive(PATIENT, NOW)).thenReturn(List.of(summary));
+        when(approvals.eligibleParticipants(PATIENT, List.of(pair))).thenReturn(Set.of(pair));
         assertThat(service.list(PATIENT)).containsExactly(summary);
-        doThrow(GuardianBookingException.denied()).when(approvals).requireParticipants(PATIENT, PATIENT.id(), GUARDIAN.id());
+        when(approvals.eligibleParticipants(PATIENT, List.of(pair))).thenReturn(Set.of());
         assertThat(service.list(PATIENT)).isEmpty();
-        doThrow(GuardianBookingException.unavailable()).when(approvals).requireParticipants(PATIENT, PATIENT.id(), GUARDIAN.id());
+        when(approvals.eligibleParticipants(PATIENT, List.of(pair))).thenThrow(GuardianBookingException.unavailable());
         assertThatThrownBy(() -> service.list(PATIENT)).isInstanceOfSatisfying(GuardianBookingException.class,
                 error -> assertThat(error.status().value()).isEqualTo(503));
+        verify(approvals, never()).requireParticipants(any(), any(), any());
         verifyNoInteractions(booking);
+    }
+
+    @Test
+    void listChecksParticipantsTogetherAndPreservesRepositoryOrder() {
+        var first = stored(command, NOW.plusSeconds(60)).summary();
+        var second = stored(GuardianBookingTestFixtures.command(UUID.randomUUID(), NOW.plusSeconds(172800)),
+                NOW.plusSeconds(120)).summary();
+        var pair = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
+        when(repository.listActive(PATIENT, NOW)).thenReturn(List.of(second, first));
+        when(approvals.eligibleParticipants(PATIENT, List.of(pair, pair))).thenReturn(Set.of(pair));
+
+        assertThat(service.list(PATIENT)).containsExactly(second, first);
+        verify(approvals).eligibleParticipants(PATIENT, List.of(pair, pair));
+        verify(approvals, never()).requireParticipants(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void listRejectsTransactionOrSynchronizationBeforeLoadingRows(boolean actualTransaction) {
+        if (actualTransaction) TransactionSynchronizationManager.setActualTransactionActive(true);
+        else TransactionSynchronizationManager.initSynchronization();
+        try {
+            assertThatThrownBy(() -> service.list(PATIENT)).isInstanceOf(IllegalTransactionStateException.class);
+            verifyNoInteractions(repository, booking);
+            verify(approvals, never()).eligibleParticipants(any(), any());
+        } finally {
+            if (!actualTransaction) TransactionSynchronizationManager.clearSynchronization();
+            TransactionSynchronizationManager.clear();
+        }
     }
 
     private StoredDraft stored(CreateAppointmentCommand value, Instant expires) {

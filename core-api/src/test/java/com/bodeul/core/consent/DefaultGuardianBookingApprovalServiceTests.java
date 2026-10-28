@@ -3,7 +3,10 @@ package com.bodeul.core.consent;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.bodeul.core.auth.AppUserRepository;
@@ -12,12 +15,15 @@ import com.bodeul.core.auth.AppUserRole;
 import com.bodeul.core.auth.FirebaseAccountStatus;
 import com.bodeul.core.consent.AdultPatientGuardianBookingPolicy.ApprovalState;
 import com.bodeul.core.consent.GuardianBookingApprovalRepository.RequestKey;
+import com.bodeul.core.consent.GuardianBookingApprovalService.ParticipantPair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -139,6 +145,120 @@ class DefaultGuardianBookingApprovalServiceTests {
     void firebaseOutageIsNotTreatedAsAnActiveAccount() {
         when(accounts.isActive(any())).thenThrow(new FirebaseAccountStatus.UnavailableException());
         assertError(() -> service.requireParticipants(PATIENT, PATIENT.id(), GUARDIAN.id()), "guardian_booking_unavailable");
+    }
+
+    @Test
+    void repeatedDraftParticipantsAreLookedUpOnlyOncePerListRequest() {
+        var pair = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
+        assertThat(service.eligibleParticipants(PATIENT, Collections.nCopies(50, pair))).containsExactly(pair);
+        verify(users).findById(PATIENT.id());
+        verify(users).findById(GUARDIAN.id());
+        verify(accounts).isActive(PATIENT.firebaseUid());
+        verify(accounts).isActive(GUARDIAN.firebaseUid());
+        verifyNoMoreInteractions(users, accounts);
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void differentPairsShareTheirCommonParticipantLookup() {
+        AppUser otherGuardian = new AppUser(UUID.randomUUID(), "another-guardian", AppUserRole.GUARDIAN);
+        when(users.findById(otherGuardian.id())).thenReturn(Optional.of(otherGuardian));
+        var first = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
+        var second = new ParticipantPair(PATIENT.id(), otherGuardian.id());
+        assertThat(service.eligibleParticipants(PATIENT, List.of(first, second, first)))
+                .containsExactlyInAnyOrder(first, second);
+        verify(users).findById(PATIENT.id());
+        verify(users).findById(GUARDIAN.id());
+        verify(users).findById(otherGuardian.id());
+        verify(accounts).isActive(PATIENT.firebaseUid());
+        verify(accounts).isActive(GUARDIAN.firebaseUid());
+        verify(accounts).isActive(otherGuardian.firebaseUid());
+        verifyNoMoreInteractions(users, accounts);
+    }
+
+    @Test
+    void inactiveCommonParticipantIsAlsoCachedWithinTheRequest() {
+        AppUser otherPatient = new AppUser(UUID.randomUUID(), "another-patient", AppUserRole.PATIENT);
+        when(users.findById(otherPatient.id())).thenReturn(Optional.of(otherPatient));
+        when(accounts.isActive(GUARDIAN.firebaseUid())).thenReturn(false);
+        var first = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
+        var second = new ParticipantPair(otherPatient.id(), GUARDIAN.id());
+        assertThat(service.eligibleParticipants(GUARDIAN, List.of(first, second, first))).isEmpty();
+        verify(users).findById(GUARDIAN.id());
+        verify(accounts).isActive(GUARDIAN.firebaseUid());
+    }
+
+    @Test
+    void missingCommonParticipantDoesNotRepeatDatabaseLookups() {
+        when(users.findById(PATIENT.id())).thenReturn(Optional.empty());
+        assertThat(service.eligibleParticipants(PATIENT, List.of(
+                new ParticipantPair(PATIENT.id(), GUARDIAN.id()),
+                new ParticipantPair(PATIENT.id(), UUID.randomUUID())))).isEmpty();
+        verify(users).findById(PATIENT.id());
+        verifyNoMoreInteractions(users);
+        verifyNoInteractions(accounts);
+    }
+
+    @Test
+    void participantCacheNeverSurvivesTheCurrentListRequest() {
+        var pair = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
+        assertThat(service.eligibleParticipants(PATIENT, List.of(pair))).containsExactly(pair);
+        when(accounts.isActive(GUARDIAN.firebaseUid())).thenReturn(false);
+        assertThat(service.eligibleParticipants(PATIENT, List.of(pair))).isEmpty();
+        verify(users, times(2)).findById(PATIENT.id());
+        verify(users, times(2)).findById(GUARDIAN.id());
+        verify(accounts, times(2)).isActive(PATIENT.firebaseUid());
+        verify(accounts, times(2)).isActive(GUARDIAN.firebaseUid());
+    }
+
+    @Test
+    void listDoesNotReturnPartialSuccessWhenAnyAccountLookupIsUnavailable() {
+        AppUser otherGuardian = new AppUser(UUID.randomUUID(), "unavailable-guardian", AppUserRole.GUARDIAN);
+        when(users.findById(otherGuardian.id())).thenReturn(Optional.of(otherGuardian));
+        when(accounts.isActive(otherGuardian.firebaseUid())).thenThrow(new FirebaseAccountStatus.UnavailableException());
+        assertError(() -> service.eligibleParticipants(PATIENT, List.of(
+                new ParticipantPair(PATIENT.id(), GUARDIAN.id()),
+                new ParticipantPair(PATIENT.id(), otherGuardian.id()))), "guardian_booking_unavailable");
+        verify(accounts).isActive(PATIENT.firebaseUid());
+    }
+
+    @Test
+    void listRejectsUnrelatedRolesAndChangedActorIdentity() {
+        var pair = new ParticipantPair(PATIENT.id(), GUARDIAN.id());
+        AppUser outsider = new AppUser(UUID.randomUUID(), "outsider", AppUserRole.PATIENT);
+        AppUser wrongRole = new AppUser(PATIENT.id(), PATIENT.firebaseUid(), AppUserRole.MANAGER);
+        assertThat(service.eligibleParticipants(outsider, List.of(pair))).isEmpty();
+        assertThat(service.eligibleParticipants(wrongRole, List.of(pair))).isEmpty();
+        assertThat(service.eligibleParticipants(null, List.of(pair))).isEmpty();
+        verifyNoInteractions(users, accounts);
+        when(users.findById(PATIENT.id())).thenReturn(Optional.of(new AppUser(PATIENT.id(), "changed", AppUserRole.PATIENT)));
+        assertThat(service.eligibleParticipants(PATIENT, List.of(pair))).isEmpty();
+        verifyNoInteractions(accounts);
+    }
+
+    @Test
+    void listEmptyOrDisabledDoesNotLookUpParticipants() {
+        assertThat(service.eligibleParticipants(PATIENT, List.of())).isEmpty();
+        service = service(false, NOW);
+        assertError(() -> service.eligibleParticipants(PATIENT,
+                Set.of(new ParticipantPair(PATIENT.id(), GUARDIAN.id()))), "guardian_booking_disabled");
+        verifyNoInteractions(repository, users, accounts);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void participantListRejectsTransactionOrSynchronizationBeforeDatabaseOrFirebaseLookup(boolean actualTransaction) {
+        if (actualTransaction) TransactionSynchronizationManager.setActualTransactionActive(true);
+        else TransactionSynchronizationManager.initSynchronization();
+        try {
+            assertThatThrownBy(() -> service.eligibleParticipants(PATIENT,
+                    List.of(new ParticipantPair(PATIENT.id(), GUARDIAN.id()))))
+                    .isInstanceOf(IllegalTransactionStateException.class);
+            verifyNoInteractions(repository, users, accounts);
+        } finally {
+            if (!actualTransaction) TransactionSynchronizationManager.clearSynchronization();
+            TransactionSynchronizationManager.clear();
+        }
     }
 
     @Test

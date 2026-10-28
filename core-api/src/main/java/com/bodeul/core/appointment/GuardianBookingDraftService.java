@@ -4,7 +4,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,12 +14,14 @@ import com.bodeul.core.auth.AppUserRepository.AppUser;
 import com.bodeul.core.auth.AppUserRole;
 import com.bodeul.core.consent.GuardianBookingApprovalService;
 import com.bodeul.core.consent.GuardianBookingApprovalService.ApprovalView;
+import com.bodeul.core.consent.GuardianBookingApprovalService.ParticipantPair;
 import com.bodeul.core.consent.GuardianBookingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Profile("database")
@@ -82,19 +83,18 @@ class GuardianBookingDraftService {
         return new DraftView(stored.summary(), review.appointment(), review.patient(), review.guardian());
     }
 
-    @Transactional(readOnly = true)
     public List<DraftSummary> list(AppUser actor) {
         requireActor(actor);
-        List<DraftSummary> visible = new ArrayList<>();
-        for (DraftSummary summary : drafts.listActive(actor, clock.instant())) {
-            try {
-                approvals.requireParticipants(actor, summary.patientUserId(), summary.guardianUserId());
-                visible.add(summary);
-            } catch (GuardianBookingException exception) {
-                if (exception.status() != HttpStatus.FORBIDDEN) throw exception;
-            }
+        // 동기화만 활성화된 범위도 JDBC 연결을 유지하므로 목록은 두 범위 모두 거부한다.
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalTransactionStateException("예약 초안 목록은 DB 트랜잭션 밖에서 조회해야 합니다.");
         }
-        return List.copyOf(visible);
+        List<DraftSummary> candidates = drafts.listActive(actor, clock.instant());
+        var eligible = approvals.eligibleParticipants(actor, candidates.stream()
+                .map(summary -> new ParticipantPair(summary.patientUserId(), summary.guardianUserId())).toList());
+        return candidates.stream().filter(summary -> eligible.contains(
+                new ParticipantPair(summary.patientUserId(), summary.guardianUserId()))).toList();
     }
 
     @Transactional

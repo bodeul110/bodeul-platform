@@ -2,6 +2,7 @@ package com.bodeul.core.appointment;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +36,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.*;
@@ -54,6 +56,8 @@ class GuardianBookingTransactionPostgresTests {
     private TransactionTemplate transaction;
     private AppointmentService.CreateAppointmentCommand command;
     private final Set<String> inactiveAccounts = new HashSet<>();
+    private final Map<String, Integer> listAccountLookups = new HashMap<>();
+    private boolean checkingListAccounts;
 
     @BeforeEach
     void setUp() {
@@ -82,7 +86,15 @@ class GuardianBookingTransactionPostgresTests {
         context.registerBean(JdbcClient.class, () -> JdbcClient.create(runtime));
         context.registerBean(DataSourceTransactionManager.class, () -> manager);
         context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
-        context.registerBean(FirebaseAccountStatus.class, () -> uid -> !inactiveAccounts.contains(uid));
+        context.registerBean(FirebaseAccountStatus.class, () -> uid -> {
+            if (checkingListAccounts) {
+                assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+                assertThat(TransactionSynchronizationManager.isSynchronizationActive()).isFalse();
+                assertThat(TransactionSynchronizationManager.hasResource(runtime)).isFalse();
+                listAccountLookups.merge(uid, 1, Integer::sum);
+            }
+            return !inactiveAccounts.contains(uid);
+        });
         context.registerBean(AppUserRepository.class, () -> new AppUserRepository() {
             public Optional<AppUser> findByFirebaseUid(String uid) { return Optional.empty(); }
             public Optional<AppUser> findById(UUID id) {
@@ -155,6 +167,38 @@ class GuardianBookingTransactionPostgresTests {
         assertThat(drafts.list(PATIENT)).isEmpty();
         assertThatThrownBy(() -> drafts.grant(PATIENT, GUARDIAN.id(), command.clientRequestId(), 0, true)).isInstanceOf(GuardianBookingException.class);
         assertThat(eventCount()).isZero();
+    }
+
+    @Test
+    void draftListChecksEachFirebaseUidOnceWithoutHoldingDatabaseTransaction() {
+        for (int i = 0; i < 20; i++) {
+            drafts.submit(GUARDIAN, PATIENT.id(), GuardianBookingTestFixtures.command(UUID.randomUUID(),
+                    Instant.now().plusSeconds(172800)));
+        }
+        checkingListAccounts = true;
+        for (AppUser actor : java.util.List.of(PATIENT, GUARDIAN)) {
+            listAccountLookups.clear();
+            assertThat(drafts.list(actor)).hasSize(20);
+            assertThat(listAccountLookups).containsExactlyInAnyOrderEntriesOf(
+                    Map.of(PATIENT.firebaseUid(), 1, GUARDIAN.firebaseUid(), 1));
+        }
+        inactiveAccounts.add(GUARDIAN.firebaseUid());
+        listAccountLookups.clear();
+        assertThat(drafts.list(PATIENT)).isEmpty();
+        assertThat(listAccountLookups).containsExactlyInAnyOrderEntriesOf(
+                Map.of(PATIENT.firebaseUid(), 1, GUARDIAN.firebaseUid(), 1));
+    }
+
+    @Test
+    void draftListRejectsAmbientTransactionsBeforeAnyExternalAccountLookup() {
+        drafts.submit(GUARDIAN, PATIENT.id(), command);
+        checkingListAccounts = true;
+        assertThatThrownBy(() -> transaction.execute(status -> drafts.list(PATIENT)))
+                .isInstanceOf(IllegalTransactionStateException.class);
+        assertThatThrownBy(() -> transaction.execute(status -> approvals.eligibleParticipants(PATIENT,
+                Set.of(new GuardianBookingApprovalService.ParticipantPair(PATIENT.id(), GUARDIAN.id())))))
+                .isInstanceOf(IllegalTransactionStateException.class);
+        assertThat(listAccountLookups).isEmpty();
     }
 
     @Test
