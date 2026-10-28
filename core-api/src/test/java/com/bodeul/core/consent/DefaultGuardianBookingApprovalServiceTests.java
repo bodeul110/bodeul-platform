@@ -151,6 +151,99 @@ class DefaultGuardianBookingApprovalServiceTests {
     }
 
     @Test
+    void activeParticipantsKeepNormalPendingAndExistingApprovalViews() {
+        assertThat(service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST).revocationOnly()).isFalse();
+        when(repository.findCurrent(KEY)).thenReturn(granted());
+        assertThat(service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST).revocationOnly()).isFalse();
+        assertThat(service.get(GUARDIAN, PATIENT.id(), GUARDIAN.id(), REQUEST).revocationOnly()).isFalse();
+        verify(repository, never()).save(any(), anyLong());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"inactive", "missing", "role-changed"})
+    void patientCanReadOwnExistingApprovalWhenGuardianIsNoLongerEligible(String reason) {
+        ApprovalState granted = granted();
+        when(repository.findCurrent(KEY)).thenReturn(granted);
+        makeGuardianIneligible(reason);
+
+        var view = service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST);
+        assertThat(view.grantId()).isEqualTo(granted.grant().orElseThrow().id());
+        assertThat(view.version()).isEqualTo(1);
+        assertThat(view.revocationOnly()).isTrue();
+        assertThat(view.toString()).doesNotContain(HASH, PATIENT.firebaseUid(), GUARDIAN.firebaseUid());
+        verify(repository, never()).save(any(), anyLong());
+
+        assertError(() -> service.get(GUARDIAN, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_permission_denied");
+        assertError(() -> service.grant(PATIENT, GUARDIAN.id(), REQUEST, 1, true, HASH, NOW.plusSeconds(600)),
+                "guardian_booking_permission_denied");
+        assertError(() -> service.lockForCreation(GUARDIAN, PATIENT.id(), REQUEST, view.grantId(), 1, HASH),
+                "guardian_booking_permission_denied");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"inactive", "missing", "role-changed"})
+    void ineligibleGuardianWithoutExistingApprovalDoesNotExposePendingMetadata(String reason) {
+        makeGuardianIneligible(reason);
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_permission_denied");
+        verify(repository, never()).save(any(), anyLong());
+    }
+
+    @Test
+    void revokedApprovalRemainsReadableButDoesNotRegainActiveStatus() {
+        when(repository.findCurrent(KEY)).thenReturn(AdultPatientGuardianBookingPolicy.revokeByPatient(
+                granted(), 1, PATIENT.id(), AppUserRole.PATIENT, NOW));
+        when(accounts.isActive(GUARDIAN.firebaseUid())).thenReturn(false);
+        var view = service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST);
+        assertThat(view.revocationOnly()).isTrue();
+        assertThat(view.active()).isFalse();
+        assertThat(view.version()).isEqualTo(2);
+        assertThat(view.revokedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void expiredApprovalRemainsReadableForRevocation() {
+        when(repository.findCurrent(KEY)).thenReturn(granted());
+        when(accounts.isActive(GUARDIAN.firebaseUid())).thenReturn(false);
+        service = service(true, NOW.plusSeconds(3600));
+        var view = service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST);
+        assertThat(view.revocationOnly()).isTrue();
+        assertThat(view.active()).isFalse();
+        assertThat(view.revokedAt()).isNull();
+    }
+
+    @Test
+    void recoveryNeverBypassesPatientIdentityOrAccountChecks() {
+        when(accounts.isActive(PATIENT.firebaseUid())).thenReturn(false);
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_permission_denied");
+        assertError(() -> service.revoke(PATIENT, GUARDIAN.id(), REQUEST, 1), "guardian_booking_permission_denied");
+        when(accounts.isActive(PATIENT.firebaseUid())).thenReturn(true);
+        when(users.findById(PATIENT.id())).thenReturn(Optional.of(new AppUser(PATIENT.id(), "changed-uid", AppUserRole.PATIENT)));
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_permission_denied");
+        when(users.findById(PATIENT.id())).thenReturn(Optional.empty());
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_permission_denied");
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void accountLookupOutageIsNotConvertedToRevocationOnlyAccess() {
+        when(repository.findCurrent(KEY)).thenReturn(granted());
+        when(accounts.isActive(GUARDIAN.firebaseUid())).thenThrow(new FirebaseAccountStatus.UnavailableException());
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_unavailable");
+        when(accounts.isActive(PATIENT.firebaseUid())).thenThrow(new FirebaseAccountStatus.UnavailableException());
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_unavailable");
+        verify(repository, times(1)).findCurrent(KEY);
+        verify(repository, never()).save(any(), anyLong());
+    }
+
+    @Test
+    void disabledGateBlocksRecoveryBeforeLookingUpAccountsOrApproval() {
+        service = service(false, NOW);
+        assertError(() -> service.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST), "guardian_booking_disabled");
+        assertError(() -> service.revoke(PATIENT, GUARDIAN.id(), REQUEST, 1), "guardian_booking_disabled");
+        verifyNoInteractions(repository, users, accounts);
+    }
+
+    @Test
     void patientCanRevokeEvenIfGuardianIsInactiveAndRepeatIsIdempotent() {
         ApprovalState granted = granted();
         when(repository.lockCurrent(KEY)).thenReturn(granted);
@@ -201,6 +294,16 @@ class DefaultGuardianBookingApprovalServiceTests {
         assertError(() -> service.grant(PATIENT, GUARDIAN.id(), REQUEST, 1, true, HASH, NOW.plusSeconds(600)), "guardian_booking_approval_conflict");
         assertError(() -> service.revoke(PATIENT, GUARDIAN.id(), REQUEST, 1), "guardian_booking_approval_conflict");
         verify(repository, never()).save(any(), anyLong());
+    }
+
+    private void makeGuardianIneligible(String reason) {
+        switch (reason) {
+            case "inactive" -> when(accounts.isActive(GUARDIAN.firebaseUid())).thenReturn(false);
+            case "missing" -> when(users.findById(GUARDIAN.id())).thenReturn(Optional.empty());
+            case "role-changed" -> when(users.findById(GUARDIAN.id())).thenReturn(
+                    Optional.of(new AppUser(GUARDIAN.id(), GUARDIAN.firebaseUid(), AppUserRole.MANAGER)));
+            default -> throw new IllegalArgumentException(reason);
+        }
     }
 
     private ApprovalState pending() { return ApprovalState.pending(PATIENT.id(), GUARDIAN.id(), REQUEST); }

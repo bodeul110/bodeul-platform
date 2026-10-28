@@ -22,5 +22,6 @@ public interface GuardianBookingApprovalService {
                          UUID grantId, long version, String serverFingerprint);
 
     record ApprovalView(UUID grantId, long version, String policyVersion,
-                        Instant grantedAt, Instant expiresAt, Instant revokedAt, boolean active) { }
+                        Instant grantedAt, Instant expiresAt, Instant revokedAt, boolean active,
+                        boolean revocationOnly) { }
 }

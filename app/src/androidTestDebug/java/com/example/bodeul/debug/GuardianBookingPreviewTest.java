@@ -100,7 +100,7 @@ public class GuardianBookingPreviewTest {
     public void rejectedCreate_showsRefreshAndSubmitsReloadedApproval() {
         try (ActivityScenario<GuardianBookingPreviewActivity> scenario = launch()) {
             FailureRepository repository = new FailureRepository(CreateFailure.REJECTED);
-            GuardianBookingCoordinator coordinator = bindFailureScenario(scenario, repository);
+            GuardianBookingCoordinator coordinator = bindScenario(scenario, repository);
             try {
                 onView(withId(R.id.buttonGuardianBookingCreate)).perform(scrollTo(), click());
                 onView(withId(R.id.textGuardianBookingMessage)).perform(scrollTo())
@@ -124,7 +124,7 @@ public class GuardianBookingPreviewTest {
     public void lostResponse_thenRejectedRetry_keepsSameRequestRecovery() {
         try (ActivityScenario<GuardianBookingPreviewActivity> scenario = launch()) {
             FailureRepository repository = new FailureRepository(CreateFailure.UNKNOWN, CreateFailure.REJECTED);
-            GuardianBookingCoordinator coordinator = bindFailureScenario(scenario, repository);
+            GuardianBookingCoordinator coordinator = bindScenario(scenario, repository);
             try {
                 onView(withId(R.id.buttonGuardianBookingCreate)).perform(scrollTo(), click());
                 onView(withId(R.id.textGuardianBookingMessage)).perform(scrollTo())
@@ -147,8 +147,36 @@ public class GuardianBookingPreviewTest {
         }
     }
 
-    private static GuardianBookingCoordinator bindFailureScenario(
-            ActivityScenario<GuardianBookingPreviewActivity> scenario, FailureRepository repository) {
+    @Test
+    public void revocationOnly_hidesUnverifiedDraftAndNeverEnablesNewApproval() {
+        try (ActivityScenario<GuardianBookingPreviewActivity> scenario = launch()) {
+            RevocationOnlyRepository repository = new RevocationOnlyRepository();
+            GuardianBookingCoordinator coordinator = bindScenario(scenario, repository);
+            try {
+                onView(withId(R.id.textGuardianBookingSummary)).check(matches(withText("")));
+                onView(withId(R.id.checkGuardianBookingReviewed)).perform(scrollTo()).check(matches(not(isEnabled())));
+                onView(withId(R.id.checkGuardianBookingAdult)).perform(scrollTo()).check(matches(not(isEnabled())));
+                onView(withId(R.id.buttonGuardianBookingGrant)).perform(scrollTo()).check(matches(not(isEnabled())));
+                onView(withId(R.id.buttonGuardianBookingCreate)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+                onView(withId(R.id.buttonGuardianBookingRevoke)).perform(scrollTo()).check(matches(isEnabled())).perform(click());
+                onView(withId(R.id.textGuardianBookingMessage)).perform(scrollTo())
+                        .check(matches(withText(R.string.guardian_booking_revoked)));
+                onView(withId(R.id.buttonGuardianBookingGrant)).perform(scrollTo()).check(matches(not(isEnabled())));
+                onView(withId(R.id.buttonGuardianBookingRevoke)).check(matches(not(isEnabled())));
+                onView(withId(R.id.buttonGuardianBookingRefresh)).perform(scrollTo(), click());
+                onView(withId(R.id.textGuardianBookingApproval)).perform(scrollTo())
+                        .check(matches(withText(containsString("승인 버전: 2"))));
+                onView(withId(R.id.buttonGuardianBookingGrant)).perform(scrollTo()).check(matches(not(isEnabled())));
+                onView(withId(R.id.buttonGuardianBookingRevoke)).check(matches(not(isEnabled())));
+                scenario.onActivity(activity -> assertEquals(1, repository.revocations));
+            } finally {
+                scenario.onActivity(activity -> coordinator.dispose());
+            }
+        }
+    }
+
+    private static GuardianBookingCoordinator bindScenario(
+            ActivityScenario<GuardianBookingPreviewActivity> scenario, GuardianBookingRepository repository) {
         AtomicReference<GuardianBookingCoordinator> result = new AtomicReference<>();
         scenario.onActivity(activity -> {
             GuardianBookingRequest request = new GuardianBookingRequest(UUID.randomUUID(), UUID.randomUUID(),
@@ -164,6 +192,40 @@ public class GuardianBookingPreviewTest {
             result.set(coordinator);
         });
         return result.get();
+    }
+
+    private static final class RevocationOnlyRepository implements GuardianBookingRepository {
+        final Instant now = Instant.now();
+        GuardianBookingApproval approval = new GuardianBookingApproval(UUID.randomUUID(), 1,
+                now.minusSeconds(1), now.plusSeconds(3600), null, true);
+        int revocations;
+
+        @Override
+        public void load(GuardianBookingRequest request, RepositoryCallback<Review> callback) {
+            callback.onSuccess(new Review(request, approval, true, false));
+        }
+
+        @Override
+        public void revoke(GuardianBookingRequest request, long version,
+                RepositoryCallback<GuardianBookingApproval> callback) {
+            assertEquals(1, version);
+            revocations++;
+            approval = new GuardianBookingApproval(approval.getGrantId(), 2,
+                    now.minusSeconds(1), now.plusSeconds(3600), now, false);
+            callback.onSuccess(approval);
+        }
+
+        @Override
+        public void grant(GuardianBookingRequest request, long version, boolean confirmed,
+                RepositoryCallback<GuardianBookingApproval> callback) {
+            throw new AssertionError("철회 전용 화면에서는 새 승인을 만들면 안 됩니다.");
+        }
+
+        @Override
+        public void create(GuardianBookingRequest request, GuardianBookingApproval approval,
+                RepositoryCallback<CreateResult> callback) {
+            throw new AssertionError("철회 전용 화면에서는 예약을 접수하면 안 됩니다.");
+        }
     }
 
     private static final class FailureRepository implements GuardianBookingRepository {

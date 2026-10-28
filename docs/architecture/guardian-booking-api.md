@@ -1,6 +1,6 @@
 # 보호자 예약 승인 API 연결
 
-기준일: 2026-09-29. Android 준비 범위는 2026-10-28에 보충했다.
+기준일: 2026-09-29. Android 준비와 비활성 보호자의 기존 승인 조회·철회 경계는 2026-10-28에 보충했다.
 
 ## 설계 판단
 
@@ -30,7 +30,7 @@
 | --- | --- | --- |
 | `POST /preview` | 환자 본인 | `guardianUserId`, `appointment`를 검증하고 정규화된 `{clientRequestId, draft, pricePolicyVersion, expectedFinalPrice}`를 반환 |
 | `POST /approvals` | 환자 본인 | 위 입력과 `expectedVersion`, `adultPatientConfirmed=true`; 승인 ID·버전·시각·활성 여부 반환 |
-| `GET /patients/{patientId}/guardians/{guardianId}/requests/{requestId}` | 지정 환자 또는 보호자 | 현재 승인 메타데이터만 반환. 미승인 상태는 버전 0·비활성 |
+| `GET /patients/{patientId}/guardians/{guardianId}/requests/{requestId}` | 지정 환자 또는 보호자 | 현재 승인 메타데이터와 `revocationOnly` 반환. 양쪽 활성 계정의 미승인 상태만 버전 0·비활성으로 반환 |
 | `POST /guardians/{guardianId}/requests/{requestId}/revoke` | 환자 본인 | `expectedVersion`; 철회된 최신 메타데이터 반환 |
 | `POST /create` | 지정 보호자 | `patientUserId`, `grantId`, `approvalVersion`, `appointment`; `{appointmentId, publicCode}` 접수증만 반환 |
 
@@ -40,13 +40,21 @@
 
 환자에게 요청 본문을 전달하는 저장·알림 기능은 아직 없다. Android에는 전용 API Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면을 준비했지만 일반 사용자 진입점은 열지 않았다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. 실제 요청 전달과 검증된 상대방 표시 정보, DEV 종단 연결은 [Android 연결 설계](../design/guardian-booking-android.md)의 후속 범위다.
 
+## 비활성 보호자의 기존 승인 철회
+
+현재 DB 역할·Firebase 활성 상태가 확인된 환자는 자신의 기존 승인 메타데이터를 보호자 상태와 별개로 다시 조회할 수 있다. 보호자가 비활성·삭제되었거나 더 이상 GUARDIAN 역할이 아니면 GET 응답에 `revocationOnly=true`를 반환한다. 기존 승인이 없는 조합은 403으로 닫으며 임의 계정 조회나 새 승인 상태를 제공하지 않는다. 철회·만료된 이력도 같은 최소 메타데이터만 조회할 수 있다.
+
+승인 응답 필드는 `grantId`, `version`, `policyVersion`, `grantedAt`, `expiresAt`, `revokedAt`, `active`, `revocationOnly`다. `active`는 승인 자체의 시각·철회·정책 유효성이지 참여 계정의 활성 여부나 예약 생성 허가가 아니다. `revocationOnly`는 GET의 화면 모드를 전달하는 값이고, 승인·철회 응답의 기본값 `false`는 권한 재부여를 뜻하지 않는다. 모든 쓰기는 서버에서 별도로 인가하며 미리보기·새 승인·생성의 양쪽 활성 계정 조건은 완화하지 않는다.
+
+Android는 환자 본인의 기존 승인에 명시적인 boolean `true`가 온 경우에만 미리보기를 건너뛰고 검증되지 않은 본문을 숨긴 채 철회만 제공한다. 필드가 없는 구버전 응답은 기존 미리보기 경로를 유지하고, 문자열·숫자·null이나 보호자/미승인 상태의 `true`는 거부한다. 401·403·503을 철회 모드로 바꾸지 않는다. Firebase 조회 장애는 503이며 비활성으로 추정하지 않는다. [상세 판단](../design/guardian-booking-revocation-recovery.md)과 [검증 기록](../reports/issue-419-revocation-recovery-2026-10-28.md)을 따른다.
+
 ## 재시도와 동시성
 
 새 예약은 승인 행의 `FOR UPDATE` 잠금부터 예약 INSERT까지 동일 Spring 트랜잭션으로 처리한다. 먼저 커밋된 철회는 대기 중인 생성을 거부하고, 생성이 먼저 잠금을 얻으면 예약 커밋 이후 철회가 진행된다. 철회는 이미 생성된 예약을 취소하지 않는다.
 
 이미 생성된 같은 요청은 활성 참여자·환자 ID·요청자 역할·최초 본문 및 가격 fingerprint가 모두 일치할 때 접수증만 재전송한다. 이때 과거 승인 만료·철회는 접수증 재전송을 막지 않으며 새 INSERT와 정보공유 권한은 만들지 않는다. 다른 본문이나 환자로 같은 요청 ID를 재사용하면 409로 거부한다. 환자의 승인·철회는 최신 버전이 필요하며 경합 시 재조회 후 다시 확인한다.
 
-승인 없는 새 생성, 만료·철회·재승인 충돌은 `409 guardian_booking_approval_conflict`, 비활성 계정·당사자/역할 불일치는 403, 계정 상태 확인 장애는 503이다. DB 원문 오류와 Firebase UID를 응답에 넣지 않는다.
+승인 없는 새 생성, 만료·철회·재승인 충돌은 `409 guardian_booking_approval_conflict`, 비활성 계정·당사자/역할 불일치는 403, 계정 상태 확인 장애는 503이다. 위 환자 본인의 기존 승인 조회·철회만 비활성 보호자 예외이며 환자 본인의 인증·활성 검사는 유지한다. DB 원문 오류와 Firebase UID를 응답에 넣지 않는다.
 
 ## 개인정보와 영향도
 

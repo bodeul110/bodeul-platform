@@ -59,6 +59,81 @@ public class CoreApiGuardianBookingRepositoryTest {
     }
 
     @Test
+    public void explicitRevocationOnly_skipsPreviewAndPreservesExistingApproval() throws Exception {
+        List<String> calls = new ArrayList<>();
+        Review result = CoreApiGuardianBookingRepository.loadRequest(request(), (method, path, body) -> {
+            calls.add(method + " " + path);
+            assertEquals("GET", method);
+            return path.equals("/api/auth/me") ? me(true) : activeJson().put("revocationOnly", true);
+        });
+        assertEquals(2, calls.size());
+        assertTrue(result.patient);
+        assertFalse(result.previewVerified);
+        assertEquals(GRANT, result.approval.getGrantId());
+        assertTrue(result.approval.canRevoke());
+    }
+
+    @Test
+    public void revokedHistoryInRevocationOnlyMode_remainsReadOnly() throws Exception {
+        Review result = CoreApiGuardianBookingRepository.loadRequest(request(), (method, path, body) -> {
+            assertEquals("GET", method);
+            return path.equals("/api/auth/me") ? me(true) : activeJson().put("revocationOnly", true)
+                    .put("version", 2).put("active", false).put("revokedAt", NOW.toString());
+        });
+        assertFalse(result.previewVerified);
+        assertFalse(result.approval.canRevoke());
+        assertFalse(result.approval.canCreateAt(NOW));
+    }
+
+    @Test
+    public void explicitNormalMode_stillRequiresPreview() throws Exception {
+        List<String> calls = new ArrayList<>();
+        Review result = CoreApiGuardianBookingRepository.loadRequest(request(), (method, path, body) -> {
+            calls.add(method + " " + path);
+            if (path.equals("/api/auth/me")) return me(true);
+            if (path.endsWith("/preview")) return preview();
+            return activeJson().put("revocationOnly", false);
+        });
+        assertEquals(3, calls.size());
+        assertTrue(result.previewVerified);
+    }
+
+    @Test
+    public void revocationOnly_rejectsGuardianAndMissingApproval() {
+        for (boolean patient : new boolean[]{false, true}) {
+            assertThrows(JSONException.class, () -> CoreApiGuardianBookingRepository.loadRequest(
+                    request(), (method, path, body) -> {
+                        assertEquals("GET", method);
+                        if (path.equals("/api/auth/me")) return me(patient);
+                        return (patient ? inactiveJson() : activeJson()).put("revocationOnly", true);
+                    }));
+        }
+    }
+
+    @Test
+    public void revocationOnly_doesNotCoerceInvalidFlagValues() {
+        for (Object invalid : List.of("true", "false", 1, 0, JSONObject.NULL)) {
+            assertThrows(JSONException.class, () -> CoreApiGuardianBookingRepository.loadRequest(
+                    request(), (method, path, body) -> {
+                        assertEquals("GET", method);
+                        return path.equals("/api/auth/me") ? me(true) : activeJson().put("revocationOnly", invalid);
+                    }));
+        }
+    }
+
+    @Test
+    public void failedMetadataRead_neverInventsRevocationOnlyAccess() {
+        for (int status : new int[]{401, 403, 404, 503}) {
+            assertThrows(CoreApiAuthenticatedClient.ApiException.class, () ->
+                    CoreApiGuardianBookingRepository.loadRequest(request(), (method, path, body) -> {
+                        assertEquals("GET", method);
+                        if (path.equals("/api/auth/me")) return me(true);
+                        throw new CoreApiAuthenticatedClient.ApiException(status, "합성 조회 오류");
+                    }));
+        }
+    }
+
+    @Test
     public void unauthorizedOrUnavailablePreview_neverBecomesWritableState() {
         for (int status : new int[]{401, 403, 404, 503}) {
             assertThrows(CoreApiAuthenticatedClient.ApiException.class, () ->

@@ -107,7 +107,8 @@ class GuardianBookingApiIntegrationTests {
         when(service.preview(eq(PATIENT), eq(GUARDIAN.id()), any())).thenReturn(
                 GuardianBookingTestFixtures.command(REQUEST, Instant.parse("2026-10-01T00:00:00Z")));
         mvc.perform(get(metadataPath()).header("Authorization", "Bearer patient"))
-                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"));
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.revocationOnly").value(false));
         mvc.perform(post(BASE + "/guardians/" + GUARDIAN.id() + "/requests/" + REQUEST + "/revoke")
                         .header("Authorization", "Bearer patient").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"expectedVersion\":1}"))
@@ -116,6 +117,22 @@ class GuardianBookingApiIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON).content(body().toString()))
                 .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"));
         verify(approvals).revoke(PATIENT, GUARDIAN.id(), REQUEST, 1);
+    }
+
+    @Test
+    void recoveryMetadataCarriesExplicitModeWithoutAddingParticipantDetails() throws Exception {
+        when(approvals.get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST)).thenReturn(
+                new ApprovalView(GRANT, 1, "adult-patient-guardian-booking-v1",
+                        Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-02T00:00:00Z"), null, true, true));
+        String json = mvc.perform(get(metadataPath()).header("Authorization", "Bearer patient"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.revocationOnly").value(true))
+                .andExpect(jsonPath("$.grantId").value(GRANT.toString()))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(mapper.readTree(json).size()).isEqualTo(8);
+        assertThat(json).doesNotContain("firebaseUid", "phone", "email", "fingerprint", "draft");
+        verify(approvals).get(PATIENT, PATIENT.id(), GUARDIAN.id(), REQUEST);
+        verifyNoInteractions(service);
     }
 
     @ParameterizedTest
@@ -183,7 +200,7 @@ class GuardianBookingApiIntegrationTests {
     private String metadataPath() {
         return BASE + "/patients/" + PATIENT.id() + "/guardians/" + GUARDIAN.id() + "/requests/" + REQUEST;
     }
-    private ApprovalView view() { return new ApprovalView(GRANT, 1, "adult-patient-guardian-booking-v1", null, null, null, true); }
+    private ApprovalView view() { return new ApprovalView(GRANT, 1, "adult-patient-guardian-booking-v1", null, null, null, true, false); }
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Configuration {
