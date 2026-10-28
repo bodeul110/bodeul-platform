@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/guardianBookingPreviewRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bodeul_background">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:background="@color/bodeul_primary_dark"
+        android:textColor="@color/white"
+        android:text="@string/debug_guardian_booking_banner" />
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/groupGuardianBookingPreviewRole"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        app:singleSelection="true"
+        app:selectionRequired="true">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingPreviewPatient"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/guardian_booking_patient" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonGuardianBookingPreviewGuardian"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/guardian_booking_guardian" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+    <include layout="@layout/guardian_booking_review"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>

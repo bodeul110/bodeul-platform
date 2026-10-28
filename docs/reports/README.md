@@ -4,6 +4,7 @@
 
 ## 최신 점검
 
+- [보호자 예약 Android 승인 연결 검증 (2026-10-28)](issue-419-android-approval-2026-10-28.md)
 - [보호자 예약 승인 API·트랜잭션 검증 (2026-09-29)](issue-419-booking-api-2026-09-29.md)
 - [보호자 예약 승인 저장·경합 검증 (2026-09-29)](issue-419-booking-approval-storage-2026-09-29.md)
 - [개발 앱·관리자 웹 예약 금액 실연동 검증 (2026-09-29)](issue-27-live-price-validation-2026-09-29.md)
