@@ -45,6 +45,12 @@ const RETENTION_MONTHLY_REPORT_OPTIONS = {
 const DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
 const MANAGER_DOCUMENT_RETENTION_MILLIS = 30 * DAY_IN_MILLIS;
 const POSTGRES_BATCH_SIZE = 500;
+const GUARDIAN_DRAFT_MAX_BATCHES = 10;
+const GUARDIAN_DRAFT_COUNT_KEYS = [
+  "guardianDraftCandidates",
+  "guardianDraftsPurged",
+  "guardianDraftsRemaining",
+];
 const UUID_PATH_SEGMENT_PATTERN = [
   "[0-9a-fA-F]{8}",
   "[0-9a-fA-F]{4}",
@@ -83,11 +89,12 @@ const RETENTION_COUNT_KEYS = [
 ];
 
 class PostgresRetentionRepository {
-  constructor(databaseUrl, databaseCaCert) {
+  constructor(databaseUrl, databaseCaCert, {guardianBookingEnabled = false} = {}) {
     if (!sanitizeText(databaseUrl)) {
       throw createRetentionError("DATABASE_CONFIG_MISSING");
     }
     this.sql = postgres(databaseUrl, postgresConnectionOptions(databaseCaCert));
+    this.guardianBookingEnabled = guardianBookingEnabled === true;
   }
 
   async beginJob(mode, asOf, startedAt) {
@@ -171,6 +178,30 @@ class PostgresRetentionRepository {
     return toCount(rows[0]?.deleted_count);
   }
 
+  async previewGuardianDrafts(asOf) {
+    // V26만 적용된 환경에서 원문부터 지우고 V27 집계 저장에 실패하지 않게 한다.
+    await this.sql`
+      select guardian_draft_candidates, guardian_drafts_purged, guardian_drafts_remaining
+      from bodeul.retention_monthly_summary(${formatDate(asOf)}::date)
+      limit 0
+    `;
+    const rows = await this.sql`
+      select bodeul.preview_expired_guardian_booking_drafts(
+        ${asOf.toISOString()}::timestamptz
+      ) as candidate_count
+    `;
+    return guardianDraftCount(rows[0]?.candidate_count);
+  }
+
+  async purgeGuardianDrafts(jobId, limit) {
+    const rows = await this.sql`
+      select bodeul.purge_expired_guardian_booking_drafts(
+        ${jobId}::uuid, ${limit}
+      ) as purged_count
+    `;
+    return guardianDraftCount(rows[0]?.purged_count, limit);
+  }
+
   async finishJob(jobId, status, finishedAt, summary, failureStage = null) {
     const counts = retentionCounts(summary);
     try {
@@ -201,7 +232,7 @@ class PostgresRetentionRepository {
       from bodeul.retention_monthly_summary(${formatDate(monthStart)}::date)
     `;
     const row = rows[0] || {};
-    return {
+    const summary = {
       month: formatDate(monthStart).slice(0, 7),
       runCount: toCount(row.run_count),
       failedRunCount: toCount(row.failed_run_count),
@@ -219,6 +250,13 @@ class PostgresRetentionRepository {
       adminAuditCandidates: toCount(row.admin_audit_candidates),
       adminAuditsDeleted: toCount(row.admin_audits_deleted),
     };
+    if (this.guardianBookingEnabled || Object.hasOwn(row, "guardian_draft_run_count")) {
+      summary.guardianDraftRunCount = guardianDraftCount(row.guardian_draft_run_count);
+      summary.guardianDraftCandidates = guardianDraftCount(row.guardian_draft_candidates);
+      summary.guardianDraftsPurged = guardianDraftCount(row.guardian_drafts_purged);
+      summary.guardianDraftsRemaining = guardianDraftCount(row.guardian_drafts_remaining);
+    }
+    return summary;
   }
 
   async close() {
@@ -484,10 +522,11 @@ async function runRetentionJob({
   managerStore,
   storage,
   apply,
+  guardianBookingEnabled = false,
   now = new Date(),
 }) {
   const asOf = new Date(now.getTime());
-  const mode = apply ? "APPLY" : "DRY_RUN";
+  const mode = apply === true ? "APPLY" : "DRY_RUN";
   const summary = emptyRetentionSummary(mode, asOf);
   let jobId = "";
   let failureStage = "BEGIN";
@@ -506,6 +545,14 @@ async function runRetentionJob({
     summary.postgresLegalHoldSkips = postgresPreview.legalHoldSkips;
     summary.adminAuditCandidates = postgresPreview.adminAuditCandidates;
 
+    if (guardianBookingEnabled === true) {
+      failureStage = "PREVIEW_GUARDIAN_DRAFTS";
+      const candidates = guardianDraftCount(await database.previewGuardianDrafts(asOf));
+      summary.guardianDraftCandidates = candidates;
+      summary.guardianDraftsPurged = 0;
+      summary.guardianDraftsRemaining = candidates;
+    }
+
     failureStage = "PREVIEW_FIRESTORE";
     const firestorePreview = await legacyStore.preview(asOf);
     summary.firestoreMessageCandidates = firestorePreview.messageCandidates;
@@ -518,7 +565,22 @@ async function runRetentionJob({
     summary.managerDocumentCandidates = managerPreview.candidates.length;
     summary.managerDocumentLegalHoldSkips = managerPreview.legalHoldSkips;
 
-    if (apply) {
+    if (apply === true) {
+      if (guardianBookingEnabled === true) {
+        failureStage = "PURGE_GUARDIAN_DRAFTS";
+        for (let batch = 0; batch < GUARDIAN_DRAFT_MAX_BATCHES; batch += 1) {
+          const purged = guardianDraftCount(
+              await database.purgeGuardianDrafts(jobId, POSTGRES_BATCH_SIZE), POSTGRES_BATCH_SIZE,
+          );
+          summary.guardianDraftsPurged += purged;
+          summary.guardianDraftsRemaining = Math.max(
+              0, summary.guardianDraftCandidates - summary.guardianDraftsPurged,
+          );
+          if (purged < POSTGRES_BATCH_SIZE) break;
+        }
+        failureStage = "RECHECK_GUARDIAN_DRAFTS";
+        summary.guardianDraftsRemaining = guardianDraftCount(await database.previewGuardianDrafts(asOf));
+      }
       failureStage = "DELETE_CHAT_ATTACHMENTS";
       const attachments = await database.claimAttachments(asOf, POSTGRES_BATCH_SIZE);
       for (const attachment of attachments) {
@@ -873,9 +935,21 @@ function emptyRetentionSummary(mode, asOf) {
 }
 
 function retentionCounts(summary) {
+  // 새 경로가 비활성 또는 사전 점검 실패이면 이전 DB의 22개 집계 계약을 유지한다.
+  const keys = Object.hasOwn(summary || {}, "guardianDraftCandidates")
+    ? [...RETENTION_COUNT_KEYS, ...GUARDIAN_DRAFT_COUNT_KEYS] : RETENTION_COUNT_KEYS;
   return Object.fromEntries(
-      RETENTION_COUNT_KEYS.map((key) => [key, toCount(summary?.[key])]),
+      keys.map((key) => [key, toCount(summary?.[key])]),
   );
+}
+
+function guardianDraftCount(value, max = 999999999) {
+  if ((typeof value !== "number" && typeof value !== "string") ||
+      (typeof value === "string" && !/^\d+$/.test(value)) ||
+      !Number.isSafeInteger(Number(value)) || Number(value) < 0 || Number(value) > max) {
+    throw createRetentionError("GUARDIAN_DRAFT_COUNT_INVALID");
+  }
+  return Number(value);
 }
 
 function resolveStorageBucketName() {
@@ -907,8 +981,12 @@ function retentionApplyEnabled(value = process.env.RETENTION_APPLY_ENABLED) {
   return sanitizeText(value).toLowerCase() === "true";
 }
 
-function createRuntimeDependencies(databaseUrl, databaseCaCert) {
-  const database = new PostgresRetentionRepository(databaseUrl, databaseCaCert);
+function retentionGuardianBookingEnabled(value = process.env.RETENTION_GUARDIAN_BOOKING_ENABLED) {
+  return sanitizeText(value).toLowerCase() === "true";
+}
+
+function createRuntimeDependencies(databaseUrl, databaseCaCert, guardianBookingEnabled) {
+  const database = new PostgresRetentionRepository(databaseUrl, databaseCaCert, {guardianBookingEnabled});
   const legacyStore = new FirebaseLegacyCompanionStore(getFirestore());
   const managerStore = new FirebaseManagerDocumentStore(getFirestore());
   const bucket = getStorage(getApp()).bucket(resolveStorageBucketName());
@@ -920,11 +998,12 @@ async function runConfiguredRetentionJob({
   databaseUrl,
   databaseCaCert,
   apply,
+  guardianBookingEnabled = retentionGuardianBookingEnabled(),
   now = new Date(),
 }) {
-  const dependencies = createRuntimeDependencies(databaseUrl, databaseCaCert);
+  const dependencies = createRuntimeDependencies(databaseUrl, databaseCaCert, guardianBookingEnabled);
   try {
-    return await runRetentionJob({...dependencies, apply, now});
+    return await runRetentionJob({...dependencies, apply, guardianBookingEnabled, now});
   } finally {
     await dependencies.database.close();
   }
@@ -1017,6 +1096,7 @@ const reportMonthlyRetention = onSchedule(
       const database = new PostgresRetentionRepository(
           RETENTION_DATABASE_URL.value(),
           RETENTION_DATABASE_CA_CERT.value(),
+          {guardianBookingEnabled: retentionGuardianBookingEnabled()},
       );
       try {
         const summary = await database.monthlySummary(previousMonthStart(new Date()));
@@ -1043,6 +1123,7 @@ module.exports = {
   previousMonthStart,
   postgresConnectionOptions,
   retentionApplyEnabled,
+  retentionGuardianBookingEnabled,
   retentionCounts,
   retentionErrorCode,
   runConfiguredRetentionJob,

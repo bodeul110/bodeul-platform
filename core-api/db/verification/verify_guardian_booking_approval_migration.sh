@@ -42,12 +42,15 @@ export BOOKING_TEST_DB_URL="jdbc:postgresql://${PGHOST}:${PGPORT}/${database}"
 export BOOKING_TEST_DB_USER="$PGUSER"
 export BOOKING_TEST_DB_PASSWORD="$PGPASSWORD"
 ./gradlew guardianBookingApprovalPostgresTest --console=plain
+node --test ../functions/postgres-tests/guardian-booking-retention.test.js
 
 # 전용 DB에 만든 합성 데이터만 비우고 빈 schema rollback을 검사한다. 실제 이력 삭제 절차가 아니다.
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 truncate bodeul.guardian_booking_approval_events, bodeul.guardian_booking_approvals;
 truncate bodeul.guardian_booking_drafts;
+truncate bodeul.retention_job_runs;
 SQL
+psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V27__remove_guardian_booking_retention_counts.sql
 psql --dbname "$database" --set ON_ERROR_STOP=1 --file db/rollback/V26__remove_guardian_booking_drafts.sql
 psql --dbname "$database" --set ON_ERROR_STOP=1 <<'SQL'
 do $$

@@ -147,6 +147,16 @@ jobs:
         with:
           cache-provider: basic
 
+      - name: 파기 연동 테스트 Node.js 22 설정
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+
+      - name: 파기 연동 테스트 의존성 설치
+        run: npm ci --prefix ../functions
+
       - name: 동행 가이드 migration 연속 적용과 rollback 검증
         env:
           PGPASSWORD: postgres

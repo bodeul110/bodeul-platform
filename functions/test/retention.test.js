@@ -13,6 +13,7 @@ const {
   previousMonthStart,
   postgresConnectionOptions,
   retentionApplyEnabled,
+  retentionGuardianBookingEnabled,
   retentionCounts,
   runRetentionJob,
 } = require("../src/retention");
@@ -247,6 +248,213 @@ test("관리자 감사기록은 1년 경과 후보만 500건 단위로 끝까지
   assert.equal(summary.adminAuditCandidates, 502);
   assert.equal(summary.adminAuditsDeleted, 502);
   assert.equal(batches.length, 0);
+});
+
+test("보호자 원문 파기는 별도 true 플래그가 있어야 활성화한다", () => {
+  for (const value of ["", "false", "1", true, null]) {
+    assert.equal(retentionGuardianBookingEnabled(value), false);
+  }
+  assert.equal(retentionGuardianBookingEnabled(" TRUE "), true);
+});
+
+function guardianRetentionDependencies(overrides = {}) {
+  return {
+    database: createDatabase(overrides),
+    legacyStore: createLegacyStore(),
+    managerStore: createManagerStore(),
+    storage: {},
+    apply: false,
+    guardianBookingEnabled: true,
+    now: new Date("2026-10-28T01:00:00.000Z"),
+  };
+}
+
+test("새 경로 OFF는 APPLY에서도 V26 조회·파기와 새 집계 키를 요구하지 않는다", async () => {
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts() { assert.fail("비활성 경로 조회"); },
+    async purgeGuardianDrafts() { assert.fail("비활성 경로 파기"); },
+  });
+  for (const enabled of [false, "true", null]) {
+    const summary = await runRetentionJob({...dependencies, apply: true, guardianBookingEnabled: enabled});
+    assert.equal(Object.keys(retentionCounts(summary)).length, 22);
+    assert.equal(Object.hasOwn(summary, "guardianDraftCandidates"), false);
+  }
+});
+
+test("보호자 원문 dry-run은 후보만 보고하고 원문과 Storage를 변경하지 않는다", async () => {
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts(asOf) {
+      assert.equal(asOf.toISOString(), "2026-10-28T01:00:00.000Z");
+      return 7;
+    },
+    async purgeGuardianDrafts() { assert.fail("dry-run 파기"); },
+  });
+  for (const apply of [false, "false", "true"]) {
+    const summary = await runRetentionJob({...dependencies, apply});
+    assert.equal(summary.mode, "DRY_RUN");
+    assert.equal(summary.guardianDraftCandidates, 7);
+    assert.equal(summary.guardianDraftsPurged, 0);
+    assert.equal(summary.guardianDraftsRemaining, 7);
+    const counts = retentionCounts({...summary, patientId: "민감정보", appointmentBody: {memo: "원문"}});
+    assert.equal(Object.keys(counts).length, 25);
+    assert.equal(Object.hasOwn(counts, "patientId"), false);
+    assert.equal(Object.hasOwn(counts, "appointmentBody"), false);
+  }
+});
+
+test("보호자 원문은 기준 시각을 가진 같은 실행 ID의 500건 배치로 처리한다", async () => {
+  const batches = [500, 2];
+  let previews = 0;
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts() { return previews++ === 0 ? 502 : 0; },
+    async beginJob(mode, asOf) {
+      assert.equal(mode, "APPLY");
+      assert.equal(asOf.toISOString(), "2026-10-28T01:00:00.000Z");
+      return "5a246e0e-e543-4fd4-936e-58e07b478247";
+    },
+    async purgeGuardianDrafts(jobId, limit) {
+      assert.equal(jobId, "5a246e0e-e543-4fd4-936e-58e07b478247");
+      assert.equal(limit, 500);
+      return batches.shift();
+    },
+  });
+  const summary = await runRetentionJob({...dependencies, apply: true});
+  assert.equal(summary.guardianDraftCandidates, 502);
+  assert.equal(summary.guardianDraftsPurged, 502);
+  assert.equal(summary.guardianDraftsRemaining, 0);
+  assert.equal(previews, 2);
+  assert.equal(batches.length, 0);
+});
+
+test("보호자 원문은 실행당 10배치 상한을 지키고 미처리 건수를 숨기지 않는다", async () => {
+  let calls = 0;
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts() { return 5500 - calls * 500; },
+    async purgeGuardianDrafts() { calls += 1; return 500; },
+  });
+  const summary = await runRetentionJob({...dependencies, apply: true});
+  assert.equal(calls, 10);
+  assert.equal(summary.guardianDraftsPurged, 5000);
+  assert.equal(summary.guardianDraftsRemaining, 500);
+});
+
+test("잠긴 원문 때문에 0건을 처리해도 남은 후보를 다시 보고한다", async () => {
+  let calls = 0;
+  const summary = await runRetentionJob({...guardianRetentionDependencies({
+    async previewGuardianDrafts() { return 3; },
+    async purgeGuardianDrafts() { calls += 1; return 0; },
+  }), apply: true});
+  assert.equal(calls, 1);
+  assert.equal(summary.guardianDraftsRemaining, 3);
+});
+
+test("V27 사전 조회 실패는 삭제 전 중단하고 기존 집계 계약으로 실패를 남긴다", async () => {
+  const records = [];
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts() { throw Object.assign(new Error("fixture"), {code: "42703"}); },
+    async purgeGuardianDrafts() { assert.fail("미적용 DB 파기"); },
+    async finishJob(_id, status, _at, summary, stage) {
+      records.push({status, stage, keys: Object.keys(retentionCounts(summary)).length});
+      return true;
+    },
+  });
+  await assert.rejects(runRetentionJob({...dependencies, apply: true}),
+      (error) => error.retentionFailureStage === "PREVIEW_GUARDIAN_DRAFTS");
+  assert.deepEqual(records, [{status: "FAILED", stage: "PREVIEW_GUARDIAN_DRAFTS", keys: 22}]);
+  assert.deepEqual(dependencies.database.calls, ["begin", "preview"]);
+});
+
+test("중간 배치 실패는 처리 건수를 보존하고 다음 실행에서 남은 원문만 재시도한다", async () => {
+  let remaining = 502;
+  let failOnce = true;
+  const records = [];
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts() { return remaining; },
+    async purgeGuardianDrafts() {
+      if (remaining === 2 && failOnce) {
+        failOnce = false;
+        throw new Error("fixture");
+      }
+      const purged = Math.min(remaining, 500);
+      remaining -= purged;
+      return purged;
+    },
+    async finishJob(_id, status, _at, summary, stage) {
+      records.push({status, stage, purged: summary.guardianDraftsPurged});
+      return true;
+    },
+  });
+  await assert.rejects(runRetentionJob({...dependencies, apply: true}),
+      (error) => error.retentionFailureStage === "PURGE_GUARDIAN_DRAFTS");
+  assert.equal(remaining, 2);
+  const second = await runRetentionJob({...dependencies, apply: true});
+  assert.equal(second.guardianDraftsPurged, 2);
+  assert.equal(second.guardianDraftsRemaining, 0);
+  assert.deepEqual(records, [
+    {status: "FAILED", stage: "PURGE_GUARDIAN_DRAFTS", purged: 500},
+    {status: "COMPLETED", stage: undefined, purged: 2},
+  ]);
+});
+
+test("마지막 후보 재조회 실패는 전체 파기 완료로 기록하지 않는다", async () => {
+  let calls = 0;
+  let status;
+  const dependencies = guardianRetentionDependencies({
+    async previewGuardianDrafts() { if (calls++ > 0) throw new Error("fixture"); return 2; },
+    async purgeGuardianDrafts() { return 2; },
+    async finishJob(_id, value) { status = value; return true; },
+  });
+  await assert.rejects(runRetentionJob({...dependencies, apply: true}),
+      (error) => error.retentionFailureStage === "RECHECK_GUARDIAN_DRAFTS");
+  assert.equal(status, "FAILED");
+});
+
+test("보호자 파기 SQL은 V27 집계 계약을 먼저 검사하고 값은 바인딩한다", async () => {
+  const repository = Object.create(PostgresRetentionRepository.prototype);
+  const queries = [];
+  repository.sql = async (parts, ...values) => {
+    const sql = parts.join("?");
+    queries.push({sql, values});
+    return sql.includes("candidate_count") ? [{candidate_count: "7"}] : [{purged_count: "2"}];
+  };
+  const asOf = new Date("2026-10-28T01:00:00.000Z");
+  const jobId = "5a246e0e-e543-4fd4-936e-58e07b478247";
+  assert.equal(await repository.previewGuardianDrafts(asOf), 7);
+  assert.equal(await repository.purgeGuardianDrafts(jobId, 500), 2);
+  assert.match(queries[0].sql, /guardian_drafts_remaining[\s\S]*limit 0/);
+  assert.match(queries[1].sql, /preview_expired_guardian_booking_drafts/);
+  assert.deepEqual(queries[2].values, [jobId, 500]);
+  assert.match(queries[2].sql, /\?::uuid/);
+  assert.equal(queries.some(({sql}) => sql.includes("appointment_body")), false);
+});
+
+test("누락·음수·비정상 파기 건수는 0건 성공으로 숨기지 않는다", async () => {
+  const repository = Object.create(PostgresRetentionRepository.prototype);
+  for (const value of [undefined, null, -1, 1.5, "", "NaN", "1.2", 501]) {
+    repository.sql = async () => [{purged_count: value}];
+    await assert.rejects(repository.purgeGuardianDrafts("5a246e0e-e543-4fd4-936e-58e07b478247", 500),
+        (error) => error.code === "GUARDIAN_DRAFT_COUNT_INVALID");
+  }
+});
+
+test("보호자 월간 보고는 활성 실행 수와 마지막 잔여 건수를 제공한다", async () => {
+  const repository = Object.create(PostgresRetentionRepository.prototype);
+  repository.guardianBookingEnabled = true;
+  repository.sql = async () => [{
+    guardian_draft_run_count: "3", guardian_draft_candidates: "12",
+    guardian_drafts_purged: "7", guardian_drafts_remaining: "0",
+  }];
+  const summary = await repository.monthlySummary(new Date("2026-10-01T00:00:00Z"));
+  assert.equal(summary.guardianDraftRunCount, 3);
+  assert.equal(summary.guardianDraftCandidates, 12);
+  assert.equal(summary.guardianDraftsPurged, 7);
+  assert.equal(summary.guardianDraftsRemaining, 0);
+  repository.guardianBookingEnabled = false;
+  assert.equal((await repository.monthlySummary(new Date())).guardianDraftRunCount, 3);
+  repository.guardianBookingEnabled = true;
+  repository.sql = async () => [{}];
+  await assert.rejects(repository.monthlySummary(new Date()),
+      (error) => error.code === "GUARDIAN_DRAFT_COUNT_INVALID");
 });
 
 test("PostgreSQL 첨부 일부 삭제 실패는 참조를 유지하고 다음 실행에서 재시도한다", async () => {
