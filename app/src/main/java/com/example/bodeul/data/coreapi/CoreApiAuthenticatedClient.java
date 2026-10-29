@@ -17,6 +17,7 @@ import com.google.firebase.appcheck.FirebaseAppCheck;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -63,12 +64,26 @@ final class CoreApiAuthenticatedClient {
             String fallbackMessage,
             String logContext
     ) {
+        execute(operation, callback, fallbackMessage, logContext, null);
+    }
+
+    <T> void executeForAccount(String expectedUid, Operation<T> operation, RepositoryCallback<T> callback,
+            String fallbackMessage, String logContext) {
+        if (expectedUid == null || expectedUid.isEmpty()) {
+            postError(callback, "로그인 정보가 없습니다. 다시 로그인해 주세요.");
+            return;
+        }
+        execute(operation, callback, fallbackMessage, logContext, expectedUid);
+    }
+
+    private <T> void execute(Operation<T> operation, RepositoryCallback<T> callback, String fallbackMessage,
+            String logContext, @Nullable String expectedUid) {
         if (baseUrl.isEmpty()) {
             postError(callback, "Core API 주소가 설정되지 않았습니다.");
             return;
         }
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
+        if (currentUser == null || (expectedUid != null && !expectedUid.equals(currentUser.getUid()))) {
             postError(callback, "로그인 정보가 없습니다. 다시 로그인해 주세요.");
             return;
         }
@@ -127,6 +142,16 @@ final class CoreApiAuthenticatedClient {
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    JSONArray requestJsonArray(String path, String idToken, @Nullable String appCheckToken) throws Exception {
+        HttpURLConnection connection = null;
+        try {
+            connection = openAuthenticatedConnection("GET", path, idToken, appCheckToken);
+            return readJsonArrayResponse(connection);
+        } finally {
+            if (connection != null) connection.disconnect();
         }
     }
 
@@ -242,7 +267,15 @@ final class CoreApiAuthenticatedClient {
         return connection;
     }
 
-    private JSONObject readJsonResponse(HttpURLConnection connection) throws Exception {
+    static JSONObject readJsonResponse(HttpURLConnection connection) throws Exception {
+        return new JSONObject(readResponseBody(connection));
+    }
+
+    static JSONArray readJsonArrayResponse(HttpURLConnection connection) throws Exception {
+        return new JSONArray(readResponseBody(connection));
+    }
+
+    private static String readResponseBody(HttpURLConnection connection) throws Exception {
         int statusCode = connection.getResponseCode();
         InputStream responseStream = statusCode >= 200 && statusCode < 300
                 ? connection.getInputStream()
@@ -253,7 +286,7 @@ final class CoreApiAuthenticatedClient {
         if (statusCode < 200 || statusCode >= 300) {
             throw new ApiException(statusCode, resolveErrorMessage(statusCode, responseBody));
         }
-        return new JSONObject(responseBody);
+        return responseBody;
     }
 
     private void writeTextPart(
@@ -311,7 +344,7 @@ final class CoreApiAuthenticatedClient {
         outputStream.write(value.getBytes(StandardCharsets.UTF_8));
     }
 
-    private String resolveErrorMessage(int statusCode, String responseBody) {
+    private static String resolveErrorMessage(int statusCode, String responseBody) {
         try {
             String message = optText(new JSONObject(responseBody), "message");
             if (!message.isEmpty()) {
@@ -335,11 +368,11 @@ final class CoreApiAuthenticatedClient {
         return "서버에 일시적으로 연결하지 못했습니다.";
     }
 
-    private String readAll(InputStream inputStream, int maxBytes) throws IOException {
+    private static String readAll(InputStream inputStream, int maxBytes) throws IOException {
         return new String(readAllBytes(inputStream, maxBytes), StandardCharsets.UTF_8);
     }
 
-    private byte[] readAllBytes(InputStream inputStream, int maxBytes) throws IOException {
+    private static byte[] readAllBytes(InputStream inputStream, int maxBytes) throws IOException {
         try (InputStream stream = new BufferedInputStream(inputStream);
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[2048];
@@ -354,7 +387,7 @@ final class CoreApiAuthenticatedClient {
         }
     }
 
-    private String optText(JSONObject object, String key) {
+    private static String optText(JSONObject object, String key) {
         if (object == null || object.isNull(key)) {
             return "";
         }
@@ -369,7 +402,7 @@ final class CoreApiAuthenticatedClient {
         return normalized;
     }
 
-    private String normalizeText(String value) {
+    private static String normalizeText(String value) {
         return value == null ? "" : value.trim();
     }
 

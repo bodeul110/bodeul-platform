@@ -1,6 +1,6 @@
 # 보호자 예약 승인 API 연결
 
-기준일: 2026-09-29. Android 준비, 비활성 보호자의 기존 승인 조회·철회, 서버 원문 전달 계약은 2026-10-28에 보충했다.
+기준일: 2026-09-29. Android 준비, 비활성 보호자의 기존 승인 조회·철회, 서버 원문 전달 계약은 2026-10-28에 보충했다. 원문 API의 Android 데이터 계층과 V27 파기 연결은 2026-10-29에 보충했다.
 
 ## 설계 판단
 
@@ -12,7 +12,7 @@
 
 ## 활성화 경계
 
-`bodeul.guardian-booking.enabled`의 기본값은 `false`다. 실제 개발 DB V24~V26 적용, 만료 원문 파기 작업 연결, Android 환자 확인 화면과 보호자 요청 전달, DEV 종단 검증 전에는 켜지 않는다. 기존 예약 POST에서 보호자 생성을 거부하는 계약과 보호자 수정·취소 제한은 유지한다. 운영 배포와 DB migration은 이 작업에 포함하지 않는다.
+`bodeul.guardian-booking.enabled`의 기본값은 `false`다. 실제 개발 DB V24~V27 적용, 만료 원문 파기 작업의 환경 연결 검증, Android 환자 확인 화면과 보호자 요청 전달, DEV 종단 검증 전에는 켜지 않는다. 기존 예약 POST에서 보호자 생성을 거부하는 계약과 보호자 수정·취소 제한은 유지한다. 운영 배포와 DB migration은 이 작업에 포함하지 않는다.
 
 환경변수 이름은 `BODEUL_GUARDIAN_BOOKING_ENABLED`다. 실제 배포 환경변수와 runtime DB 권한은 변경하지 않는다. V26 소스에는 새 원문 테이블의 Core 읽기·삽입과 파기 전용 role의 함수 실행 권한만 선언한다. Firebase 계정 조회에는 해당 환경 runtime의 `firebaseauth.users.get` 권한과 명시된 `FIREBASE_PROJECT_ID`가 필요하다. 권한·연결 실패를 활성 계정으로 간주하지 않고 503으로 닫는다. 이 권한의 실제 Cloud Run 검증도 활성화 전 조건이다.
 
@@ -38,7 +38,7 @@
 
 버전과 확인 금액은 JSON 정수, 성인 확인은 JSON boolean만 받는다. 클라이언트가 보낸 시각·fingerprint·역할·승인 정책 값은 사용하지 않는다. 성인 여부는 환자의 자기선언이며 출생일 검증이나 법정대리인 증명 절차를 구현한 것은 아니다.
 
-서버의 원문 저장·목록·조회와 저장된 원문으로 승인·접수하는 경로는 아래와 같이 준비했다. Android에는 기존 직접 본문 전달 API의 Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면이 있으며, 새 원문 전달 API 연결과 일반 사용자 진입점은 아직 없다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. [Android 연결 설계](../design/guardian-booking-android.md)를 따른다.
+서버의 원문 저장·목록·조회와 저장된 원문으로 승인·접수하는 경로는 아래와 같이 준비했다. Android에는 기존 직접 본문 전달 API의 Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면이 있다. 새 원문 API의 전용 Repository도 추가했지만, 수신·상대방 지정·복구 화면과 일반 사용자 진입점은 아직 연결하지 않았다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. [Android 연결 설계](../design/guardian-booking-android.md)와 [저장 원문 데이터 계층](../design/guardian-booking-android-drafts.md)을 따른다.
 
 ## 서버 원문 전달
 
@@ -60,7 +60,7 @@
 
 접수 응답이 유실된 보호자는 같은 요청 경로의 `/create`를 재호출할 수 있다. 서버가 현재 참여자와 기존 접수 소유권을 확인한 뒤, 원문이 만료·파기되었더라도 접수증만 돌려준다. 새 INSERT, 새 동의, 예약 상세 열람은 발생하지 않는다.
 
-V26의 `preview_expired_guardian_booking_drafts(asOf)`는 파기 대상 건수만 조회하고, `purge_expired_guardian_booking_drafts(asOf, limit)`는 최대 500건의 만료 JSON 원문을 NULL로 제거한다. 미래 기준 시각으로 활성 원문을 지울 수 없으며 현재 DB 시각까지로 제한한다. 요청 ID 재사용을 막기 위해 참여자 UUID·fingerprint·시각은 남긴다. 원문 조회 만료가 물리적 파기 완료를 뜻하지 않으며 **자동 파기 작업에 연결하는 것은 후속 범위**다. 관리자·일반 클라이언트·Core runtime은 이 파기 함수를 실행할 수 없다. [설계 판단](../design/guardian-booking-draft-handoff.md)과 [검증 기록](../reports/issue-419-draft-handoff-2026-10-28.md)을 함께 확인한다.
+V26의 `preview_expired_guardian_booking_drafts(asOf)`는 파기 대상 건수만 조회한다. V27에서는 runtime이 `purge_expired_guardian_booking_drafts(jobId, limit)`를 호출해 원문 파기와 실행별 건수를 같은 트랜잭션으로 기록하며, 기존 `(asOf, limit)` 함수의 runtime 직접 호출은 회수한다. 최대 500건씩 처리하고 미래 기준 시각으로 활성 원문을 지울 수 없으며 현재 DB 시각까지로 제한한다. 요청 ID 재사용을 막기 위해 참여자 UUID·fingerprint·시각은 남긴다. 정기 실행 연결 코드는 #501로 `dev`에 병합했지만 기본 OFF이며 **실제 DB 적용·Functions 배포·삭제 실행은 별도**다. 원문 조회 만료가 물리적 파기 완료를 뜻하지 않는다. 관리자·일반 클라이언트·Core runtime은 파기 함수를 실행할 수 없다. [원문 설계](../design/guardian-booking-draft-handoff.md), [정기 파기 설계](../design/guardian-booking-retention.md)와 [검증 기록](../reports/issue-419-guardian-booking-retention-2026-10-28.md)을 함께 확인한다.
 
 ## 비활성 보호자의 기존 승인 철회
 

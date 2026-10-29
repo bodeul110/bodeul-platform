@@ -183,7 +183,12 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
 
     static GuardianBookingRequest parsePreview(JSONObject response, GuardianBookingRequest request)
             throws JSONException {
-        if (!uuid(response, "clientRequestId").equals(request.getRequestId())
+        return parsePreview(response, request.getPatientId(), request.getGuardianId(), request.getRequestId());
+    }
+
+    static GuardianBookingRequest parsePreview(JSONObject response, UUID patientId, UUID guardianId, UUID requestId)
+            throws JSONException {
+        if (!uuid(response, "clientRequestId").equals(requestId)
                 || !BookingPricePolicy.VERSION.equals(text(response, "pricePolicyVersion"))
                 || number(response, "expectedFinalPrice") != BookingPricePolicy.BASE_PRICE) {
             throw new JSONException("예약 요청과 가격 계약이 일치하지 않습니다.");
@@ -213,7 +218,7 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
                     .couponType(BookingCouponType.valueOf(text(draft, "couponCode")))
                     .priceSummary(new BookingPriceSummary(BookingPricePolicy.BASE_PRICE, 0, 0,
                             BookingPricePolicy.BASE_PRICE)).build();
-            return request.withNormalizedDraft(normalized);
+            return new GuardianBookingRequest(patientId, guardianId, requestId, normalized);
         } catch (IllegalArgumentException error) {
             throw new JSONException("예약 미리보기 응답을 확인하지 못했습니다.");
         }
@@ -236,7 +241,7 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
         }
     }
 
-    private static Instant instant(JSONObject response, String key) throws JSONException {
+    static Instant instant(JSONObject response, String key) throws JSONException {
         Object value = response.get(key);
         if (value == JSONObject.NULL) return null;
         try {
@@ -246,7 +251,7 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
         }
     }
 
-    private static UUID uuid(JSONObject response, String key) throws JSONException {
+    static UUID uuid(JSONObject response, String key) throws JSONException {
         String value = text(response, key);
         try {
             UUID id = UUID.fromString(value);
@@ -257,7 +262,7 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
         }
     }
 
-    private static String text(JSONObject response, String key) throws JSONException {
+    static String text(JSONObject response, String key) throws JSONException {
         Object value = response.get(key);
         if (!(value instanceof String)) throw new JSONException("예약 응답 문자열을 확인해 주세요.");
         return (String) value;
@@ -281,7 +286,7 @@ public final class CoreApiGuardianBookingRepository implements GuardianBookingRe
         return result;
     }
 
-    private static void requireVersion(long version) throws JSONException {
+    static void requireVersion(long version) throws JSONException {
         if (version < 0 || version == Long.MAX_VALUE) throw new JSONException("예약 승인 버전을 확인해 주세요.");
     }
 
