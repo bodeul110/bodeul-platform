@@ -6,6 +6,8 @@
 
 Google 외의 GitHub·Vercel·Supabase와 326 잔여 계정은 [서비스 소유 계정과 개발 권한](service-ownership-and-access.md)에서 함께 구분한다.
 
+2026-11-07 후속 결정에 따라 프로젝트 자산의 공식 소유 계정은 외부 서비스를 포함해 `scp@bodeul.kr`로 통일한다. 외부 서비스의 실제 이메일 전환 완료 여부는 위 문서에서 별도로 추적한다. 개인 개발자 계정, 관리자 웹 업무 계정, CI·런타임 서비스 계정은 그대로 분리한다.
+
 ## 역할 경계
 
 | 주체 | 기준 | 사용 범위 |
@@ -27,7 +29,7 @@ Google 계정 비밀번호를 여러 사람이 공유하지 않는다. 사람의
 - Cloud Identity API를 `bodeul-dev`에서 활성화했다.
 - `bodeul.kr` Cloud Identity 디렉터리에 세 보안 그룹을 만들었다.
 - `gcp-admins@bodeul.kr`의 구성원은 공식 관리자 한 명이다. 2026-11-07 공식 계정의 재인증과 그룹 Owner를 확인한 뒤 개인 개발 계정을 관리자 그룹에서 제거했다.
-- 관리자 그룹의 두 조직과 개발·production 프로젝트 관리 권한은 유지한다. 개인 개발 계정은 더 이상 이 그룹의 권한을 상속하지 않는다.
+- 관리자 그룹의 공식 조직과 개발·production 프로젝트 관리 권한은 유지한다. 개인 개발 계정은 더 이상 이 그룹의 권한을 상속하지 않는다. 구 326 조직은 후속 검증 후 삭제 대기 상태로 전환했다.
 - `developers@bodeul.kr`에는 공식 관리자 Owner와 개인 Member 세 명이 있다. 개발 프로젝트의 Editor를 아래 서비스별 역할로 대체했다.
 - `prod-operators@bodeul.kr`에는 `bodeul-prod-110`의 Logging Viewer, Monitoring Viewer, Cloud Run Viewer, Secret Manager Viewer만 부여했다. Secret payload, Firestore 데이터와 Storage 객체 읽기 권한은 포함하지 않는다.
 - 2026-09-22 공식 관리자 재인증 후 두 계정의 조직·프로젝트 IAM 조회를 확인했고, 조직 이동 뒤에도 두 계정으로 개발·production 프로젝트 접근을 다시 확인했다.
@@ -62,7 +64,7 @@ Google 계정 비밀번호를 여러 사람이 공유하지 않는다. 사람의
 - `scp@bodeul.kr`에는 보조 이메일 주소와 이메일 별칭이 등록돼 있지 않다.
 - 관리 도메인은 기본 도메인 `bodeul.kr`, 시스템 게스트 도메인, 가입 시 생성된 테스트 도메인 별칭뿐이다.
 - `bodeul.kr`로 이전할 비관리 Google 계정은 0건이다.
-- `bodeul.official@gmail.com`은 두 프로젝트, 두 조직과 세 역할 그룹에서 IAM 주체로 사용되지 않는다. 따라서 이 주소는 사이트용 외부 계정으로 유지하고 Google Cloud 권한을 부여하지 않는다.
+- 당시 `bodeul.official@gmail.com`은 두 프로젝트, 두 조직과 세 역할 그룹에서 IAM 주체로 사용되지 않았다. Google Cloud 권한을 이 주소에 추가하지 않는 기준은 유지한다. 외부 서비스 소유 이메일은 2026-11-07 후속 결정에 따라 `scp@bodeul.kr`로 전환하며, 과거 주소의 계정 자체를 자동 삭제하지 않는다.
 
 ## 조직 경계
 
@@ -73,7 +75,7 @@ Google 계정 비밀번호를 여러 사람이 공유하지 않는다. 사람의
 | `bodeul-dev` | `bodeul.kr` (`1038381475908`) | `533563500316` |
 | `bodeul-prod-110` | `bodeul.kr` (`1038381475908`) | `649312328770` |
 
-기존 조직 `766471701894`는 즉시 삭제하지 않는다. 남은 자산·감사 기록과 복구 필요성을 별도 확인한다. 9월 22일 조직 이전에서는 프로젝트를 새로 만들거나 데이터·비밀값을 복사하지 않았고 Vercel·Supabase도 변경하지 않았다. 이후 11월 7일의 사람 계정 역할 축소는 [별도 정리 기록](../reports/shared-ownership-access-cleanup-2026-11-07.md)으로 구분한다.
+기존 조직 `766471701894`와 남아 있던 기본 프로젝트는 기록 보존·현재 서비스 점검 후 2026-11-07 순차 삭제 요청했다. 두 자원 모두 `DELETE_REQUESTED`이며 영구 삭제 완료는 아니다. 공식 프로젝트 ID·번호·조직·결제와 기존 IAM은 유지된다. 9월 22일 조직 이전, 11월 7일 사람 계정 역할 축소와 후속 자원 삭제를 [정리 기록](../reports/shared-ownership-access-cleanup-2026-11-07.md)에서 구분한다.
 
 공식 조직의 IAM·조직 정책 상속은 이전 조직과 다르다. 기존 공개 Cloud Run 접근과 새 공개 서비스 IAM 부여를 구분하며, 신규 production 배포 시 도메인 제한과 공개 접근 방식을 검증한다. 이전 절차·비교 항목·복귀 경계는 [공식 조직 이전 기록](google-cloud-organization-migration.md)을 따른다.
 
