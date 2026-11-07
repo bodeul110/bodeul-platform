@@ -135,12 +135,12 @@ production DB도 개발 DB와 같은 역할 경계를 사용하되 자격 증명
 - production DB 자격 증명은 새로 만들어 Google Secret Manager와 Vercel Production에 등록했다. 개발 비밀번호는 복사하지 않는다. Kakao REST 키만 사용자 승인에 따라 같은 값을 별도 Secret 항목으로 관리한다.
 - 서비스 계정 JSON key는 발급하지 않고 GitHub OIDC와 WIF를 사용한다.
 - [Production 인프라 읽기 전용 점검](production-infrastructure-audit.md)은 Secret payload, Firestore 문서, Auth 사용자와 Storage 객체 권한 없이 project·IAM·서비스 metadata만 확인한다.
-- 모든 관리자 계정에 MFA를 적용하고 공용 계정을 금지하는 것이 출시 기준이다. 현재 최초 개인 관리자의 TOTP 로그인은 확인했지만 전역 MFA 강제 모드 전환과 복구 절차 검증은 남아 있다.
+- 관리자 웹의 모든 업무 관리자 계정에 MFA를 적용하고 공용 업무 로그인을 금지하는 것이 출시 기준이다. 인프라 소유·복구용 공용 계정은 [서비스 소유 계정 기준](service-ownership-and-access.md)으로 별도 관리한다. 현재 최초 개인 관리자의 TOTP 로그인은 확인했지만 전역 MFA 강제 모드 전환과 복구 절차 검증은 남아 있다.
 - 출시 전 최소 2명의 실명 운영자를 정해 한 명의 계정 잠금이 전체 운영 중단으로 이어지지 않게 한다.
-- `gcp-admins@bodeul.kr`에 주 관리자와 복구용 관리자 두 소유자 계정을 등록하고, 두 조직 및 개발·production 프로젝트 조회를 그룹 경유로 각각 검증했다. 이후 두 프로젝트와 두 조직의 `scp@bodeul.kr` 직접 관리자 IAM binding을 모두 제거해 0건으로 만들었다.
-- 개발자는 `developers@bodeul.kr`, production 조회 담당자는 `prod-operators@bodeul.kr`로 관리한다. 팀에서 제외된 이전 개발자의 `bodeul-dev` 직접 Editor 권한은 제거했으며, 현재 개발자의 직접 Editor 권한은 개별 그룹 경유 접근 검증 전까지만 유지한다. production 조회 그룹에는 로그·모니터링·Cloud Run·Secret 메타데이터 조회만 허용한다.
+- 2026-11-07 `gcp-admins@bodeul.kr`에는 공식 관리자만 Owner로 남기고 개인 계정을 제거했다. 구 조직에는 공식 관리자의 일부 직접 복구 권한이 남아 있으므로 직접 IAM이 모두 0건이라고 해석하지 않는다.
+- 개발자는 `developers@bodeul.kr`, production 조회 담당자는 `prod-operators@bodeul.kr`로 관리한다. 개발 그룹의 Editor는 서비스별 역할로 대체했고 현재 개발자의 중복 직접 Editor 두 건도 제거했다. production 조회 그룹에는 로그·모니터링·Cloud Run·Secret 메타데이터 조회만 허용한다. 상세 허용·차단 결과는 [최신 권한 정리 기록](../reports/shared-ownership-access-cleanup-2026-11-07.md)을 따른다.
 - 알림용 Google Cloud budget은 개발 10,000 KRW, production 30,000 KRW와 50%·80%·100%를 계획 기준으로 둔다. 현재 결제 연결·알림 수신 설정은 [비용 모니터링](cost-monitoring.md)에 따라 재확인한다.
-- Supabase 조직의 Pro 전환은 완료했다. 실제 운영 전 Vercel의 현재 플랜과 개발자 좌석 조건을 확인한다.
+- Supabase와 Vercel은 공용 Owner·개인 Developer 구조다. Supabase Pro의 조직 단위 Developer는 개발·운영 DB 콘텐츠에 모두 접근하므로 운영 데이터의 개인 접근 분리까지 완료한 것은 아니다. 실제 운영 전 프로젝트 범위 권한과 현재 플랜·결제·개발자 좌석 조건을 별도로 확인한다.
 - Supabase spend cap을 유지하고 PITR, custom domain과 Log Drain은 초기 운영 비용에 포함하지 않는다.
 - Cloud Run 오류율·지연·인스턴스 수, PostgreSQL 연결 수·용량·백업, Vercel 실패 배포와 Firebase Auth 오류를 확인한다.
 
