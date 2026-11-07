@@ -28,6 +28,8 @@
   - metadata-only 감사와 기대 구성 대조
 - [Google Cloud 접근 관리](google-cloud-access-governance.md)
   - 사람 계정·그룹과 CI·서비스 계정 경계
+- [서비스 소유 계정과 개발 권한](service-ownership-and-access.md)
+  - 공용 소유자·개인 개발 계정 구분, 서비스별 역할과 326 잔여 자산
 - [Google Cloud 공식 조직 이전](google-cloud-organization-migration.md)
   - 개발·운영 프로젝트의 공식 조직 소속, 이전 검증과 복귀 경계
 - [프로젝트와 인프라 명칭](resource-naming.md)
