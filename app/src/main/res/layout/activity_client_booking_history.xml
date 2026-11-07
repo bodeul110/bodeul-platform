@@ -83,6 +83,15 @@
                 android:id="@+id/clientBookingHistoryStatePanel"
                 layout="@layout/include_state_panel" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonOpenGuardianBookingInbox"
+                style="@style/BodeulOutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_inbox_title"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:id="@+id/clientBookingHistoryContentContainer"
                 android:layout_width="match_parent"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guardian_booking_inbox_title">보호자 예약 요청</string>
+    <string name="guardian_booking_inbox_reload">목록 다시 불러오기</string>
+    <string name="guardian_booking_inbox_empty">확인할 예약 요청이 없습니다.</string>
+    <string name="guardian_booking_inbox_disabled">아직 이용할 수 없는 기능입니다.</string>
+    <string name="guardian_booking_account_changed">로그인 계정이 변경되었습니다. 홈에서 다시 로그인한 후 확인해 주세요.</string>
+    <string name="guardian_booking_inbox_row_title">예약 요청 %1$d</string>
+    <string name="guardian_booking_inbox_row_dates">요청: %1$s\n확인 기한: %2$s</string>
+    <string name="guardian_booking_masked_participants">환자: %1$s (%2$s)\n보호자: %3$s (%4$s)</string>
+</resources>

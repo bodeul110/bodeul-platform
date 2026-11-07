@@ -70,6 +70,12 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         );
 
         findViewById(R.id.buttonBackClientBookingHistory).setOnClickListener(view -> finish());
+        findViewById(R.id.buttonOpenGuardianBookingInbox).setOnClickListener(view -> {
+            if (authRepository.isFirebaseBacked()
+                    && getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled)) {
+                startActivity(new Intent(this, GuardianBookingInboxActivity.class));
+            }
+        });
         findViewById(R.id.buttonClientBookingHistoryManage).setOnClickListener(view ->
                 startActivity(new Intent(this, BookingActivity.class))
         );
@@ -99,6 +105,7 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
 
     private void reload() {
         setLoading(true);
+        findViewById(R.id.buttonOpenGuardianBookingInbox).setVisibility(View.GONE);
         bottomNavigation.setVisibility(View.GONE);
         hideBlockingState();
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
@@ -114,6 +121,10 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
                     return;
                 }
                 bottomNavigation.setVisibility(View.VISIBLE);
+                findViewById(R.id.buttonOpenGuardianBookingInbox).setVisibility(
+                        authRepository.isFirebaseBacked()
+                                && getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled)
+                                ? View.VISIBLE : View.GONE);
                 loadRequests(result);
             }
 
