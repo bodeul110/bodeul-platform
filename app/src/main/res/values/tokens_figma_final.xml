@@ -8,7 +8,10 @@
     <color name="final_line">#EDF1F7</color>
     <color name="final_text_primary">#000000</color>
     <color name="final_text_secondary">#545B68</color>
-    <color name="final_text_hint">#4D545B68</color>
+    <!-- #510 검토 후 배치·브랜드색은 유지하고 필수 글자 대비만 보완하기로 했다. -->
+    <color name="final_text_hint">@color/final_text_secondary</color>
+    <color name="final_text_on_primary">@color/final_text_primary</color>
+    <color name="final_text_error">#B3261E</color>
     <color name="final_error">#FF4D4D</color>
     <color name="final_disabled">#CBD1DB</color>
     <color name="final_ripple">#18000000</color>

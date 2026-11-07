@@ -734,7 +734,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void showFieldError(TextInputLayout layout, TextInputEditText input, int messageRes) {
-        input.setTextColor(getColor(R.color.final_error));
+        input.setTextColor(getColor(R.color.final_text_error));
         ViewCompat.setStateDescription(input, getString(messageRes));
         if (registerMode) {
             layout.setError(getString(messageRes));

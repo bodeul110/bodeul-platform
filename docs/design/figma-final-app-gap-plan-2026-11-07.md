@@ -47,7 +47,7 @@
 
 원본 영역: [Color](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-13541), [Text Style](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-13316), [Button](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-13108).
 
-원본 내부에도 차이가 있다. Color의 `1:13565`는 `#01A1FF`라고 적혀 있지만 실제 fill은 `#018DFF`에 가깝고, 주요 버튼 `1:13141`·`1:13165`의 fill은 `#01A1FF`다. 구현할 화면 node의 실제 fill을 우선한다. 흰 글자와 `#01A1FF`의 계산상 명암 대비는 약 2.78:1이지만 임의로 색을 진하게 바꾸지 않고 원본의 접근성 보완 과제로 구분한다. Color 영역의 존재를 공식 variables/styles 연결 완료로 간주하지 않는다.
+원본 내부에도 차이가 있다. Color의 `1:13565`는 `#01A1FF`라고 적혀 있지만 실제 fill은 `#018DFF`에 가깝고, 주요 버튼 `1:13141`·`1:13165`의 fill은 `#01A1FF`다. 구현할 화면 node의 실제 fill을 우선한다. 흰 글자와 `#01A1FF`의 계산상 명암 대비는 약 2.78:1이다. #510 리뷰 후 사용자가 배치·브랜드색 유지와 필수 텍스트 대비 보완을 승인했으므로, 로그인 힌트·오류·버튼에는 [별도 텍스트 토큰](figma-final-login-implementation-2026-11-07.md)을 적용한다. Color 영역의 존재를 공식 variables/styles 연결 완료로 간주하지 않는다.
 
 현재 근거: [색상 리소스](../../app/src/main/res/values/colors_figma_mvp.xml), [로그인 XML](../../app/src/main/res/layout/activity_login.xml), [환자 홈 XML](../../app/src/main/res/layout/activity_client_home_figma.xml), [매니저 홈 XML](../../app/src/main/res/layout/activity_manager_home.xml).
 

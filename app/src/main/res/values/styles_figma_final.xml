@@ -8,6 +8,12 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/final_text_primary</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Bodeul.FinalAuthDialog</item>
+    </style>
+    <style name="ThemeOverlay.Bodeul.FinalAuthDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="buttonBarPositiveButtonStyle">@style/BodeulFinalDialogTextButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/BodeulFinalDialogTextButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/BodeulFinalDialogTextButton</item>
     </style>
     <style name="TextAppearance.BodeulFinal.Body" parent="TextAppearance.MaterialComponents.Body1">
         <item name="fontFamily">@font/pretendard_medium</item>
@@ -27,7 +33,7 @@
         <item name="android:fontFamily">@font/pretendard_bold</item>
         <item name="android:textSize">@dimen/final_button_size</item>
         <item name="lineHeight">@dimen/final_button_line_height</item>
-        <item name="android:textColor">@color/white</item>
+        <item name="android:textColor">@color/final_text_on_primary</item>
     </style>
     <style name="BodeulFinalInputLayout" parent="Widget.MaterialComponents.TextInputLayout.FilledBox">
         <item name="hintEnabled">false</item>
@@ -38,7 +44,7 @@
         <item name="boxCornerRadiusBottomEnd">@dimen/final_corner_control</item>
         <item name="boxStrokeWidth">0dp</item>
         <item name="boxStrokeWidthFocused">0dp</item>
-        <item name="errorTextColor">@color/final_error</item>
+        <item name="errorTextColor">@color/final_text_error</item>
         <item name="errorTextAppearance">@style/TextAppearance.BodeulFinal.Caption</item>
         <item name="errorIconDrawable">@null</item>
     </style>
@@ -90,5 +96,8 @@
         <item name="android:background">?attr/selectableItemBackground</item>
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>
+    </style>
+    <style name="BodeulFinalDialogTextButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/final_text_primary</item>
     </style>
 </resources>

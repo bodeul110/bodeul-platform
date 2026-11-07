@@ -10,12 +10,15 @@ import static org.junit.Assert.*;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.view.View;
 import android.widget.TextView;
 
 import androidx.core.view.ViewCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.UiController;
@@ -25,6 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.UserRole;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -88,8 +92,12 @@ public class LoginFigmaPreviewTest {
             onView(withId(R.id.buttonSubmitAuth)).perform(click());
             onView(withId(R.id.textAuthMessage)).check(matches(withText(R.string.error_email_invalid)));
             scenario.onActivity(activity -> {
-                assertEquals(activity.getColor(R.color.final_error),
-                        ((TextView) activity.findViewById(R.id.inputEmail)).getCurrentTextColor());
+                TextView email = activity.findViewById(R.id.inputEmail);
+                TextInputLayout layout = activity.findViewById(R.id.layoutEmail);
+                assertEquals(activity.getColor(R.color.final_text_error), email.getCurrentTextColor());
+                assertContrast("로그인 오류 글자", email.getCurrentTextColor(), layout.getBoxBackgroundColor());
+                TextView message = activity.findViewById(R.id.textAuthMessage);
+                assertContrast("로그인 오류 안내", message.getCurrentTextColor(), backgroundColor(message));
                 assertEquals(originalTop[0], top(activity.findViewById(R.id.buttonSubmitAuth)));
                 assertEquals(0, activity.repository.calls);
             });
@@ -127,6 +135,7 @@ public class LoginFigmaPreviewTest {
         try (ActivityScenario<LoginFigmaPreviewActivity> scenario = launch(UserRole.PATIENT)) {
             fillCredentials();
             onView(withId(R.id.buttonSubmitAuth)).perform(scrollTo(), click());
+            assertDialogButtonContrast(android.R.string.cancel);
             onView(withText(android.R.string.cancel)).perform(click());
             scenario.onActivity(activity -> assertEquals(0, activity.repository.calls));
             onView(withId(R.id.buttonSubmitAuth)).perform(click());
@@ -213,6 +222,7 @@ public class LoginFigmaPreviewTest {
         try (ActivityScenario<LoginFigmaPreviewActivity> scenario = launch(UserRole.MANAGER)) {
             onView(withId(R.id.buttonSocialApple)).perform(scrollTo(), click());
             onView(withText(R.string.final_login_apple_unavailable)).check(matches(isDisplayed()));
+            assertDialogButtonContrast(android.R.string.ok);
             onView(withText(android.R.string.ok)).perform(click());
             scenario.onActivity(activity -> assertEquals(0, activity.repository.calls));
         }
@@ -235,6 +245,81 @@ public class LoginFigmaPreviewTest {
             capture("register-keyboard");
             onView(withId(R.id.buttonSubmitAuth)).perform(scrollTo()).check(matches(isDisplayed()));
         }
+    }
+
+    @Test public void essentialTextMeetsContrastWithoutChangingFigmaBackgrounds() {
+        try (ActivityScenario<LoginFigmaPreviewActivity> scenario = launch(UserRole.PATIENT)) {
+            scenario.onActivity(activity -> {
+                assertInputContrast(activity, R.id.inputEmail, R.id.layoutEmail);
+                assertInputContrast(activity, R.id.inputPassword, R.id.layoutPassword);
+                TextView submit = activity.findViewById(R.id.buttonSubmitAuth);
+                assertEquals(Color.rgb(1, 161, 255), backgroundColor(submit));
+                assertContrast("로그인 버튼", submit.getCurrentTextColor(), backgroundColor(submit));
+            });
+            onView(withId(R.id.textSwitchMode)).perform(scrollTo(), click());
+            scenario.onActivity(activity -> {
+                assertInputContrast(activity, R.id.inputName, R.id.layoutName);
+                assertInputContrast(activity, R.id.inputPhone, R.id.layoutPhone);
+                assertInputContrast(activity, R.id.inputEmail, R.id.layoutEmail);
+                assertInputContrast(activity, R.id.inputPassword, R.id.layoutPassword);
+                TextView submit = activity.findViewById(R.id.buttonSubmitAuth);
+                assertContrast("회원가입 버튼", submit.getCurrentTextColor(), backgroundColor(submit));
+            });
+        }
+    }
+
+    @Test public void registrationFieldAndInlineErrorTextMeetContrast() throws Exception {
+        try (ActivityScenario<LoginFigmaPreviewActivity> scenario = launch(UserRole.MANAGER)) {
+            onView(withId(R.id.textSwitchMode)).perform(scrollTo(), click());
+            onView(withId(R.id.inputEmail)).perform(scrollTo(), replaceText("invalid-email"), closeSoftKeyboard());
+            onView(withId(R.id.buttonSubmitAuth)).perform(scrollTo(), click());
+            scenario.onActivity(activity -> {
+                TextView input = activity.findViewById(R.id.inputEmail);
+                TextInputLayout layout = activity.findViewById(R.id.layoutEmail);
+                assertEquals(activity.getString(R.string.error_email_invalid), layout.getError());
+                assertContrast("회원가입 오류 글자", input.getCurrentTextColor(), layout.getBoxBackgroundColor());
+                assertContrast("회원가입 오류 안내", layout.getErrorCurrentTextColors(),
+                        activity.getColor(R.color.final_surface));
+                assertEquals(0, activity.repository.calls);
+            });
+            capture("register-error");
+        }
+    }
+
+    private static void assertInputContrast(LoginFigmaPreviewActivity activity, int inputId, int layoutId) {
+        TextView input = activity.findViewById(inputId);
+        TextInputLayout layout = activity.findViewById(layoutId);
+        int background = ColorUtils.compositeColors(layout.getBoxBackgroundColor(), Color.WHITE);
+        assertEquals(Color.rgb(242, 245, 248), background);
+        assertContrast("입력 힌트 " + inputId, input.getCurrentHintTextColor(), background);
+        assertContrast("입력 본문 " + inputId, input.getCurrentTextColor(), background);
+    }
+
+    private static void assertDialogButtonContrast(int textRes) {
+        onView(withText(textRes)).inRoot(androidx.test.espresso.matcher.RootMatchers.isDialog())
+                .check((view, missing) -> {
+                    if (missing != null) { throw missing; }
+                    TextView button = (TextView) view;
+                    android.util.TypedValue surface = new android.util.TypedValue();
+                    assertTrue(button.getContext().getTheme().resolveAttribute(
+                            com.google.android.material.R.attr.colorSurface, surface, true));
+                    assertContrast("대화상자 " + button.getText(), button.getCurrentTextColor(), surface.data);
+                });
+    }
+
+    private static int backgroundColor(View view) {
+        Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+        try {
+            Canvas canvas = new Canvas(bitmap);
+            canvas.drawColor(Color.WHITE);
+            view.getBackground().draw(canvas);
+            return bitmap.getPixel(bitmap.getWidth() / 2, bitmap.getHeight() / 2);
+        } finally { bitmap.recycle(); }
+    }
+
+    private static void assertContrast(String name, int foreground, int background) {
+        double ratio = ColorUtils.calculateContrast(ColorUtils.compositeColors(foreground, background), background);
+        assertTrue(name + " 대비 부족: " + ratio, ratio >= 4.5);
     }
 
     private static void openRecovery(int item) {
