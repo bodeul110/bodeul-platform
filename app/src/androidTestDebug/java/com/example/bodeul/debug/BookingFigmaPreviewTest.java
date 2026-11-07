@@ -13,6 +13,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.Visibility.GONE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.view.View;
@@ -114,10 +115,22 @@ public class BookingFigmaPreviewTest {
             View navigation = activity.findViewById(R.id.clientBottomNavigation);
             WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(navigation);
             assertNotNull(insets);
-            int baseHeight = Math.round(84 * activity.getResources().getDisplayMetrics().density);
+            int baseHeight = Math.round(64 * activity.getResources().getDisplayMetrics().density);
             int bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()
                     | WindowInsetsCompat.Type.displayCutout()).bottom;
-            assertEquals(baseHeight + bottom, navigation.getHeight());
+            int[] decorPosition = new int[2];
+            int[] navigationPosition = new int[2];
+            View decor = activity.getWindow().getDecorView();
+            decor.getLocationOnScreen(decorPosition);
+            navigation.getLocationOnScreen(navigationPosition);
+            int safeBottomY = decorPosition[1] + decor.getHeight() - bottom;
+            // edge-to-edge 여부와 무관하게 실제 겹치는 시스템 영역만 메뉴 높이에 포함한다.
+            int overlappingBottom = Math.max(0, navigationPosition[1] + navigation.getHeight() - safeBottomY);
+            assertEquals(baseHeight + overlappingBottom, navigation.getHeight());
+            View item = navigation.findViewById(R.id.clientNavScheduleHistory);
+            int[] itemPosition = new int[2];
+            item.getLocationOnScreen(itemPosition);
+            assertTrue("시스템 내비게이션이 예약 탭을 가림", itemPosition[1] + item.getHeight() <= safeBottomY);
         });
     }
 

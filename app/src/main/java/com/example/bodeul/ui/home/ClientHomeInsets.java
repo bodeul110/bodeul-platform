@@ -33,9 +33,9 @@ public final class ClientHomeInsets {
             );
             view.setPadding(
                     contentLeft + systemInsets.left,
-                    contentTop + systemInsets.top,
+                    contentTop,
                     contentRight + systemInsets.right,
-                    contentBottom + systemInsets.bottom
+                    contentBottom
             );
             return windowInsets;
         });

@@ -48,6 +48,13 @@ import com.google.android.material.textfield.TextInputLayout;
  * 환자와 보호자의 예약 신청 화면에서 흐름 제어만 담당한다.
  */
 public class BookingActivity extends AppCompatActivity {
+    public enum HomeEntry { LOCATION, APPOINTMENT }
+    private static final String EXTRA_HOME_ENTRY = "homeEntry";
+    private boolean homeEntryConsumed;
+
+    public static Intent createHomeEntryIntent(Context context, HomeEntry entry) {
+        return new Intent(context, BookingActivity.class).putExtra(EXTRA_HOME_ENTRY, entry.name());
+    }
     private static final String EXTRA_EDIT_REQUEST_ID = "editRequestId";
 
     private AuthRepository authRepository;
@@ -88,6 +95,7 @@ public class BookingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booking);
         pendingEditRequestId = getIntent().getStringExtra(EXTRA_EDIT_REQUEST_ID);
+        homeEntryConsumed = savedInstanceState != null && savedInstanceState.getBoolean(EXTRA_HOME_ENTRY);
 
         authRepository = provideAuthRepository();
         bookingRepository = provideBookingRepository();
@@ -388,6 +396,7 @@ public class BookingActivity extends AppCompatActivity {
                         });
                         bindFormState(dashboard);
                         bookingContentContainer.setVisibility(View.VISIBLE);
+                        openHomeEntryOnce();
                         if (shouldStartHospitalMapPreview()) {
                             hospitalMapPreviewController.onHostContentVisible();
                         }
@@ -436,6 +445,24 @@ public class BookingActivity extends AppCompatActivity {
 
         editingRequest = refreshedEditingRequest;
         formBinder.bindEditMode(currentUser, refreshedEditingRequest);
+    }
+
+    private void openHomeEntryOnce() {
+        if (homeEntryConsumed || editingRequest != null || currentUser == null) return;
+        homeEntryConsumed = true;
+        String entry = getIntent().getStringExtra(EXTRA_HOME_ENTRY);
+        if (HomeEntry.APPOINTMENT.name().equals(entry)) {
+            findViewById(R.id.buttonBookingAppointmentSummary).performClick();
+        } else if (HomeEntry.LOCATION.name().equals(entry)) {
+            if (formBinder.getHospitalSelection().isComplete()) openLocationSelector();
+            else openHospitalSelector();
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(EXTRA_HOME_ENTRY, homeEntryConsumed);
+        super.onSaveInstanceState(outState);
     }
 
     @Nullable

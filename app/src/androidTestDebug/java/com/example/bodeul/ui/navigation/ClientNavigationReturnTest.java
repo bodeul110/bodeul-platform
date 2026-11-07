@@ -57,6 +57,8 @@ import com.example.bodeul.ui.booking.BookingHealthProfileSelection;
 import com.example.bodeul.ui.booking.BookingHealthProfileActivity;
 import com.example.bodeul.ui.booking.BookingPaymentApprovalActivity;
 import com.example.bodeul.ui.booking.ClientBookingHistoryActivity;
+import com.example.bodeul.ui.booking.ClientCalendarActivity;
+import com.example.bodeul.ui.booking.BookingAppointmentSelectorActivity;
 import com.example.bodeul.ui.chat.CompanionChatActivity;
 import com.example.bodeul.ui.profile.ClientProfileActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -137,6 +139,39 @@ public class ClientNavigationReturnTest {
         instrumentation.waitForIdleSync();
         for (Map.Entry<Field, Object> entry : originalRepositories.entrySet()) {
             entry.getKey().set(null, entry.getValue());
+        }
+    }
+
+    @Test
+    public void calendarAndHistoryRemainDistinctAndReturnToHome() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            MainActivity home = awaitActivity(MainActivity.class);
+            click(home, R.id.clientNavCalendar);
+            ClientCalendarActivity calendar = awaitActivity(ClientCalendarActivity.class);
+            assertNavigationBounds(calendar, R.id.clientNavCalendar);
+            click(calendar, R.id.clientNavScheduleHistory);
+            ClientBookingHistoryActivity history = awaitActivity(ClientBookingHistoryActivity.class);
+            assertEquals(ClientBookingHistoryActivity.class, history.getClass());
+            assertSelected(history, R.id.clientNavScheduleHistory);
+            click(history, R.id.clientNavCalendar);
+            ClientCalendarActivity returned = awaitActivity(ClientCalendarActivity.class);
+            assertSelected(returned, R.id.clientNavCalendar);
+            instrumentation.runOnMainSync(() -> returned.getOnBackPressedDispatcher().onBackPressed());
+            assertSame(home, awaitActivity(MainActivity.class));
+        }
+    }
+
+    @Test
+    public void homeDateOpensExistingSelectorOnlyOnceWithoutCreatingReservation() {
+        int before = data.getAppointmentRequestsForUser(patient.getId(), UserRole.PATIENT).size();
+        try (ActivityScenario<BookingActivity> scenario = ActivityScenario.launch(
+                BookingActivity.createHomeEntryIntent(instrumentation.getTargetContext(), BookingActivity.HomeEntry.APPOINTMENT))) {
+            BookingAppointmentSelectorActivity selector = awaitActivity(BookingAppointmentSelectorActivity.class);
+            instrumentation.runOnMainSync(() -> selector.getOnBackPressedDispatcher().onBackPressed());
+            awaitActivity(BookingActivity.class);
+            scenario.recreate();
+            assertEquals(BookingActivity.class, awaitActivity(BookingActivity.class).getClass());
+            assertEquals(before, data.getAppointmentRequestsForUser(patient.getId(), UserRole.PATIENT).size());
         }
     }
 
@@ -251,7 +286,7 @@ public class ClientNavigationReturnTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             MainActivity home = awaitActivity(MainActivity.class);
             assertNavigationBounds(home, R.id.clientNavHome);
-            click(home, R.id.cardActionBooking);
+            click(home, R.id.buttonHomeHeroPrimary);
             BookingActivity booking = awaitActivity(BookingActivity.class);
             fillLocalBooking(booking);
             assertNavigationBounds(booking, R.id.clientNavScheduleHistory);
@@ -400,17 +435,24 @@ public class ClientNavigationReturnTest {
             WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(navigation);
             assertNotNull(insets);
             float density = activity.getResources().getDisplayMetrics().density;
-            // 홈 Figma 레이아웃은 공통 메뉴의 84dp를 88dp로 재정의한다.
-            int baseHeightDp = activity instanceof MainActivity ? 88 : 84;
+            int baseHeightDp = 64;
             int safeBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()
                     | WindowInsetsCompat.Type.displayCutout()).bottom;
+            int[] decorPosition = new int[2];
+            int[] navigationPosition = new int[2];
+            View decor = activity.getWindow().getDecorView();
+            decor.getLocationOnScreen(decorPosition);
+            navigation.getLocationOnScreen(navigationPosition);
+            int safeBottomY = decorPosition[1] + decor.getHeight() - safeBottom;
+            // 구형 Android의 decor가 이미 제외한 시스템 영역을 메뉴 높이에 다시 더하지 않는다.
+            int overlappingBottom = Math.max(0, navigationPosition[1] + navigation.getHeight() - safeBottomY);
             assertEquals(activity.getClass().getSimpleName() + ": 하단 메뉴 높이, density="
                             + density + ", safeBottom=" + safeBottom + ", layoutHeight="
                             + navigation.getLayoutParams().height + ", paddingBottom="
                             + navigation.getPaddingBottom(),
-                    Math.round(baseHeightDp * density) + safeBottom, navigation.getHeight());
+                    Math.round(baseHeightDp * density) + overlappingBottom, navigation.getHeight());
             assertEquals(selectedItem, navigation.getSelectedItemId());
-            for (int id : new int[]{R.id.clientNavHome, R.id.clientNavScheduleHistory,
+            for (int id : new int[]{R.id.clientNavHome, R.id.clientNavCalendar, R.id.clientNavScheduleHistory,
                     R.id.clientNavCompanionRoom, R.id.clientNavProfile}) {
                 View item = navigation.findViewById(id);
                 Rect visible = new Rect();
@@ -418,6 +460,7 @@ public class ClientNavigationReturnTest {
                 assertEquals(item.getHeight(), visible.height());
                 assertEquals(item.getWidth(), visible.width());
                 assertTrue(visible.height() >= Math.round(48 * density));
+                assertTrue("시스템 내비게이션이 탭을 가림", visible.bottom <= safeBottomY);
             }
         });
     }

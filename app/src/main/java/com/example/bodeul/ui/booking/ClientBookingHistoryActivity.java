@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.CalendarView;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,6 +30,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Calendar;
 
 /**
  * 사용자 예약 이력을 읽기 전용으로 보여준다.
@@ -41,18 +45,38 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
     private View contentContainer;
     private ProgressBar progressBar;
     private BottomNavigationView bottomNavigation;
+    private User loadedUser;
+    private List<AppointmentRequest> loadedRequests = new ArrayList<>();
+    private int calendarYear, calendarMonth, calendarDay;
+    private int loadGeneration;
+
+    protected boolean isCalendarScreen() { return false; }
+    protected AuthRepository provideAuthRepository() { return ServiceLocator.provideAuthRepository(this); }
+    protected BookingRepository provideBookingRepository() { return ServiceLocator.provideBookingRepository(this); }
+    private ClientBottomNavigationTab selectedTab() {
+        return isCalendarScreen() ? ClientBottomNavigationTab.CALENDAR : ClientBottomNavigationTab.SCHEDULE_HISTORY;
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_client_booking_history);
 
-        authRepository = ServiceLocator.provideAuthRepository(this);
-        bookingRepository = ServiceLocator.provideBookingRepository(this);
+        authRepository = provideAuthRepository();
+        bookingRepository = provideBookingRepository();
         coordinator = new ClientBookingHistoryCoordinator(this, new BookingPresentationFormatter(this));
         statePanel = findViewById(R.id.clientBookingHistoryStatePanel);
         contentContainer = findViewById(R.id.clientBookingHistoryContentContainer);
         progressBar = findViewById(R.id.progressClientBookingHistory);
+        Calendar today = BookingAppointmentDateTime.newCalendar();
+        calendarYear = savedInstanceState == null ? today.get(Calendar.YEAR) : savedInstanceState.getInt("calendarYear");
+        calendarMonth = savedInstanceState == null ? today.get(Calendar.MONTH) : savedInstanceState.getInt("calendarMonth");
+        calendarDay = savedInstanceState == null ? today.get(Calendar.DAY_OF_MONTH) : savedInstanceState.getInt("calendarDay");
+        Calendar displayed = Calendar.getInstance();
+        displayed.set(calendarYear, calendarMonth, calendarDay, 12, 0);
+        CalendarView calendar = findViewById(R.id.clientCalendar);
+        calendar.setDate(displayed.getTimeInMillis(), false, true);
+        calendar.setOnDateChangeListener((view, year, month, day) -> onCalendarDateSelected(year, month, day));
 
         binder = new ClientBookingHistoryBinder(
                 this,
@@ -87,10 +111,10 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         bottomNavigation.setVisibility(View.GONE);
         ClientBottomNavigationBinder.bind(
                 bottomNavigation,
-                ClientBottomNavigationTab.SCHEDULE_HISTORY,
+                selectedTab(),
                 tab -> ClientBottomNavigationRouter.open(
                         this,
-                        ClientBottomNavigationTab.SCHEDULE_HISTORY,
+                        selectedTab(),
                         tab
                 )
         );
@@ -104,6 +128,10 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
     }
 
     private void reload() {
+        int generation = ++loadGeneration;
+        loadedUser = null;
+        loadedRequests.clear();
+        findViewById(R.id.clientCalendarContainer).setVisibility(View.GONE);
         setLoading(true);
         findViewById(R.id.buttonOpenGuardianBookingInbox).setVisibility(View.GONE);
         bottomNavigation.setVisibility(View.GONE);
@@ -111,6 +139,7 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
+                if (generation != loadGeneration) return;
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
                     openProfileCompletion();
                     return;
@@ -125,44 +154,74 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
                         authRepository.isFirebaseBacked()
                                 && getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled)
                                 ? View.VISIBLE : View.GONE);
-                loadRequests(result);
+                loadRequests(result, generation);
             }
 
             @Override
             public void onError(String message) {
+                if (generation != loadGeneration) return;
                 setLoading(false);
                 showAuthState();
             }
         });
     }
 
-    private void loadRequests(User currentUser) {
+    private void loadRequests(User currentUser, int generation) {
         bookingRepository.getMyAppointmentRequests(currentUser, new RepositoryCallback<List<AppointmentRequest>>() {
             @Override
             public void onSuccess(List<AppointmentRequest> result) {
+                if (generation != loadGeneration) return;
                 setLoading(false);
-                if (result.isEmpty()) {
-                    showEmptyState();
-                    return;
-                }
-                ClientBookingHistoryScreenModel screenModel = coordinator.createScreenModel(
-                        currentUser,
-                        result,
-                        bookingRepository.isFirebaseBacked()
-                );
-                hideBlockingState();
-                contentContainer.setVisibility(View.VISIBLE);
-                binder.bindScreen(screenModel, requestId ->
-                        startActivity(BookingStatusActivity.createIntent(ClientBookingHistoryActivity.this, requestId))
-                );
+                loadedUser = currentUser;
+                loadedRequests = result == null ? new ArrayList<>() : new ArrayList<>(result);
+                renderRequests();
             }
 
             @Override
             public void onError(String message) {
+                if (generation != loadGeneration) return;
                 setLoading(false);
                 showLoadErrorState(message);
             }
         });
+    }
+
+    protected void onCalendarDateSelected(int year, int month, int day) {
+        calendarYear = year;
+        calendarMonth = month;
+        calendarDay = day;
+        if (loadedUser != null) renderRequests();
+    }
+
+    private void renderRequests() {
+        List<AppointmentRequest> visible = isCalendarScreen()
+                ? ClientCalendarFilter.select(loadedRequests, calendarYear, calendarMonth, calendarDay)
+                : loadedRequests;
+        hideBlockingState();
+        findViewById(R.id.clientCalendarContainer).setVisibility(isCalendarScreen() ? View.VISIBLE : View.GONE);
+        ((TextView) findViewById(R.id.textClientCalendarDate)).setText(getString(
+                R.string.final_calendar_date, calendarYear, calendarMonth + 1, calendarDay));
+        findViewById(R.id.textClientCalendarEmpty).setVisibility(isCalendarScreen() && visible.isEmpty() ? View.VISIBLE : View.GONE);
+        if (visible.isEmpty()) {
+            contentContainer.setVisibility(View.GONE);
+            if (!isCalendarScreen()) showEmptyState();
+            return;
+        }
+        contentContainer.setVisibility(View.VISIBLE);
+        binder.bindScreen(coordinator.createScreenModel(loadedUser, visible, bookingRepository.isFirebaseBacked()),
+                requestId -> startActivity(BookingStatusActivity.createIntent(this, requestId)));
+    }
+
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt("calendarYear", calendarYear);
+        outState.putInt("calendarMonth", calendarMonth);
+        outState.putInt("calendarDay", calendarDay);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override protected void onStop() {
+        loadGeneration++;
+        super.onStop();
     }
 
     private void setLoading(boolean loading) {

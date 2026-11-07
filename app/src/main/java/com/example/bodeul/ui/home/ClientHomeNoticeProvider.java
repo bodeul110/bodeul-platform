@@ -13,13 +13,13 @@ public final class ClientHomeNoticeProvider {
     public List<ClientHomeNotice> createNotices(UserRole role) {
         List<ClientHomeNotice> notices = new ArrayList<>();
         notices.add(new ClientHomeNotice(
-                R.drawable.manager_service_intro_safe,
+                R.drawable.bodeul_final_home_article_1,
                 R.string.client_home_notice_prepare_eyebrow,
                 R.string.client_home_notice_prepare_title,
                 R.string.client_home_notice_prepare_body
         ));
         notices.add(new ClientHomeNotice(
-                R.drawable.manager_service_intro_ai,
+                R.drawable.bodeul_final_home_article_2,
                 role == UserRole.GUARDIAN
                         ? R.string.client_home_notice_guardian_eyebrow
                         : R.string.client_home_notice_patient_eyebrow,
@@ -30,6 +30,12 @@ public final class ClientHomeNoticeProvider {
                         ? R.string.client_home_notice_guardian_body
                         : R.string.client_home_notice_patient_body
         ));
+        notices.add(new ClientHomeNotice(R.drawable.bodeul_final_home_article_3,
+                R.string.client_home_notice_patient_eyebrow,
+                R.string.final_home_guide_steps_title, R.string.final_home_guide_steps_body));
+        notices.add(new ClientHomeNotice(R.drawable.bodeul_final_home_article_4,
+                R.string.final_home_support,
+                R.string.final_home_guide_support_title, R.string.final_home_guide_support_body));
         return notices;
     }
 }
