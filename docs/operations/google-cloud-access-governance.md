@@ -1,8 +1,10 @@
 # Google Cloud 계정 및 IAM 운영 기준
 
-조직·관리자 접근 재확인일: 2026-09-22. Google Workspace 사용자·라이선스 항목은 별도 표시한 2026-08-23 확인 기록이다.
+조직·관리자·개인 개발 권한 재확인일: 2026-11-07. Google Workspace 사용자·라이선스 항목은 별도 표시한 2026-08-23 확인 기록이다.
 
 이 문서는 BoDeul의 Google Cloud, Firebase, Cloud Identity 접근 주체를 사람, 역할 그룹, 자동화 계정으로 분리하는 기준과 현재 전환 상태를 기록한다. 공개 사이트의 문의 주소를 개발 또는 운영 로그인으로 사용하지 않는다.
+
+Google 외의 GitHub·Vercel·Supabase와 326 잔여 계정은 [서비스 소유 계정과 개발 권한](service-ownership-and-access.md)에서 함께 구분한다.
 
 ## 역할 경계
 
@@ -24,17 +26,33 @@ Google 계정 비밀번호를 여러 사람이 공유하지 않는다. 사람의
 
 - Cloud Identity API를 `bodeul-dev`에서 활성화했다.
 - `bodeul.kr` Cloud Identity 디렉터리에 세 보안 그룹을 만들었다.
-- `gcp-admins@bodeul.kr`의 구성원은 두 명이다. 공식 관리자와 개인 개발 관리자 모두의 그룹 등록 및 실제 접근을 2026-09-22에 확인했다.
-- 관리자 그룹에는 두 Google Cloud 조직과 개발·production 프로젝트에서 기존 관리자 주체와 같은 권한을 병행 부여했다.
-- `developers@bodeul.kr`에는 현재 활동 중인 개발자 계정을 등록하고 `bodeul-dev`의 `roles/editor`를 병행 부여했다.
+- `gcp-admins@bodeul.kr`의 구성원은 공식 관리자 한 명이다. 2026-11-07 공식 계정의 재인증과 그룹 Owner를 확인한 뒤 개인 개발 계정을 관리자 그룹에서 제거했다.
+- 관리자 그룹의 두 조직과 개발·production 프로젝트 관리 권한은 유지한다. 개인 개발 계정은 더 이상 이 그룹의 권한을 상속하지 않는다.
+- `developers@bodeul.kr`에는 공식 관리자 Owner와 개인 Member 세 명이 있다. 개발 프로젝트의 Editor를 아래 서비스별 역할로 대체했다.
 - `prod-operators@bodeul.kr`에는 `bodeul-prod-110`의 Logging Viewer, Monitoring Viewer, Cloud Run Viewer, Secret Manager Viewer만 부여했다. Secret payload, Firestore 데이터와 Storage 객체 읽기 권한은 포함하지 않는다.
 - 2026-09-22 공식 관리자 재인증 후 두 계정의 조직·프로젝트 IAM 조회를 확인했고, 조직 이동 뒤에도 두 계정으로 개발·production 프로젝트 접근을 다시 확인했다.
 - 2026-09-06에는 공식 관리자에게 직접 부여된 기존 조직의 관리자 역할 4건을 제거한 기록이 있다. 2026-09-22 실조회에서는 기존 조직에 공식 관리자의 직접 `roles/resourcemanager.organizationAdmin`과 `roles/iam.denyReviewer`가 존재한다. 조직 이전과 추가 권한 회수를 섞지 않고 복구 접근으로 보존했다. 과거 중복 제거 기록을 현재의 직접 권한 부재로 해석하지 않는다.
 - 팀에서 제외된 이전 개발자 계정의 `bodeul-dev` 직접 `roles/editor` binding을 제거했다.
-- 현재 활동 중인 개발자 두 명의 기존 `bodeul-dev` 직접 `roles/editor` binding은 유지했다. 그룹 명단은 일치하지만 Policy Troubleshooter의 해당 그룹 판정이 `MEMBERSHIP_UNKNOWN_INFO`이므로, 직접 권한이 포함된 `CAN_ACCESS` 결과만으로 그룹 경유 검증이 끝났다고 판단하지 않는다.
+- `prod-operators@bodeul.kr`에는 공식 관리자 Owner와 개인 개발 담당자 Member 한 명이 있다. 이 개인 계정은 production에서 조회 역할만 갖는다.
+- 개발 그룹 구성원과 IAM을 실조회한 뒤 기존 두 개인 계정의 직접 Editor를 제거했다. 개인 개발 담당자 계정의 실제 개발 조회와 `testIamPermissions`로 새 역할 경계를 확인했다. 다른 구성원으로 직접 로그인하는 검증은 수행하지 않았다.
+- 개인 계정의 개발·production 프로젝트 IAM 변경, 프로젝트 삭제, Cloud Run 변경·IAM, Secret payload, 서비스 계정 키 생성·대행·토큰 발급은 불허로 확인했다. 개발 Auth·Firestore 관리 권한은 유지하고 production에서는 차단했다.
 - Git 작성자와 GitHub 작업 계정은 작업 시 실제 인증된 사용자 및 사용자의 계정 지정에 맞춘다. Google Cloud 관리자 계정과 GitHub 작성자를 같은 계정으로 강제하지 않는다.
 
-과거 권한 정리는 [2026-09-06 재정비 기록](../reports/google-cloud-access-realignment-2026-09-06.md), 최신 소속과 검증은 [공식 조직 이전 기록](google-cloud-organization-migration.md)을 따른다.
+과거 권한 정리는 [2026-09-06 재정비 기록](../reports/google-cloud-access-realignment-2026-09-06.md), 조직 소속은 [공식 조직 이전 기록](google-cloud-organization-migration.md), 최신 권한 축소는 [2026-11-07 정리 기록](../reports/shared-ownership-access-cleanup-2026-11-07.md)을 따른다.
+
+### 개발 그룹 역할
+
+| 범위 | 역할 | 목적 |
+| --- | --- | --- |
+| `bodeul-dev` 프로젝트 | `roles/firebase.viewer` | Firebase 구성 조회 |
+| 같은 프로젝트 | `roles/firebaseauth.admin`, `roles/firebaseappcheck.admin` | 개발 인증 계정과 App Check 검증 관리 |
+| 같은 프로젝트 | `roles/datastore.user` | 개발 Firestore 데이터 테스트 |
+| 같은 프로젝트 | `roles/logging.viewer`, `roles/monitoring.viewer`, `roles/run.viewer` | 로그·모니터링·서버 조회 |
+| 같은 프로젝트 | `roles/artifactregistry.reader`, `roles/serviceusage.serviceUsageConsumer` | 개발 이미지 조회와 API 사용 |
+| 같은 프로젝트 | `roles/secretmanager.viewer` | 비밀값이 아닌 Secret 메타데이터 조회 |
+| 개발 Firebase 파일 버킷만 | `roles/storage.objectUser` | 개발 첨부 객체 테스트 |
+
+개발 서버·Rules·Functions 배포와 DB migration은 기존 GitHub workflow 및 WIF 경계로 수행한다. 개인 개발 계정에 IAM·서비스 계정 대행·Secret payload 권한을 되돌려 주는 방식으로 배포 오류를 해결하지 않는다. 추가 작업이 필요하면 대상 환경과 필요한 권한을 확인해 별도로 처리한다.
 
 ### Google Workspace 확인 결과 (2026-08-23)
 
@@ -55,7 +73,7 @@ Google 계정 비밀번호를 여러 사람이 공유하지 않는다. 사람의
 | `bodeul-dev` | `bodeul.kr` (`1038381475908`) | `533563500316` |
 | `bodeul-prod-110` | `bodeul.kr` (`1038381475908`) | `649312328770` |
 
-기존 조직 `766471701894`는 즉시 삭제하지 않는다. 남은 자산·감사 기록과 복구 필요성을 별도 확인한다. 프로젝트를 새로 만들거나 데이터·비밀값을 복사하지 않았고, 관리자 웹의 Vercel·Supabase 소유권과 설정도 변경하지 않았다.
+기존 조직 `766471701894`는 즉시 삭제하지 않는다. 남은 자산·감사 기록과 복구 필요성을 별도 확인한다. 9월 22일 조직 이전에서는 프로젝트를 새로 만들거나 데이터·비밀값을 복사하지 않았고 Vercel·Supabase도 변경하지 않았다. 이후 11월 7일의 사람 계정 역할 축소는 [별도 정리 기록](../reports/shared-ownership-access-cleanup-2026-11-07.md)으로 구분한다.
 
 공식 조직의 IAM·조직 정책 상속은 이전 조직과 다르다. 기존 공개 Cloud Run 접근과 새 공개 서비스 IAM 부여를 구분하며, 신규 production 배포 시 도메인 제한과 공개 접근 방식을 검증한다. 이전 절차·비교 항목·복귀 경계는 [공식 조직 이전 기록](google-cloud-organization-migration.md)을 따른다.
 
@@ -74,21 +92,21 @@ Google 계정 비밀번호를 여러 사람이 공유하지 않는다. 사람의
 
 공용 계정으로 로그인하는 것과 Cloud Billing 계정·결제 수단을 이전하는 것은 별개다. 이번 접근 권한 정리를 이유로 기존 개인 결제 계정을 자동 재개하거나 개인 결제 수단을 다시 등록하지 않는다.
 
-2026-09-22 조회 기준 공식 조직 소속 `bodeul-billing`은 `open=true`이며, 두 프로젝트 모두 이 계정에 연결돼 `billingEnabled=true`다. 기존 개인 결제 계정은 닫힌 상태이며 프로젝트 연결이 없다. 조직 이전 후 [명칭 정리](resource-naming.md)에서 기존 `bodeul-shared-billing1`의 표시 이름만 변경했고, 결제 계정 ID·연결·결제 수단은 유지했다.
+2026-11-07 재조회에서도 공식 조직 소속 `bodeul-billing`은 `open=true`이며, 두 프로젝트 모두 이 계정에 연결돼 `billingEnabled=true`다. 기존 개인 결제 `bodeul-test`는 닫힌 상태이며 현행 개발·운영 프로젝트와 연결되지 않는다. 구 조직의 기본 프로젝트에 남은 다른 닫힌 결제 계정과 혼동하지 않는다. 조직 이전 후 [명칭 정리](resource-naming.md)에서 기존 `bodeul-shared-billing1`의 표시 이름만 변경했고, 이번 권한 정리에서는 결제 계정 ID·연결·결제 수단을 변경하지 않았다.
 
 향후 결제 전환도 계정의 `open=true`, 각 프로젝트의 예상 연결과 `billingEnabled=true`로 확인한다. 결제 활성 확인은 카드의 상세 내역·다음 청구 성공이나 앱 업무 기능 검증을 대신하지 않는다. 결제 등록·약관·카드 입력은 담당자가 직접 완료하며, 결제 계정과 Google Payments 권한을 동일한 것으로 취급하지 않는다.
 
 ## 점검 명령
 
-현재 로컬 보들 설정 이름은 `bodeul-ops`다. 기본 계정이나 기본 프로젝트를 추정하지 않고 설정 이름과 대상 프로젝트를 명시한다. 복구 관리자 점검은 `--account=<복구 관리자 계정>`을 추가해 수행하며, 활성 계정이나 다른 프로젝트의 인증을 교체하지 않는다.
+현재 로컬 보들 설정 이름은 `bodeul-ops`이고 기본 계정은 개인 개발 계정이다. 기본 프로젝트를 추정하지 않고 설정 이름과 대상 프로젝트를 명시한다. 그룹·IAM 점검은 공식 관리자를 명시하며, 활성 계정이나 다른 프로젝트의 인증을 교체하지 않는다.
 
 ```powershell
 gcloud config configurations describe bodeul-ops
-gcloud identity groups memberships list --group-email=gcp-admins@bodeul.kr --view=full --configuration=bodeul-ops
-gcloud identity groups memberships list --group-email=developers@bodeul.kr --view=full --configuration=bodeul-ops
-gcloud projects get-iam-policy bodeul-dev --configuration=bodeul-ops
-gcloud projects get-iam-policy bodeul-prod-110 --configuration=bodeul-ops
-gcloud organizations list --configuration=bodeul-ops
+gcloud identity groups memberships list --group-email=gcp-admins@bodeul.kr --view=full --configuration=bodeul-ops --account=scp@bodeul.kr
+gcloud identity groups memberships list --group-email=developers@bodeul.kr --view=full --configuration=bodeul-ops --account=scp@bodeul.kr
+gcloud projects get-iam-policy bodeul-dev --configuration=bodeul-ops --account=scp@bodeul.kr
+gcloud projects get-iam-policy bodeul-prod-110 --configuration=bodeul-ops --account=scp@bodeul.kr
+gcloud organizations list --configuration=bodeul-ops --account=scp@bodeul.kr
 ```
 
 `Reauthentication failed`는 먼저 해당 계정의 재인증으로 확인한다. 이 오류만으로 IAM 손상이나 프로젝트 재생성 필요성을 판단하지 않는다. `gcloud auth login`은 기존 보들 설정과 명시한 계정으로 실행하고, `--update-adc`를 추가하거나 다른 계정의 인증을 일괄 폐기하지 않는다. 브라우저 자동 실행이 불가능하면 공식 `--no-launch-browser` 흐름을 사용하며 인증 코드는 해당 터미널에만 입력한다.

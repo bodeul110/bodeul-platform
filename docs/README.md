@@ -24,6 +24,7 @@
 | 인프라·배포 | [인프라 개요](architecture/infrastructure.md), [개발·운영 환경 기준](operations/dev-production-branch-transition-plan.md), [Production 인프라 기본값](operations/production-infrastructure-defaults.md) |
 | Firebase 운영 | [Firebase 설정](operations/firebase/setup.md), [운영 문서](operations/README.md) |
 | 보안·권한 | [보안 문서](security/README.md), [데이터 보관 및 파기 정책](operations/data-retention-policy.md) |
+| 소유 계정·개발 접근 | [서비스 소유 계정과 개발 권한](operations/service-ownership-and-access.md), [Google Cloud IAM 기준](operations/google-cloud-access-governance.md) |
 | 기획·법률 정책 확인 | [Notion 제품 기준 정합성](planning/notion-product-alignment.md), [MVP 임시 정책값 결정 경계](planning/mvp-policy-default-boundary.md), [2026-08-25 정책·법률 점검](reports/notion-policy-legal-alignment-2026-08-25.md) |
 | 검증 결과 확인 | [현재 구현 상태](status/implementation-status.md), [보고서](reports/README.md) |
 
