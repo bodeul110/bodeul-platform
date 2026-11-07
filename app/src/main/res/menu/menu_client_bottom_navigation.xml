@@ -2,18 +2,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/clientNavHome"
-        android:icon="@drawable/ic_client_nav_home"
+        android:icon="@drawable/bodeul_final_home_nav_home"
         android:title="@string/client_nav_home" />
     <item
+        android:id="@+id/clientNavCalendar"
+        android:icon="@drawable/bodeul_final_home_nav_calendar"
+        android:title="@string/final_home_calendar" />
+    <item
         android:id="@+id/clientNavScheduleHistory"
-        android:icon="@drawable/ic_client_nav_history"
-        android:title="@string/client_nav_schedule_history" />
+        android:icon="@drawable/bodeul_final_home_nav_history"
+        android:title="@string/final_home_history" />
     <item
         android:id="@+id/clientNavCompanionRoom"
-        android:icon="@drawable/ic_client_nav_guide"
-        android:title="@string/client_nav_companion_room" />
+        android:icon="@drawable/bodeul_final_home_nav_chat"
+        android:title="@string/final_home_chat" />
     <item
         android:id="@+id/clientNavProfile"
-        android:icon="@drawable/ic_client_nav_profile"
-        android:title="@string/client_nav_profile" />
+        android:icon="@drawable/bodeul_final_home_nav_profile"
+        android:title="@string/final_home_profile" />
 </menu>

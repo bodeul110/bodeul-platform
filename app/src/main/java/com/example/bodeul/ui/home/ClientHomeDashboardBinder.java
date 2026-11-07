@@ -1,7 +1,7 @@
 package com.example.bodeul.ui.home;
 
 import android.content.Context;
-import android.content.res.ColorStateList;
+import android.graphics.Matrix;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,370 +9,129 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.core.content.ContextCompat;
-import androidx.core.view.ViewCompat;
+import androidx.appcompat.app.AlertDialog;
 
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentStatus;
-import com.example.bodeul.domain.model.CompanionSession;
 import com.example.bodeul.domain.model.GuardianReportEntry;
 import com.example.bodeul.ui.booking.BookingPresentationFormatter;
 import com.example.bodeul.ui.common.AttentionBannerBinder;
 import com.example.bodeul.ui.common.AppointmentProgressOverviewModel;
 import com.example.bodeul.ui.common.AppointmentProgressStageItemBinder;
 import com.example.bodeul.ui.common.AppointmentProgressStageModel;
-import com.google.android.material.button.MaterialButton;
 
-/**
- * 환자/보호자 홈에 필요한 텍스트와 안내 카드를 대시보드 모델 기준으로 바인딩한다.
- */
+/** 완성본 홈에 실제 예약 상태와 안내 콘텐츠를 연결한다. */
 public final class ClientHomeDashboardBinder {
     private final Context context;
-    private final LayoutInflater layoutInflater;
-    private final TextView textGreeting;
-    private final TextView textSubtitle;
-    private final TextView textHeaderSupportBadge;
+    private final View root;
     private final AttentionBannerBinder supportBannerBinder;
-    private final TextView textHeroBadge;
-    private final TextView textHeroTitle;
-    private final TextView textHeroBody;
-    private final MaterialButton buttonHeroPrimary;
-    private final TextView textProgressBadge;
-    private final TextView textProgressTitle;
-    private final TextView textProgressBody;
-    private final LinearLayout progressStageContainer;
-    private final MaterialButton buttonOpenProgress;
-    private final TextView textActionSecondaryTitle;
-    private final TextView textActionSecondaryBody;
-    private final TextView textActionHistoryBody;
-    private final TextView textActionSupportBody;
-    private final TextView textActionSupportCounter;
-    private final View progressSection;
-    private final LinearLayout noticeContainer;
-    private final AppointmentProgressStageItemBinder stageItemBinder;
-    private final BookingPresentationFormatter bookingPresentationFormatter;
 
-    public ClientHomeDashboardBinder(
-            Context context,
-            LayoutInflater layoutInflater,
-            TextView textGreeting,
-            TextView textSubtitle,
-            TextView textHeaderSupportBadge,
-            View supportBannerView,
-            TextView textHeroBadge,
-            TextView textHeroTitle,
-            TextView textHeroBody,
-            MaterialButton buttonHeroPrimary,
-            TextView textProgressBadge,
-            TextView textProgressTitle,
-            TextView textProgressBody,
-            LinearLayout progressStageContainer,
-            MaterialButton buttonOpenProgress,
-            TextView textActionSecondaryTitle,
-            TextView textActionSecondaryBody,
-            TextView textActionHistoryBody,
-            TextView textActionSupportBody,
-            TextView textActionSupportCounter,
-            View progressSection,
-            LinearLayout noticeContainer
-    ) {
+    public ClientHomeDashboardBinder(Context context, View root) {
         this.context = context;
-        this.layoutInflater = layoutInflater;
-        this.textGreeting = textGreeting;
-        this.textSubtitle = textSubtitle;
-        this.textHeaderSupportBadge = textHeaderSupportBadge;
-        this.supportBannerBinder = new AttentionBannerBinder(context, supportBannerView);
-        this.textHeroBadge = textHeroBadge;
-        this.textHeroTitle = textHeroTitle;
-        this.textHeroBody = textHeroBody;
-        this.buttonHeroPrimary = buttonHeroPrimary;
-        this.textProgressBadge = textProgressBadge;
-        this.textProgressTitle = textProgressTitle;
-        this.textProgressBody = textProgressBody;
-        this.progressStageContainer = progressStageContainer;
-        this.buttonOpenProgress = buttonOpenProgress;
-        this.textActionSecondaryTitle = textActionSecondaryTitle;
-        this.textActionSecondaryBody = textActionSecondaryBody;
-        this.textActionHistoryBody = textActionHistoryBody;
-        this.textActionSupportBody = textActionSupportBody;
-        this.textActionSupportCounter = textActionSupportCounter;
-        this.progressSection = progressSection;
-        this.noticeContainer = noticeContainer;
-        this.stageItemBinder = new AppointmentProgressStageItemBinder(context);
-        this.bookingPresentationFormatter = new BookingPresentationFormatter(context);
+        this.root = root;
+        supportBannerBinder = new AttentionBannerBinder(context,
+                root.findViewById(R.id.layoutHomeSupportBanner));
     }
 
     public void bindDashboard(ClientHomeDashboard dashboard) {
-        bindGreeting(dashboard);
-        bindHeaderSupportBadge(dashboard);
-        supportBannerBinder.bind(dashboard.getSupportBanner());
-        bindHero(dashboard);
-        bindProgress(dashboard);
-        bindQuickActions(dashboard);
-        bindNotices(dashboard);
-    }
-
-    private void bindHeaderSupportBadge(ClientHomeDashboard dashboard) {
+        TextView badge = root.getRootView().findViewById(R.id.textHomeSupportHeaderBadge);
+        int count = dashboard.getUnreadSupportResponseCount();
+        badge.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+        badge.setText(String.valueOf(count));
+        String notificationDescription = count > 0
+                ? context.getString(R.string.final_home_unread, count)
+                : context.getString(R.string.final_home_notifications);
         if (dashboard.hasStaleUnreadSupportResponses()) {
-            textHeaderSupportBadge.setVisibility(View.VISIBLE);
-            textHeaderSupportBadge.setText(context.getString(
-                    R.string.client_home_support_header_badge_overdue,
-                    dashboard.getStaleUnreadSupportResponseCount()
-            ));
-            ViewCompat.setBackgroundTintList(
-                    textHeaderSupportBadge,
-                    ColorStateList.valueOf(ContextCompat.getColor(context, R.color.bodeul_error))
-            );
-            textHeaderSupportBadge.setTextColor(ContextCompat.getColor(context, R.color.white));
-            return;
+            notificationDescription += ", " + context.getString(R.string.client_home_support_header_badge_overdue,
+                    dashboard.getStaleUnreadSupportResponseCount());
         }
-        if (dashboard.hasUnreadSupportResponses()) {
-            textHeaderSupportBadge.setVisibility(View.VISIBLE);
-            textHeaderSupportBadge.setText(context.getString(
-                    R.string.client_home_support_header_badge_unread,
-                    dashboard.getUnreadSupportResponseCount()
-            ));
-            ViewCompat.setBackgroundTintList(
-                    textHeaderSupportBadge,
-                    ColorStateList.valueOf(ContextCompat.getColor(context, R.color.bodeul_primary))
-            );
-            textHeaderSupportBadge.setTextColor(ContextCompat.getColor(context, R.color.white));
-            return;
-        }
-        textHeaderSupportBadge.setVisibility(View.GONE);
-    }
-
-    private void bindGreeting(ClientHomeDashboard dashboard) {
-        if (dashboard.isGuardianUser()) {
-            textGreeting.setText(context.getString(
-                    R.string.client_home_greeting_guardian,
-                    dashboard.getUser().getName()
-            ));
-        } else {
-            textGreeting.setText(context.getString(
-                    R.string.client_home_greeting_patient,
-                    dashboard.getUser().getName()
-            ));
-        }
-
-        int subtitleResId;
-        if (!dashboard.hasRequests()) {
-            subtitleResId = R.string.client_home_subtitle_empty;
-        } else if (dashboard.hasActiveRequest()) {
-            subtitleResId = R.string.client_home_subtitle_active;
-        } else {
-            subtitleResId = R.string.client_home_subtitle_history;
-        }
-        textSubtitle.setText(subtitleResId);
+        root.getRootView().findViewById(R.id.buttonHomeSupport).setContentDescription(notificationDescription);
+        supportBannerBinder.bind(dashboard.getSupportBanner());
+        bindProgress(dashboard);
+        bindNotices(dashboard);
     }
 
     public void setOnSupportBannerClickListener(View.OnClickListener listener) {
         supportBannerBinder.setOnActionClickListener(listener);
     }
 
-    private void bindHero(ClientHomeDashboard dashboard) {
-        AppointmentRequest primaryRequest = dashboard.getPrimaryRequest();
-        if (primaryRequest == null) {
-            textHeroBadge.setText(R.string.client_home_hero_badge_empty);
-            textHeroTitle.setText(R.string.client_home_hero_empty_title);
-            textHeroBody.setText(R.string.client_home_hero_empty_body);
-            buttonHeroPrimary.setText(R.string.client_home_hero_request_button);
-            return;
-        }
-
-        textHeroBadge.setText(toStatusLabel(primaryRequest.getStatus()));
-        textHeroTitle.setText(resolveHeroTitleResId(primaryRequest.getStatus()));
-        textHeroBody.setText(buildHeroBody(dashboard, primaryRequest));
-        buttonHeroPrimary.setText(dashboard.isGuardianUser()
-                ? R.string.client_home_hero_report_button
-                : R.string.client_home_hero_progress_button);
-    }
-
     private void bindProgress(ClientHomeDashboard dashboard) {
-        AppointmentProgressOverviewModel progressOverview = dashboard.getProgressOverview();
-        if (progressOverview == null || dashboard.getPrimaryRequest() == null) {
-            progressSection.setVisibility(View.GONE);
-            textProgressBadge.setText(R.string.client_home_progress_empty_badge);
-            tintProgressBadge(R.color.bodeul_soft_blue, R.color.bodeul_primary);
-            textProgressTitle.setText(R.string.client_home_progress_empty_title);
-            textProgressBody.setText(R.string.client_home_progress_empty_body);
-            progressStageContainer.removeAllViews();
-            buttonOpenProgress.setText(R.string.client_home_hero_request_button);
+        View section = root.findViewById(R.id.layoutHomeProgressSection);
+        AppointmentProgressOverviewModel progress = dashboard.getProgressOverview();
+        LinearLayout stages = root.findViewById(R.id.layoutHomeProgressStageContainer);
+        stages.removeAllViews();
+        if (progress == null || dashboard.getPrimaryRequest() == null) {
+            section.setVisibility(View.GONE);
             return;
         }
-
-        progressSection.setVisibility(View.VISIBLE);
-        textProgressBadge.setText(progressOverview.getBadgeText());
-        tintProgressBadge(
-                resolveRecentBadgeBackground(dashboard.getPrimaryRequest().getStatus()),
-                resolveRecentBadgeTextColor(dashboard.getPrimaryRequest().getStatus())
-        );
-        textProgressTitle.setText(progressOverview.getTitleText());
-        textProgressBody.setText(progressOverview.getBodyText());
-        bindProgressStages(progressOverview.getStages());
-        buttonOpenProgress.setText(dashboard.isGuardianUser()
-                ? R.string.client_home_hero_report_button
-                : R.string.client_home_progress_detail_button);
-    }
-
-    private CharSequence buildHeroBody(ClientHomeDashboard dashboard, AppointmentRequest primaryRequest) {
-        String recentUpdate = buildHomeUpdateLine(dashboard, primaryRequest);
-        return context.getString(
-                R.string.client_home_hero_active_body,
-                toStatusLabel(primaryRequest.getStatus()),
-                primaryRequest.getAppointmentAt(),
-                TextUtils.isEmpty(primaryRequest.getMeetingPlace())
-                        ? context.getString(R.string.booking_status_place_missing)
-                        : primaryRequest.getMeetingPlace(),
-                recentUpdate
-        );
-    }
-
-    private void bindQuickActions(ClientHomeDashboard dashboard) {
-        textActionSecondaryTitle.setText(R.string.client_home_action_health_title);
-        textActionSecondaryBody.setText(dashboard.isGuardianUser()
-                ? R.string.client_home_action_health_body_guardian
-                : R.string.client_home_action_health_body_patient);
-        textActionHistoryBody.setText(context.getString(
-                R.string.client_home_action_history_body,
-                dashboard.getRequestCount(),
-                dashboard.getCompletedRequestCount()
-        ));
-
-        int supportCount = dashboard.hasStaleUnreadSupportResponses()
-                ? dashboard.getStaleUnreadSupportResponseCount()
-                : dashboard.getUnreadSupportResponseCount();
-        textActionSupportCounter.setVisibility(supportCount > 0 ? View.VISIBLE : View.GONE);
-        if (supportCount > 0) {
-            textActionSupportCounter.setText(String.valueOf(supportCount));
-            textActionSupportBody.setText(context.getString(
-                    dashboard.hasStaleUnreadSupportResponses()
-                            ? R.string.client_home_action_support_body_overdue
-                            : R.string.client_home_action_support_body_unread,
-                    supportCount
-            ));
-            return;
+        section.setVisibility(View.VISIBLE);
+        setText(R.id.textHomeProgressBadge, progress.getBadgeText());
+        setText(R.id.textHomeProgressTitle, progress.getTitleText());
+        AppointmentRequest request = dashboard.getPrimaryRequest();
+        String body = context.getString(R.string.final_home_current_booking,
+                request.getAppointmentAt(), TextUtils.isEmpty(request.getMeetingPlace())
+                        ? context.getString(R.string.booking_status_place_missing) : request.getMeetingPlace())
+                + "\n\n" + progress.getBodyText();
+        if (request.getStatus() == AppointmentStatus.COMPLETED && dashboard.getPrimaryFollowUpRecord() != null) {
+            body = body + "\n" + new BookingPresentationFormatter(context)
+                    .buildFollowUpSummary(dashboard.getPrimaryFollowUpRecord());
+        } else if (dashboard.isGuardianUser()) {
+            GuardianReportEntry entry = dashboard.getHighlightGuardianEntry();
+            if (entry != null && entry.getSession() != null) {
+                String update = entry.getSession().getGuardianUpdate();
+                if (!TextUtils.isEmpty(update) && !body.contains(update)) body += "\n" + update;
+            }
         }
-        textActionSupportBody.setText(R.string.client_home_action_support_body);
-    }
-
-    private void tintProgressBadge(int backgroundColorResId, int textColorResId) {
-        ViewCompat.setBackgroundTintList(
-                textProgressBadge,
-                ColorStateList.valueOf(ContextCompat.getColor(context, backgroundColorResId))
-        );
-        textProgressBadge.setTextColor(ContextCompat.getColor(context, textColorResId));
-    }
-
-    private int resolveRecentBadgeBackground(AppointmentStatus status) {
-        switch (status) {
-            case MATCHED:
-            case IN_PROGRESS:
-                return R.color.bodeul_soft_green;
-            case COMPLETED:
-                return R.color.bodeul_soft_blue;
-            case CANCELED:
-                return R.color.bodeul_soft_red;
-            case REQUESTED:
-            default:
-                return R.color.bodeul_soft_yellow;
-        }
-    }
-
-    private int resolveRecentBadgeTextColor(AppointmentStatus status) {
-        switch (status) {
-            case CANCELED:
-                return R.color.bodeul_error;
-            case MATCHED:
-            case IN_PROGRESS:
-            case COMPLETED:
-            case REQUESTED:
-            default:
-                return R.color.bodeul_text_primary;
+        setText(R.id.textHomeProgressBody, body);
+        setText(R.id.buttonHomeProgressDetail, context.getString(dashboard.isGuardianUser()
+                ? R.string.client_home_hero_report_button : R.string.client_home_progress_detail_button));
+        AppointmentProgressStageItemBinder binder = new AppointmentProgressStageItemBinder(context);
+        for (AppointmentProgressStageModel stage : progress.getStages()) {
+            View row = LayoutInflater.from(context).inflate(R.layout.item_appointment_progress_stage, stages, false);
+            binder.bind(row, stage);
+            stages.addView(row);
         }
     }
 
     private void bindNotices(ClientHomeDashboard dashboard) {
-        noticeContainer.removeAllViews();
+        LinearLayout container = root.findViewById(R.id.layoutHomeNoticeContainer);
+        container.removeAllViews();
         for (ClientHomeNotice notice : dashboard.getNotices()) {
-            View itemView = layoutInflater.inflate(R.layout.item_client_home_promo, noticeContainer, false);
-            ImageView bannerView = itemView.findViewById(R.id.imageNoticeBanner);
-            TextView eyebrowView = itemView.findViewById(R.id.textNoticeEyebrow);
-            TextView titleView = itemView.findViewById(R.id.textNoticeTitle);
-            TextView bodyView = itemView.findViewById(R.id.textNoticeBody);
-
-            bannerView.setImageResource(notice.getBannerBackgroundResId());
-            eyebrowView.setText(notice.getEyebrowResId());
-            titleView.setText(notice.getTitleResId());
-            bodyView.setText(notice.getBodyResId());
-            noticeContainer.addView(itemView);
+            View row = LayoutInflater.from(context).inflate(R.layout.item_final_home_notice, container, false);
+            ImageView image = row.findViewById(R.id.imageNoticeBanner);
+            image.setImageResource(notice.getBannerBackgroundResId());
+            applyOriginalImageCrop(image, notice.getBannerBackgroundResId());
+            ((TextView) row.findViewById(R.id.textNoticeTitle)).setText(notice.getTitleResId());
+            ((TextView) row.findViewById(R.id.textNoticeEyebrow)).setText(notice.getEyebrowResId());
+            row.setOnClickListener(view -> new AlertDialog.Builder(context)
+                    .setTitle(notice.getTitleResId()).setMessage(notice.getBodyResId())
+                    .setPositiveButton(R.string.permission_guide_confirm, null).show());
+            if (container.getChildCount() > 0) {
+                ((LinearLayout.LayoutParams) row.getLayoutParams()).topMargin =
+                        Math.round(25 * context.getResources().getDisplayMetrics().density);
+            }
+            container.addView(row);
         }
     }
 
-    private void bindProgressStages(java.util.List<AppointmentProgressStageModel> stages) {
-        progressStageContainer.removeAllViews();
-        for (AppointmentProgressStageModel stage : stages) {
-            View itemView = layoutInflater.inflate(R.layout.item_appointment_progress_stage, progressStageContainer, false);
-            stageItemBinder.bind(itemView, stage);
-            progressStageContainer.addView(itemView);
-        }
+    private void setText(int id, CharSequence value) {
+        ((TextView) root.findViewById(id)).setText(value);
     }
 
-    private String buildGuardianUpdateLine(GuardianReportEntry entry) {
-        if (entry == null) {
-            return context.getString(R.string.client_home_hero_guardian_update_empty);
-        }
-
-        CompanionSession session = entry.getSession();
-        if (session == null || TextUtils.isEmpty(session.getGuardianUpdate())) {
-            return context.getString(R.string.client_home_hero_guardian_update_empty);
-        }
-        return session.getGuardianUpdate();
-    }
-
-    private String buildHomeUpdateLine(ClientHomeDashboard dashboard, AppointmentRequest primaryRequest) {
-        if (primaryRequest.getStatus() == AppointmentStatus.COMPLETED
-                && dashboard.getPrimaryFollowUpRecord() != null) {
-            return bookingPresentationFormatter.buildFollowUpSummary(
-                    dashboard.getPrimaryFollowUpRecord()
-            );
-        }
-        if (dashboard.isGuardianUser()) {
-            return buildGuardianUpdateLine(dashboard.getHighlightGuardianEntry());
-        }
-        return context.getString(R.string.client_home_hero_patient_update_empty);
-    }
-
-    private String toStatusLabel(AppointmentStatus status) {
-        switch (status) {
-            case MATCHED:
-                return context.getString(R.string.booking_status_matched);
-            case IN_PROGRESS:
-                return context.getString(R.string.booking_status_in_progress);
-            case COMPLETED:
-                return context.getString(R.string.booking_status_completed);
-            case CANCELED:
-                return context.getString(R.string.booking_status_canceled);
-            case REQUESTED:
-            default:
-                return context.getString(R.string.booking_status_requested);
-        }
-    }
-
-    private int resolveHeroTitleResId(AppointmentStatus status) {
-        switch (status) {
-            case MATCHED:
-                return R.string.client_home_hero_matched_title;
-            case IN_PROGRESS:
-                return R.string.client_home_hero_in_progress_title;
-            case COMPLETED:
-                return R.string.client_home_hero_completed_title;
-            case CANCELED:
-                return R.string.client_home_hero_canceled_title;
-            case REQUESTED:
-            default:
-                return R.string.client_home_hero_requested_title;
-        }
+    private void applyOriginalImageCrop(ImageView image, int imageId) {
+        if (imageId != R.drawable.bodeul_final_home_article_2
+                && imageId != R.drawable.bodeul_final_home_article_4) return;
+        image.setScaleType(ImageView.ScaleType.MATRIX);
+        // 원본 자산을 자르거나 다시 저장하지 않고 Figma의 이미지 배치 비율을 유지한다.
+        image.addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> {
+            boolean second = imageId == R.drawable.bodeul_final_home_article_2;
+            Matrix matrix = new Matrix();
+            matrix.setScale((float) (image.getWidth() * (second ? 1.3721 : 1.9714) / image.getDrawable().getIntrinsicWidth()),
+                    (float) (image.getHeight() * (second ? 1.3721 : 1.3143) / image.getDrawable().getIntrinsicHeight()));
+            matrix.postTranslate((float) (-image.getWidth() * (second ? 0.1861 : 0.2426)),
+                    (float) (-image.getHeight() * (second ? 0.0128 : 0.1571)));
+            image.setImageMatrix(matrix);
+        });
     }
 }

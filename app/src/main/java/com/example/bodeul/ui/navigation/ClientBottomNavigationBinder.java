@@ -50,6 +50,8 @@ public final class ClientBottomNavigationBinder {
 
     private static int resolveMenuItemId(ClientBottomNavigationTab tab) {
         switch (tab) {
+            case CALENDAR:
+                return R.id.clientNavCalendar;
             case SCHEDULE_HISTORY:
                 return R.id.clientNavScheduleHistory;
             case COMPANION_ROOM:
@@ -63,6 +65,9 @@ public final class ClientBottomNavigationBinder {
     }
 
     private static ClientBottomNavigationTab resolveTab(int itemId) {
+        if (itemId == R.id.clientNavCalendar) {
+            return ClientBottomNavigationTab.CALENDAR;
+        }
         if (itemId == R.id.clientNavHome) {
             return ClientBottomNavigationTab.HOME;
         }

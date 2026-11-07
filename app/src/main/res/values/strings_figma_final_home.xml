@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string
+        name="final_home_heading">가장 든든한 동행\n보들이 함께 하겠습니다.</string>
+    <string
+        name="final_home_tagline">마음을 잇는 따뜻한 발걸음</string>
+    <string
+        name="final_home_booking_title">이번 동행은 어디로 함께 할까요?</string>
+    <string
+        name="final_home_location">동행 위치</string>
+    <string
+        name="final_home_location_hint">픽업 위치를 선택해주세요.</string>
+    <string
+        name="final_home_date">동행일</string>
+    <string
+        name="final_home_date_hint">동행일 선택</string>
+    <string
+        name="final_home_time">만남 시간</string>
+    <string
+        name="final_home_time_hint">예약 폼에서 확인</string>
+    <string
+        name="final_home_booking_start">동행 예약 시작하기</string>
+    <string
+        name="final_home_book">간편 보들백서</string>
+    <string
+        name="final_home_more">자세히 보기</string>
+    <string
+        name="final_home_notifications">문의 답변 알림</string>
+    <string
+        name="final_home_unread">읽지 않은 문의 답변 %1$d건</string>
+    <string
+        name="final_home_current_booking">예약 일시: %1$s\n만남 장소: %2$s</string>
+    <string
+        name="final_home_profile">마이</string>
+    <string
+        name="final_home_calendar">캘린더</string>
+    <string
+        name="final_home_history">이용내역</string>
+    <string
+        name="final_home_chat">채팅</string>
+    <string
+        name="final_home_health">건강 정보</string>
+    <string
+        name="final_home_support">문의하기</string>
+    <string
+        name="final_home_sign_out">로그아웃</string>
+    <string
+        name="final_home_copyright">© 2026 보들. All rights reserved.</string>
+    <string
+        name="final_home_guide_steps_title">병원동행 서비스,\n이렇게 이용하면 쉬워요.</string>
+    <string
+        name="final_home_guide_steps_body">동행 예약에서 병원과 일정, 만날 장소를 확인하고 필요한 건강 정보를 입력해 주세요. 접수 후 이용내역에서 배정과 동행 상태를 확인할 수 있습니다.</string>
+    <string
+        name="final_home_guide_support_title">궁금한 점은 문의하고\n답변을 확인하세요.</string>
+    <string
+        name="final_home_guide_support_body">문의하기에서 필요한 도움을 요청할 수 있습니다. 새 답변은 홈의 알림에서 확인해 주세요.</string>
+    <string
+        name="final_calendar_date">%1$d년 %2$d월 %3$d일</string>
+    <string
+        name="final_calendar_empty">선택한 날짜에 예약이 없습니다.</string>
+    <string
+        name="final_calendar_undated">날짜를 확인할 수 없는 예약은 이용내역에서 확인해 주세요.</string>
+</resources>

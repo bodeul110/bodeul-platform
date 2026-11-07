@@ -20,7 +20,6 @@ import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.ui.booking.BookingActivity;
 import com.example.bodeul.ui.booking.BookingStatusActivity;
-import com.example.bodeul.ui.booking.ClientBookingHistoryActivity;
 import com.example.bodeul.ui.common.AppointmentProgressComposer;
 import com.example.bodeul.ui.health.HealthInfoActivity;
 import com.example.bodeul.ui.home.ClientHomeCoordinator;
@@ -51,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView textHomeMode;
     private BottomNavigationView bottomNavigation;
     private ClientHomeDashboard currentDashboard;
+    private int loadGeneration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_client_home_figma);
 
-        authRepository = ServiceLocator.provideAuthRepository(this);
+        authRepository = provideAuthRepository();
         clientHomeCoordinator = new ClientHomeCoordinator(
                 this,
                 ServiceLocator.provideBookingRepository(this),
@@ -73,35 +73,15 @@ public class MainActivity extends AppCompatActivity {
         progressHome = findViewById(R.id.progressHome);
         textHomeMode = findViewById(R.id.textHomeMode);
 
-        ClientHomeDashboardBinder dashboardBinder = new ClientHomeDashboardBinder(
-                this,
-                getLayoutInflater(),
-                findViewById(R.id.textHomeGreeting),
-                findViewById(R.id.textHomeSubtitle),
-                findViewById(R.id.textHomeSupportHeaderBadge),
-                findViewById(R.id.layoutHomeSupportBanner),
-                findViewById(R.id.textHomeHeroBadge),
-                findViewById(R.id.textHomeHeroTitle),
-                findViewById(R.id.textHomeHeroBody),
-                findViewById(R.id.buttonHomeHeroPrimary),
-                findViewById(R.id.textHomeProgressBadge),
-                findViewById(R.id.textHomeProgressTitle),
-                findViewById(R.id.textHomeProgressBody),
-                findViewById(R.id.layoutHomeProgressStageContainer),
-                findViewById(R.id.buttonHomeProgressDetail),
-                findViewById(R.id.textActionSecondaryTitle),
-                findViewById(R.id.textActionSecondaryBody),
-                findViewById(R.id.textActionHistoryBody),
-                findViewById(R.id.textActionSupportBody),
-                findViewById(R.id.textActionSupportCounter),
-                findViewById(R.id.layoutHomeProgressSection),
-                findViewById(R.id.layoutHomeNoticeContainer)
-        );
-        findViewById(R.id.buttonHomeHeroPrimary).setOnClickListener(view -> openHeroAction());
+        ClientHomeDashboardBinder dashboardBinder = new ClientHomeDashboardBinder(this, homeContentContainer);
+        findViewById(R.id.buttonHomeHeroPrimary).setOnClickListener(view -> openBooking());
+        findViewById(R.id.buttonHomePickup).setOnClickListener(view ->
+                startActivity(BookingActivity.createHomeEntryIntent(this, BookingActivity.HomeEntry.LOCATION)));
+        findViewById(R.id.buttonHomeDate).setOnClickListener(view ->
+                startActivity(BookingActivity.createHomeEntryIntent(this, BookingActivity.HomeEntry.APPOINTMENT)));
+        findViewById(R.id.buttonHomeTime).setOnClickListener(view -> openBooking());
         findViewById(R.id.buttonHomeProgressDetail).setOnClickListener(view -> openProgressAction());
-        findViewById(R.id.cardActionBooking).setOnClickListener(view -> openBooking());
         findViewById(R.id.cardActionSecondary).setOnClickListener(view -> openHealthInfo());
-        findViewById(R.id.cardActionHistory).setOnClickListener(view -> openBookingHistory());
         findViewById(R.id.cardActionSupport).setOnClickListener(view -> openSupport());
         findViewById(R.id.buttonHomeSupport).setOnClickListener(view -> openSupport());
         findViewById(R.id.textHomeNoticeMore).setOnClickListener(view -> showServiceIntroduction());
@@ -141,13 +121,32 @@ public class MainActivity extends AppCompatActivity {
         reloadHome();
     }
 
+    protected AuthRepository provideAuthRepository() {
+        return ServiceLocator.provideAuthRepository(this);
+    }
+
+    protected void loadHomeDashboard(User user, RepositoryCallback<ClientHomeDashboard> callback) {
+        clientHomeCoordinator.loadDashboard(user, callback);
+    }
+
+    @Override
+    protected void onStop() {
+        loadGeneration++;
+        super.onStop();
+    }
+
     private void reloadHome() {
+        int generation = ++loadGeneration;
+        currentDashboard = null;
+        findViewById(R.id.textHomeSupportHeaderBadge).setVisibility(View.GONE);
+        findViewById(R.id.buttonHomeSupport).setContentDescription(getString(R.string.final_home_notifications));
         setLoading(true);
         bottomNavigation.setVisibility(View.GONE);
         hideBlockingState();
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
+                if (generation != loadGeneration) return;
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
                     openProfileCompletion();
                     return;
@@ -162,21 +161,23 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 bottomNavigation.setVisibility(View.VISIBLE);
-                loadDashboard(result);
+                loadDashboard(result, generation);
             }
 
             @Override
             public void onError(String message) {
+                if (generation != loadGeneration) return;
                 setLoading(false);
                 showAuthState();
             }
         });
     }
 
-    private void loadDashboard(User currentUser) {
-        clientHomeCoordinator.loadDashboard(currentUser, new RepositoryCallback<ClientHomeDashboard>() {
+    private void loadDashboard(User currentUser, int generation) {
+        loadHomeDashboard(currentUser, new RepositoryCallback<ClientHomeDashboard>() {
             @Override
             public void onSuccess(ClientHomeDashboard result) {
+                if (generation != loadGeneration) return;
                 currentDashboard = result;
                 setLoading(false);
                 hideBlockingState();
@@ -186,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(String message) {
+                if (generation != loadGeneration) return;
                 currentDashboard = null;
                 setLoading(false);
                 showLoadErrorState(message);
@@ -205,18 +207,6 @@ public class MainActivity extends AppCompatActivity {
         openPrimaryRequestDetail();
     }
 
-    private void openHeroAction() {
-        if (currentDashboard == null || !currentDashboard.hasRequests()) {
-            openBooking();
-            return;
-        }
-        if (currentDashboard.isGuardianUser()) {
-            openGuardianReport();
-            return;
-        }
-        openPrimaryRequestDetail();
-    }
-
     private void openProgressAction() {
         if (currentDashboard != null && currentDashboard.isGuardianUser()) {
             openGuardianReport();
@@ -227,10 +217,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void openBooking() {
         startActivity(new Intent(this, BookingActivity.class));
-    }
-
-    private void openBookingHistory() {
-        startActivity(new Intent(this, ClientBookingHistoryActivity.class));
     }
 
     private void openPrimaryRequestDetail() {

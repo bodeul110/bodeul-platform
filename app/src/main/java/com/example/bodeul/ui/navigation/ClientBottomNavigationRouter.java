@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 
 import com.example.bodeul.MainActivity;
 import com.example.bodeul.ui.booking.ClientBookingHistoryActivity;
+import com.example.bodeul.ui.booking.ClientCalendarActivity;
 import com.example.bodeul.ui.chat.CompanionChatActivity;
 import com.example.bodeul.ui.profile.ClientProfileActivity;
 
@@ -28,6 +29,9 @@ public final class ClientBottomNavigationRouter {
 
         Intent intent;
         switch (destinationTab) {
+            case CALENDAR:
+                intent = new Intent(activity, ClientCalendarActivity.class);
+                break;
             case SCHEDULE_HISTORY:
                 intent = new Intent(activity, ClientBookingHistoryActivity.class);
                 break;
