@@ -2,13 +2,15 @@
 
 기준일: 2026-09-27
 
+> 2026-11-07 우선순위 변경: 제품 범위·화면·사용자 흐름은 최신 Figma `보들 어플 완성본`이 이 문서보다 우선한다. 아래 내용은 기존 MVP와 구현의 비교 기준이며, 충돌 항목을 현행 유지 사유로 쓰지 않는다. [기준 체계](source-of-truth.md)와 [완성본 반영 계획](../design/figma-final-app-gap-plan-2026-11-07.md)을 따른다.
+
 ## 기준
 
 - 기준 분리: [기획·디자인·구현 기준](source-of-truth.md)
 - 제품 판단: [Notion 제품 기준 정합성](notion-product-alignment.md)
 - 미확정 기본값: [MVP 임시 정책값 결정 경계](mvp-policy-default-boundary.md)
 - 화면 흐름: [화면 개편 목표](screen-restructure-target.md)
-- 디자인: [Figma MVP 구현 매핑](../design/figma-mvp-implementation-map-2026-08-29.md)
+- 제품·디자인 목표: [Figma 완성본 비교·반영 계획](../design/figma-final-app-gap-plan-2026-11-07.md) (2026-11-07부터 기존 MVP보다 우선)
 - 실제 구현: [현재 구현 상태](../status/implementation-status.md)
 
 2026-09-09 기획 답변의 보호자 예약, STT 내부 개발과 관리자 보안 기준을 유지한다. 2026-09-27에는 최신 Notion MVP를 기준으로 내부 테스트 의견을 대조했다. 내부 테스트는 결함·사용성 개선의 참고 자료이며 제품 범위를 자동으로 늘리거나 기존 권한을 완화하는 근거가 아니다. 문서 갱신은 구현·배포 완료를 뜻하지 않는다.

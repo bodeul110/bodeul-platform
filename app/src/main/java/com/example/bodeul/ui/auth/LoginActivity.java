@@ -2,15 +2,17 @@ package com.example.bodeul.ui.auth;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.text.TextUtils;
 import android.util.Patterns;
 import android.view.View;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,6 +22,7 @@ import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.graphics.Insets;
 import androidx.core.view.OneShotPreDrawListener;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.bodeul.R;
@@ -33,6 +36,7 @@ import com.example.bodeul.util.UserProfileSanitizer;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -43,6 +47,7 @@ public class LoginActivity extends AppCompatActivity {
     private static final String EXTRA_ROLE_HINT = "role_hint";
     private static final String STATE_REGISTER_MODE = "state_register_mode";
     private static final String STATE_SELECTED_ROLE = "state_selected_role";
+    private static final String STATE_RESEND_REVEALED = "state_resend_revealed";
     private static final String STATE_VERIFICATION_RESEND_AVAILABLE_AT =
             "state_verification_resend_available_at";
     private static final long VERIFICATION_EMAIL_RESEND_COOLDOWN_MS = 60_000L;
@@ -52,6 +57,7 @@ public class LoginActivity extends AppCompatActivity {
     private boolean registerMode;
     private boolean loading;
     private boolean imeVisible;
+    private boolean resendRevealed;
     private long verificationResendAvailableAtMillis;
     @Nullable
     private CountDownTimer verificationResendCooldownTimer;
@@ -62,7 +68,8 @@ public class LoginActivity extends AppCompatActivity {
     private TextView textSwitchMode;
     private TextView textForgotPassword;
     private TextView textResendVerification;
-    private TextView textSocialHelper;
+    private TextView textAuthMessage;
+    private final Runnable hideAuthMessage = () -> textAuthMessage.setVisibility(View.GONE);
     private ScrollView scrollLogin;
     private TextInputLayout layoutName;
     private TextInputLayout layoutPhone;
@@ -81,10 +88,9 @@ public class LoginActivity extends AppCompatActivity {
     private AppCompatButton buttonSubmit;
     private AppCompatImageButton buttonSocialKakao;
     private AppCompatImageButton buttonSocialGoogle;
+    private AppCompatImageButton buttonSocialApple;
     private MaterialButton buttonSocialNaver;
     private ProgressBar progressBar;
-    private AuthSummaryCardBinder summaryCardBinder;
-    private LoginSummaryFormatter summaryFormatter;
 
     public static Intent createIntent(Context context, UserRole roleHint) {
         Intent intent = new Intent(context, LoginActivity.class);
@@ -95,9 +101,15 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            getWindow().setNavigationBarColor(Color.TRANSPARENT);
+            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                    .setAppearanceLightNavigationBars(true);
+        }
         setContentView(R.layout.activity_login);
 
-        authRepository = ServiceLocator.provideAuthRepository(this);
+        authRepository = provideAuthRepository();
         roleHint = SafeEnumParser.parseOrDefault(
                 UserRole.class,
                 getIntent().getStringExtra(EXTRA_ROLE_HINT),
@@ -110,7 +122,7 @@ public class LoginActivity extends AppCompatActivity {
         textSwitchMode = findViewById(R.id.textSwitchMode);
         textForgotPassword = findViewById(R.id.textForgotPassword);
         textResendVerification = findViewById(R.id.textResendVerification);
-        textSocialHelper = findViewById(R.id.textSocialHelper);
+        textAuthMessage = findViewById(R.id.textAuthMessage);
         scrollLogin = findViewById(R.id.scrollLogin);
         layoutName = findViewById(R.id.layoutName);
         layoutPhone = findViewById(R.id.layoutPhone);
@@ -129,10 +141,9 @@ public class LoginActivity extends AppCompatActivity {
         buttonSubmit = findViewById(R.id.buttonSubmitAuth);
         buttonSocialKakao = findViewById(R.id.buttonSocialKakao);
         buttonSocialGoogle = findViewById(R.id.buttonSocialGoogle);
+        buttonSocialApple = findViewById(R.id.buttonSocialApple);
         buttonSocialNaver = findViewById(R.id.buttonSocialNaver);
         progressBar = findViewById(R.id.progressAuth);
-        summaryCardBinder = new AuthSummaryCardBinder(findViewById(R.id.layoutLoginSummaryCard));
-        summaryFormatter = new LoginSummaryFormatter(this);
         configureImeInsets();
         configureRoleChips();
         restoreScreenState(savedInstanceState);
@@ -141,34 +152,101 @@ public class LoginActivity extends AppCompatActivity {
         applyDemoCredentials();
         restoreVerificationResendCooldown();
 
-        buttonSubmit.setOnClickListener(view -> submitAuth());
+        buttonSubmit.setOnClickListener(view -> withSelectedRole(this::submitAuth));
         textSwitchMode.setOnClickListener(view -> {
             registerMode = !registerMode;
+            clearErrors();
             bindMode();
         });
-        textForgotPassword.setOnClickListener(view -> requestPasswordReset());
+        textForgotPassword.setOnClickListener(view -> showAccountRecovery());
         textResendVerification.setOnClickListener(view -> requestVerificationEmailResend());
-        buttonSocialKakao.setOnClickListener(view -> submitKakaoAuth());
-        buttonSocialGoogle.setOnClickListener(view -> submitGoogleAuth());
-        buttonSocialNaver.setOnClickListener(view -> submitNaverAuth());
+        buttonSocialKakao.setOnClickListener(view -> withSelectedRole(this::submitKakaoAuth));
+        buttonSocialGoogle.setOnClickListener(view -> withSelectedRole(this::submitGoogleAuth));
+        buttonSocialNaver.setOnClickListener(view -> withSelectedRole(this::submitNaverAuth));
+        buttonSocialApple.setOnClickListener(view -> new MaterialAlertDialogBuilder(this)
+                .setMessage(R.string.final_login_apple_unavailable)
+                .setPositiveButton(android.R.string.ok, null)
+                .show());
         findViewById(R.id.buttonLoginBack).setOnClickListener(view -> finish());
 
-        View.OnClickListener roleListener = view -> {
-            applyDemoCredentials();
-            bindSummaryCard();
-        };
+        View.OnClickListener roleListener = view -> applyDemoCredentials();
         chipRoleManager.setOnClickListener(roleListener);
         chipRolePatient.setOnClickListener(roleListener);
         chipRoleGuardian.setOnClickListener(roleListener);
     }
 
-    private void configureImeInsets() {
-        int initialLeftPadding = scrollLogin.getPaddingLeft();
-        int initialTopPadding = scrollLogin.getPaddingTop();
-        int initialRightPadding = scrollLogin.getPaddingRight();
-        int initialBottomPadding = scrollLogin.getPaddingBottom();
+    protected AuthRepository provideAuthRepository() {
+        return ServiceLocator.provideAuthRepository(this);
+    }
 
-        ViewCompat.setOnApplyWindowInsetsListener(scrollLogin, (view, windowInsets) -> {
+    private void showAuthMessage(int messageRes) {
+        showAuthMessage(getString(messageRes));
+    }
+
+    private void showAuthMessage(CharSequence message) {
+        textAuthMessage.removeCallbacks(hideAuthMessage);
+        textAuthMessage.setText(message);
+        textAuthMessage.setVisibility(View.VISIBLE);
+        AccessibilityManager accessibility = (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+        int timeout = 4_000;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && accessibility != null) {
+            timeout = accessibility.getRecommendedTimeoutMillis(timeout, AccessibilityManager.FLAG_CONTENT_TEXT);
+        }
+        textAuthMessage.postDelayed(hideAuthMessage, timeout);
+    }
+
+    private void withSelectedRole(Runnable action) {
+        if (loading) {
+            return;
+        }
+        if (isFixedRoleHint() || registerMode) {
+            action.run();
+            return;
+        }
+
+        // 첫 화면은 피그마를 따르고, 기존 역할 검증에 필요한 선택은 인증 직전에 받는다.
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.final_login_role_title)
+                .setItems(new CharSequence[]{getString(R.string.login_role_patient),
+                        getString(R.string.login_role_guardian)}, (dialog, which) -> {
+                    roleChipGroup.check(which == 0 ? R.id.chipRolePatient : R.id.chipRoleGuardian);
+                    applyDemoCredentials();
+                    action.run();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void showAccountRecovery() {
+        if (!authRepository.isFirebaseBacked()) {
+            requestPasswordReset();
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.final_login_recovery_title)
+                .setItems(new CharSequence[]{getString(R.string.forgot_password),
+                        getString(R.string.resend_verification_email)}, (dialog, which) -> {
+                    if (which == 0) {
+                        requestPasswordReset();
+                    } else {
+                        resendRevealed = true;
+                        updateVerificationResendState();
+                        requestVerificationEmailResend();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void configureImeInsets() {
+        View rootWindow = findViewById(R.id.rootLoginWindow);
+        int initialLeftPadding = rootWindow.getPaddingLeft();
+        int initialTopPadding = rootWindow.getPaddingTop();
+        int initialRightPadding = rootWindow.getPaddingRight();
+        int initialBottomPadding = rootWindow.getPaddingBottom();
+
+        // ScrollView 바깥에서 inset을 소비해 스크롤 목표가 시스템 영역에 가려지지 않게 한다.
+        ViewCompat.setOnApplyWindowInsetsListener(rootWindow, (view, windowInsets) -> {
             Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
             Insets systemInsets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars()
@@ -193,7 +271,7 @@ public class LoginActivity extends AppCompatActivity {
             }
             return windowInsets;
         });
-        ViewCompat.requestApplyInsets(scrollLogin);
+        ViewCompat.requestApplyInsets(rootWindow);
 
         View.OnFocusChangeListener inputFocusListener = (focusedView, hasFocus) -> {
             if (hasFocus && imeVisible) {
@@ -238,6 +316,7 @@ public class LoginActivity extends AppCompatActivity {
 
         // 화면 재생성 뒤에도 회원가입 모드와 선택 역할을 그대로 유지한다.
         registerMode = savedInstanceState.getBoolean(STATE_REGISTER_MODE, false);
+        resendRevealed = savedInstanceState.getBoolean(STATE_RESEND_REVEALED, false);
         restoreSelectedRole(savedInstanceState.getString(STATE_SELECTED_ROLE));
         verificationResendAvailableAtMillis = savedInstanceState.getLong(
                 STATE_VERIFICATION_RESEND_AVAILABLE_AT,
@@ -267,7 +346,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void configureRoleChips() {
-        // 매니저 로그인은 역할이 고정이고, 일반 사용자 로그인은 환자/보호자 선택을 노출한다.
+        // 역할별 저장소 계약은 유지하고 선택 UI는 화면 모드에 맞춰 노출한다.
         if (isFixedRoleHint()) {
             roleChipGroup.setVisibility(View.GONE);
             chipRoleManager.setVisibility(roleHint == UserRole.MANAGER ? View.VISIBLE : View.GONE);
@@ -281,7 +360,8 @@ public class LoginActivity extends AppCompatActivity {
         chipRoleManager.setVisibility(View.GONE);
         chipRolePatient.setVisibility(View.VISIBLE);
         chipRoleGuardian.setVisibility(View.VISIBLE);
-        chipRolePatient.setChecked(true);
+        roleChipGroup.check(roleHint == UserRole.GUARDIAN
+                ? R.id.chipRoleGuardian : R.id.chipRolePatient);
     }
 
     private void bindMode() {
@@ -291,12 +371,12 @@ public class LoginActivity extends AppCompatActivity {
 
         // 로그인과 회원가입 모드에 따라 필요한 입력 필드만 노출한다.
         textLoginTitle.setText(registerMode ? R.string.register_button : getLoginTitleResId());
-        textLoginTitle.setVisibility(
-                registerMode || isFixedRoleHint() ? View.VISIBLE : View.GONE
-        );
+        textLoginTitle.setVisibility(registerMode ? View.VISIBLE : View.GONE);
         textLoginSubtitle.setText(registerMode
                 ? R.string.login_subtitle_register
                 : R.string.figma_login_tagline);
+        textLoginSubtitle.setVisibility(registerMode ? View.VISIBLE : View.GONE);
+        roleChipGroup.setVisibility(registerMode && !isFixedRoleHint() ? View.VISIBLE : View.GONE);
 
         buttonSubmit.setText(registerMode ? R.string.register_button : R.string.login_button);
         textSwitchMode.setText(registerMode
@@ -307,7 +387,6 @@ public class LoginActivity extends AppCompatActivity {
         layoutPhone.setVisibility(registerMode ? View.VISIBLE : View.GONE);
         textForgotPassword.setVisibility(registerMode ? View.GONE : View.VISIBLE);
         bindSocialAccess();
-        bindSummaryCard();
         updateVerificationResendState();
     }
 
@@ -362,7 +441,7 @@ public class LoginActivity extends AppCompatActivity {
 
         UserRole selectedRole = getSelectedRole();
         if (selectedRole == null) {
-            Toast.makeText(this, R.string.toast_role_required, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_role_required);
             return;
         }
 
@@ -370,7 +449,7 @@ public class LoginActivity extends AppCompatActivity {
         if (registerMode) {
             if (selectedRole == UserRole.ADMIN) {
                 setLoading(false);
-                Toast.makeText(this, R.string.toast_admin_register_unavailable, Toast.LENGTH_SHORT).show();
+                showAuthMessage(R.string.toast_admin_register_unavailable);
                 return;
             }
 
@@ -394,7 +473,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void submitGoogleAuth() {
         if (isAdminRoleHint()) {
-            Toast.makeText(this, R.string.toast_admin_email_login_only, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_admin_email_login_only);
             return;
         }
 
@@ -403,7 +482,7 @@ public class LoginActivity extends AppCompatActivity {
         // 구글 로그인도 현재 선택한 역할을 기준으로 Firestore 프로필을 맞춘다.
         UserRole selectedRole = getSelectedRole();
         if (selectedRole == null) {
-            Toast.makeText(this, R.string.toast_role_required, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_role_required);
             return;
         }
 
@@ -413,7 +492,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void submitKakaoAuth() {
         if (isAdminRoleHint()) {
-            Toast.makeText(this, R.string.toast_admin_email_login_only, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_admin_email_login_only);
             return;
         }
 
@@ -422,7 +501,7 @@ public class LoginActivity extends AppCompatActivity {
         // 카카오 로그인도 현재 선택한 역할을 기준으로 Firestore 프로필을 맞춘다.
         UserRole selectedRole = getSelectedRole();
         if (selectedRole == null) {
-            Toast.makeText(this, R.string.toast_role_required, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_role_required);
             return;
         }
 
@@ -432,11 +511,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private void submitNaverAuth() {
         if (isAdminRoleHint()) {
-            Toast.makeText(this, R.string.toast_admin_email_login_only, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_admin_email_login_only);
             return;
         }
         if (!isNaverLoginEnabled()) {
-            Toast.makeText(this, R.string.toast_naver_login_unavailable, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_naver_login_unavailable);
             return;
         }
 
@@ -445,7 +524,7 @@ public class LoginActivity extends AppCompatActivity {
         // 네이버 로그인도 현재 선택한 역할을 기준으로 Firestore 프로필을 맞춘다.
         UserRole selectedRole = getSelectedRole();
         if (selectedRole == null) {
-            Toast.makeText(this, R.string.toast_role_required, Toast.LENGTH_SHORT).show();
+            showAuthMessage(R.string.toast_role_required);
             return;
         }
 
@@ -467,18 +546,21 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onSuccess(Void result) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this, R.string.toast_password_reset_sent, Toast.LENGTH_LONG).show();
+                showAuthMessage(R.string.toast_password_reset_sent);
             }
 
             @Override
             public void onError(String message) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+                showAuthMessage(message);
             }
         });
     }
 
     private void requestVerificationEmailResend() {
+        if (loading || getVerificationResendRemainingSeconds() > 0L) {
+            return;
+        }
         clearErrors();
 
         // 재발송은 로그인 전이므로 이메일과 비밀번호를 다시 확인한 뒤 실행한다.
@@ -494,17 +576,13 @@ public class LoginActivity extends AppCompatActivity {
             public void onSuccess(Void result) {
                 setLoading(false);
                 startVerificationResendCooldown();
-                Toast.makeText(
-                        LoginActivity.this,
-                        R.string.toast_verification_email_resent,
-                        Toast.LENGTH_LONG
-                ).show();
+                showAuthMessage(R.string.toast_verification_email_resent);
             }
 
             @Override
             public void onError(String message) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+                showAuthMessage(message);
             }
         });
     }
@@ -513,21 +591,24 @@ public class LoginActivity extends AppCompatActivity {
         @Override
         public void onSuccess(User result) {
             setLoading(false);
-            ServiceLocator.provideNotificationTokenRegistrar(LoginActivity.this)
-                    .syncCurrentUserToken();
-            // 로그인 직후에도 프로필 보완이 필요하면 먼저 보완 화면으로 보낸다.
-            Intent intent = AuthFlowRouter.createPostAuthIntent(LoginActivity.this, result);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            onAuthenticated(result);
         }
 
         @Override
         public void onError(String message) {
             setLoading(false);
-            Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+            showAuthMessage(message);
         }
     };
+
+    protected void onAuthenticated(User result) {
+        ServiceLocator.provideNotificationTokenRegistrar(this).syncCurrentUserToken();
+        // 로그인 직후에도 프로필 보완이 필요하면 먼저 보완 화면으로 보낸다.
+        Intent intent = AuthFlowRouter.createPostAuthIntent(this, result);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
 
     private final RepositoryCallback<User> registerCallback = new RepositoryCallback<User>() {
         @Override
@@ -545,25 +626,21 @@ public class LoginActivity extends AppCompatActivity {
                 startVerificationResendCooldown();
             }
 
-            Toast.makeText(
-                    LoginActivity.this,
-                    authRepository.isFirebaseBacked()
+            showAuthMessage(authRepository.isFirebaseBacked()
                             ? R.string.toast_register_success_verify
-                            : R.string.toast_register_success_demo,
-                    Toast.LENGTH_LONG
-            ).show();
+                            : R.string.toast_register_success_demo);
         }
 
         @Override
         public void onError(String message) {
             setLoading(false);
-            Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+            showAuthMessage(message);
         }
     };
 
     @Nullable
     private UserRole getSelectedRole() {
-        // 현재 노출된 칩 중 선택된 항목을 읽어 실제 로그인 대상 역할로 변환한다.
+        // 로그인 모드에서는 칩이 숨겨져 있어도 선택한 역할을 그대로 검증한다.
         if (isAdminRoleHint()) {
             return UserRole.ADMIN;
         }
@@ -602,19 +679,10 @@ public class LoginActivity extends AppCompatActivity {
         return R.string.demo_banner_general;
     }
 
-    private void bindSummaryCard() {
-        UserRole selectedRole = getSelectedRole();
-        if (selectedRole == null) {
-            selectedRole = roleHint == UserRole.GUARDIAN ? UserRole.GUARDIAN : UserRole.PATIENT;
-        }
-        summaryCardBinder.render(summaryFormatter.format(roleHint, selectedRole, registerMode));
-    }
-
     private void bindSocialAccess() {
         int visibility = isAdminRoleHint() ? View.GONE : View.VISIBLE;
         layoutSocialDivider.setVisibility(visibility);
         layoutSocialButtons.setVisibility(visibility);
-        textSocialHelper.setVisibility(View.GONE);
         buttonSocialNaver.setVisibility(
                 visibility == View.VISIBLE && isNaverLoginEnabled() ? View.VISIBLE : View.GONE
         );
@@ -638,20 +706,42 @@ public class LoginActivity extends AppCompatActivity {
         buttonSubmit.setEnabled(!loading);
         buttonSocialKakao.setEnabled(!loading);
         buttonSocialGoogle.setEnabled(!loading);
+        buttonSocialApple.setEnabled(!loading);
         buttonSocialNaver.setEnabled(!loading);
         textSwitchMode.setEnabled(!loading);
         textForgotPassword.setEnabled(!loading);
         chipRoleManager.setEnabled(!loading);
         chipRolePatient.setEnabled(!loading);
         chipRoleGuardian.setEnabled(!loading);
+        inputName.setEnabled(!loading);
+        inputPhone.setEnabled(!loading);
+        inputEmail.setEnabled(!loading);
+        inputPassword.setEnabled(!loading);
         updateVerificationResendState();
     }
 
     private void clearErrors() {
+        textAuthMessage.removeCallbacks(hideAuthMessage);
+        textAuthMessage.setVisibility(View.GONE);
         layoutName.setError(null);
         layoutPhone.setError(null);
         layoutEmail.setError(null);
         layoutPassword.setError(null);
+        for (TextInputEditText input : new TextInputEditText[]{inputName, inputPhone, inputEmail, inputPassword}) {
+            input.setTextColor(getColor(R.color.final_text_primary));
+            ViewCompat.setStateDescription(input, null);
+        }
+    }
+
+    private void showFieldError(TextInputLayout layout, TextInputEditText input, int messageRes) {
+        input.setTextColor(getColor(R.color.final_text_error));
+        ViewCompat.setStateDescription(input, getString(messageRes));
+        if (registerMode) {
+            layout.setError(getString(messageRes));
+        } else {
+            // 로그인 오류는 원본처럼 중앙 메시지로 보여 입력창과 버튼 위치를 유지한다.
+            showAuthMessage(messageRes);
+        }
     }
 
     private String valueOf(TextInputEditText editText) {
@@ -660,11 +750,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private boolean validateEmail(String email) {
         if (TextUtils.isEmpty(email)) {
-            layoutEmail.setError(getString(R.string.error_email_required));
+            showFieldError(layoutEmail, inputEmail, R.string.error_email_required);
             return false;
         }
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            layoutEmail.setError(getString(R.string.error_email_invalid));
+            showFieldError(layoutEmail, inputEmail, R.string.error_email_invalid);
             return false;
         }
         return true;
@@ -672,11 +762,11 @@ public class LoginActivity extends AppCompatActivity {
 
     private boolean validatePassword(String password, boolean enforceRule) {
         if (TextUtils.isEmpty(password)) {
-            layoutPassword.setError(getString(R.string.error_password_required));
+            showFieldError(layoutPassword, inputPassword, R.string.error_password_required);
             return false;
         }
         if (enforceRule && password.length() < 6) {
-            layoutPassword.setError(getString(R.string.error_password_length));
+            showFieldError(layoutPassword, inputPassword, R.string.error_password_length);
             return false;
         }
         return true;
@@ -684,7 +774,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private boolean validateName(String name) {
         if (TextUtils.isEmpty(name)) {
-            layoutName.setError(getString(R.string.error_name_required));
+            showFieldError(layoutName, inputName, R.string.error_name_required);
             return false;
         }
         return true;
@@ -692,12 +782,12 @@ public class LoginActivity extends AppCompatActivity {
 
     private boolean validatePhone(String phone) {
         if (TextUtils.isEmpty(phone)) {
-            layoutPhone.setError(getString(R.string.error_phone_required));
+            showFieldError(layoutPhone, inputPhone, R.string.error_phone_required);
             return false;
         }
 
         if (!UserProfileSanitizer.isValidPhone(phone)) {
-            layoutPhone.setError(getString(R.string.error_phone_invalid));
+            showFieldError(layoutPhone, inputPhone, R.string.error_phone_invalid);
             return false;
         }
         return true;
@@ -708,6 +798,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void startVerificationResendCooldown(long durationMillis) {
+        resendRevealed = true;
         if (durationMillis <= 0L) {
             verificationResendAvailableAtMillis = 0L;
             updateVerificationResendState();
@@ -754,7 +845,7 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        boolean visible = !registerMode && authRepository.isFirebaseBacked();
+        boolean visible = !registerMode && resendRevealed && authRepository.isFirebaseBacked();
         textResendVerification.setVisibility(visible ? View.VISIBLE : View.GONE);
         if (!visible) {
             return;
@@ -779,6 +870,7 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        textAuthMessage.removeCallbacks(hideAuthMessage);
         if (verificationResendCooldownTimer != null) {
             verificationResendCooldownTimer.cancel();
             verificationResendCooldownTimer = null;
@@ -790,6 +882,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putBoolean(STATE_REGISTER_MODE, registerMode);
+        outState.putBoolean(STATE_RESEND_REVEALED, resendRevealed);
         UserRole selectedRole = getSelectedRole();
         if (selectedRole != null) {
             outState.putString(STATE_SELECTED_ROLE, selectedRole.name());

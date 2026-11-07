@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_login_email_hint">이메일을 입력해주세요.</string>
+    <string name="final_login_password_hint">비밀번호를 입력해주세요.</string>
+    <string name="final_login_social_label">SNS로 로그인</string>
+    <string name="final_login_recovery_title">계정 찾기</string>
+    <string name="final_login_role_title">로그인할 계정 유형</string>
+    <string name="final_login_apple_description">Apple로 로그인</string>
+    <string name="final_login_apple_unavailable">Apple 로그인은 아직 연결되지 않았습니다. 이메일, 카카오 또는 Google로 로그인해 주세요.</string>
+</resources>
