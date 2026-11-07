@@ -7,7 +7,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.bodeul.data.AuthRepository;
@@ -36,6 +35,7 @@ import com.example.bodeul.ui.support.ClientSupportActivity;
 import com.example.bodeul.util.EnvironmentModeBadgeHelper;
 import com.example.bodeul.util.StatePanelHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /**
  * 환자와 보호자가 서비스 신청, 진행 현황, 안내 정보를 한곳에서 보는 메인 홈 화면이다.
@@ -254,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showServiceIntroduction() {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.client_home_notice_title)
                 .setMessage(R.string.client_home_service_intro_dialog_body)
                 .setPositiveButton(R.string.permission_guide_confirm, null)

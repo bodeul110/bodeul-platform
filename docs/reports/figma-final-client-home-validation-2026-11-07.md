@@ -73,6 +73,29 @@ node tools/android/check-environment-boundary.mjs
 
 `git diff --check`, 변경 텍스트의 UTF-8 검사와 문서 로컬 링크 63개 존재 확인도 통과했다. API 키·로컬 설정·환경 파일·의존성 변경은 변경 목록에 없다.
 
+## 11월 8일 PR 리뷰 보완 검증
+
+[PR #511의 대비 지적](https://github.com/bodeul110/bodeul-platform/pull/511#discussion_r4501794317)을 `4c057a2`의 앱 코드와 새 계측 테스트로 재현했다. Android 11 / API 30, 375dp에서 안내 카드와 서비스 소개의 실제 확인 버튼은 모두 **2.78395:1**이었고, 두 테스트가 4.5:1 기준에서 실패했다.
+
+두 진입점의 `AlertDialog.Builder`를 `MaterialAlertDialogBuilder`로 바꿔 #510에서 적용한 고대비 버튼 테마를 사용한다. 테마·브랜드색·의존성·인증 및 예약 로직은 변경하지 않았다.
+
+`ClientHomeFigmaPreviewTest`에 회귀 테스트 2건을 추가했다. 각각 환자와 보호자 화면에서 실제 대화상자를 열고 확인 버튼의 현재 글자색과 대화상자 `colorSurface`를 기준으로 대비 4.5:1 이상, 버튼 전체 노출·글자 잘림 없음, 클릭 후 닫힘·홈 중복 조회 없음을 검사한다. 화면 캡처도 함께 확인했다.
+
+| 환경 | 홈 12건 + 기존 로그인 13건 | 확인 버튼 대비 |
+| --- | --- | --- |
+| Android 11 / API 30, 360dp, 글꼴 1.0, 3버튼 | 25건 통과 | 두 대화상자·두 역할 모두 21:1 |
+| Android 11 / API 30, 375dp, 글꼴 1.0, 3버튼 | 25건 통과 | 동일 |
+| Android 11 / API 30, 412dp, 글꼴 1.3, 3버튼 | 25건 통과 | 동일 |
+| Android 14 / API 34, 375dp, 글꼴 1.0, 제스처 | 25건 통과 | 동일 |
+
+이번 보완 검증은 **총 100회**이며 위의 11월 7일 144회와 별도 기록이다. 실행 명령은 각 에뮬레이터에서 다음과 같다.
+
+```text
+adb -s <serial> shell am instrument -w -e class com.example.bodeul.debug.ClientHomeFigmaPreviewTest,com.example.bodeul.debug.LoginFigmaPreviewTest com.example.bodeul.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Debug·계측 APK 빌드, 단위 테스트 432건(실패·오류·건너뜀 0건), Release App Check classpath와 개발/운영 설정 혼용 차단 4건도 다시 확인했다. 로그와 대화상자 캡처는 로컬 `.tmp/pr511-dialog-review/`에 보관하며 Git에는 추가하지 않는다. 이번에도 합성 데이터 기반 검증이며 실기기·실제 OAuth·서버 종단 검증은 아니다. 위의 기존 lint 오류를 해결한 것으로 보지 않는다.
+
 ## 남은 범위
 
 - 매니저 홈은 다음 구현 단위다. 캘린더 화면 전체, 예약 단계별 화면·두 시각 계약, 실제 콘텐츠·약관 공급 등은 후속 반영 계획을 따른다.

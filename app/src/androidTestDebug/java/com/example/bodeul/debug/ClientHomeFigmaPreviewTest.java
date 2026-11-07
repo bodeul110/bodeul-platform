@@ -2,7 +2,9 @@ package com.example.bodeul.debug;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.*;
+import static androidx.test.espresso.assertion.ViewAssertions.doesNotExist;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
 import static org.junit.Assert.*;
 
@@ -168,6 +170,34 @@ public class ClientHomeFigmaPreviewTest {
         }
     }
 
+    @Test public void noticeConfirmationMeetsContrastForPatientsAndGuardians() {
+        for (String mode : new String[]{"empty", "guardian"}) {
+            try (ActivityScenario<ClientHomeFigmaPreviewActivity> scenario = launch(mode)) {
+                onView(withText(R.string.final_home_guide_steps_title)).perform(scrollTo(), click());
+                onView(withText(R.string.final_home_guide_steps_body)).inRoot(isDialog()).check(matches(isDisplayed()));
+                capture("notice-dialog-" + mode);
+                assertDialogConfirmContrast("안내 카드 " + mode);
+                onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
+                onView(withText(R.string.final_home_guide_steps_body)).check(doesNotExist());
+                scenario.onActivity(activity -> assertEquals(1, activity.loadCalls));
+            }
+        }
+    }
+
+    @Test public void serviceIntroductionConfirmationMeetsContrastForPatientsAndGuardians() {
+        for (String mode : new String[]{"empty", "guardian"}) {
+            try (ActivityScenario<ClientHomeFigmaPreviewActivity> scenario = launch(mode)) {
+                onView(withId(R.id.textHomeNoticeMore)).perform(scrollTo(), click());
+                onView(withText(R.string.client_home_service_intro_dialog_body)).inRoot(isDialog()).check(matches(isDisplayed()));
+                capture("service-dialog-" + mode);
+                assertDialogConfirmContrast("서비스 소개 " + mode);
+                onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
+                onView(withText(R.string.client_home_service_intro_dialog_body)).check(doesNotExist());
+                scenario.onActivity(activity -> assertEquals(1, activity.loadCalls));
+            }
+        }
+    }
+
     @Test public void failedDashboardCanRetryWithoutShowingStaleContent() throws Exception {
         try (ActivityScenario<ClientHomeFigmaPreviewActivity> scenario = launch("error")) {
             onView(withId(R.id.homeContentContainer)).check(matches(withEffectiveVisibility(Visibility.GONE)));
@@ -244,6 +274,23 @@ public class ClientHomeFigmaPreviewTest {
             }
         }
         if (view instanceof ViewGroup) for (int i = 0; i < ((ViewGroup) view).getChildCount(); i++) assertTextFits(((ViewGroup) view).getChildAt(i));
+    }
+    private static void assertDialogConfirmContrast(String name) {
+        onView(withId(android.R.id.button1)).inRoot(isDialog()).check(matches(isCompletelyDisplayed()))
+                .check((view, missing) -> {
+                    if (missing != null) throw missing;
+                    TextView button = (TextView) view;
+                    android.util.TypedValue surface = new android.util.TypedValue();
+                    assertTrue(button.getContext().getTheme().resolveAttribute(
+                            com.google.android.material.R.attr.colorSurface, surface, true));
+                    int background = surface.resourceId == 0 ? surface.data : button.getContext().getColor(surface.resourceId);
+                    assertEquals(255, Color.alpha(background));
+                    double ratio = ColorUtils.calculateContrast(
+                            ColorUtils.compositeColors(button.getCurrentTextColor(), background), background);
+                    android.util.Log.i("HomeDialogContrast", name + " 확인 버튼 대비: " + ratio);
+                    assertTrue(name + " 확인 버튼 대비 부족: " + ratio, ratio >= 4.5);
+                    assertTextFits(button);
+                });
     }
     private static void capture(String name) {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();

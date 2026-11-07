@@ -9,8 +9,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentStatus;
@@ -20,6 +18,7 @@ import com.example.bodeul.ui.common.AttentionBannerBinder;
 import com.example.bodeul.ui.common.AppointmentProgressOverviewModel;
 import com.example.bodeul.ui.common.AppointmentProgressStageItemBinder;
 import com.example.bodeul.ui.common.AppointmentProgressStageModel;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /** 완성본 홈에 실제 예약 상태와 안내 콘텐츠를 연결한다. */
 public final class ClientHomeDashboardBinder {
@@ -104,7 +103,7 @@ public final class ClientHomeDashboardBinder {
             applyOriginalImageCrop(image, notice.getBannerBackgroundResId());
             ((TextView) row.findViewById(R.id.textNoticeTitle)).setText(notice.getTitleResId());
             ((TextView) row.findViewById(R.id.textNoticeEyebrow)).setText(notice.getEyebrowResId());
-            row.setOnClickListener(view -> new AlertDialog.Builder(context)
+            row.setOnClickListener(view -> new MaterialAlertDialogBuilder(context)
                     .setTitle(notice.getTitleResId()).setMessage(notice.getBodyResId())
                     .setPositiveButton(R.string.permission_guide_confirm, null).show());
             if (container.getChildCount() > 0) {
