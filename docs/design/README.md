@@ -1,17 +1,15 @@
 # 디자인 문서
 
-기준일: 2026-09-27
+기준일: 2026-11-07
 
-Figma 원본의 현재 화면 구조, 구현에 적용할 수 있는 시각 기준과 불일치를 관리한다.
+최신 Figma 완성본을 기존 MVP보다 우선하는 제품·화면 기준으로 사용하며 현재 구현과의 차이를 관리한다.
 
 ## 현재 기준
 
-- [Figma MVP 화면 인벤토리와 Android 구현 매핑](figma-mvp-implementation-map-2026-08-29.md)
-  - 현재 `보들 MVP` Page 1의 8월 화면 인벤토리와 9월 21일 metadata·병합 코드 대조. 화면 수와 픽셀을 새로 실측한 기록은 아님
-- [이전 Figma 화면 지도](figma-current-screen-map.md)
-  - 이전 `보들 가이드` 파일 `Page 2(460:2)`의 38개 화면, prototype 흐름과 과거 비교 기준
+- [Figma 완성본과 앱 비교 및 반영 계획](figma-final-app-gap-plan-2026-11-07.md)
+  - `보들 어플 완성본` Page 1과 11월 7일 `dev` 대조. 공통 스타일부터 화면별 수정 범위·계약 차이·PR 순서 정리
 - [환자·보호자 공통 하단 내비게이션](client-bottom-navigation.md)
-  - 홈, 일정·이력, 동행방, 내 정보 탭과 서버 인가 소비 경계
+  - 현재 구현된 4탭·서버 인가 경계. 후속 개편 목표는 완성본의 역할별 5탭
 - [디자인 참조 정리](../../design_refs/README.md)
   - Figma 원본과 로컬 export 사용 원칙
 - [화면 개편 목표](../planning/screen-restructure-target.md)
@@ -21,6 +19,8 @@ Figma 원본의 현재 화면 구조, 구현에 적용할 수 있는 시각 기�
 
 ## 최근 화면 구현 근거
 
+- [완성본 공통 스타일·로그인](figma-final-login-implementation-2026-11-07.md)
+  - 원본 자산·색상·입력창·3개 소셜 버튼, 기존 인증 경로와 시스템 영역 처리
 - [보호자 예약 수신함](guardian-booking-inbox.md)
   - 서버 원문 목록·상세·환자 승인/철회, 계정 수명주기와 기본 비활성 경계
 - [브랜드 스플래시](figma-brand-splash-implementation-2026-09-19.md)
@@ -38,6 +38,13 @@ Figma 원본의 현재 화면 구조, 구현에 적용할 수 있는 시각 기�
 - [단계 자유 메모 모음](manager-guide-step-memo-summary-2026-09-19.md)
 
 각 문서는 해당 구현 당시 근거다. 병합 여부와 재시험 필요 사항은 현재 구현 상태의 최신 요약을 함께 확인한다.
+
+## 이전 Figma 기준
+
+- [보들 MVP 화면 인벤토리와 Android 구현 매핑](figma-mvp-implementation-map-2026-08-29.md)
+  - 8월 인벤토리와 9월 21일 metadata·병합 코드 비교. 새 완성본 적용의 현재 화면 기준은 아님
+- [보들 가이드 화면 지도](figma-current-screen-map.md)
+  - `Page 2(460:2)`의 38개 화면과 prototype을 정리한 과거 비교 기록
 
 ## 과거 감사 이력
 

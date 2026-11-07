@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/final_ripple">
+    <item>
+        <selector>
+            <item android:state_enabled="false">
+                <shape><solid android:color="@color/final_disabled" /><corners android:radius="@dimen/final_corner_control" /></shape>
+            </item>
+            <item>
+                <shape><solid android:color="@color/final_brand_primary" /><corners android:radius="@dimen/final_corner_control" /></shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

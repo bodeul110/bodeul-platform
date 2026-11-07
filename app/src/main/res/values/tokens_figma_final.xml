@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 완성본의 실제 컴포넌트 값을 사용하며 이전 화면의 토큰은 바꾸지 않는다. -->
+    <color name="final_brand_primary">#01A1FF</color>
+    <color name="final_text_accent">#018DFF</color>
+    <color name="final_surface">#FFFFFF</color>
+    <color name="final_input_surface">#F2F5F8</color>
+    <color name="final_line">#EDF1F7</color>
+    <color name="final_text_primary">#000000</color>
+    <color name="final_text_secondary">#545B68</color>
+    <color name="final_text_hint">#4D545B68</color>
+    <color name="final_error">#FF4D4D</color>
+    <color name="final_disabled">#CBD1DB</color>
+    <color name="final_ripple">#18000000</color>
+    <dimen name="final_screen_gutter">15dp</dimen>
+    <dimen name="final_corner_control">10dp</dimen>
+    <dimen name="final_input_height">50dp</dimen>
+    <dimen name="final_button_height">56dp</dimen>
+    <dimen name="final_touch_target">48dp</dimen>
+    <dimen name="final_control_gap">10dp</dimen>
+    <dimen name="final_section_gap">20dp</dimen>
+    <dimen name="final_body_size">14sp</dimen>
+    <dimen name="final_body_line_height">20sp</dimen>
+    <dimen name="final_button_size">15sp</dimen>
+    <dimen name="final_button_line_height">22sp</dimen>
+    <dimen name="final_caption_size">13sp</dimen>
+    <dimen name="final_caption_line_height">18sp</dimen>
+</resources>
