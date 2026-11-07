@@ -38,7 +38,7 @@
 
 버전과 확인 금액은 JSON 정수, 성인 확인은 JSON boolean만 받는다. 클라이언트가 보낸 시각·fingerprint·역할·승인 정책 값은 사용하지 않는다. 성인 여부는 환자의 자기선언이며 출생일 검증이나 법정대리인 증명 절차를 구현한 것은 아니다.
 
-서버의 원문 저장·목록·조회와 저장된 원문으로 승인·접수하는 경로는 아래와 같이 준비했다. Android에는 기존 직접 본문 전달 API의 Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면이 있다. 새 원문 API의 전용 Repository도 추가했지만, 수신·상대방 지정·복구 화면과 일반 사용자 진입점은 아직 연결하지 않았다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. [Android 연결 설계](../design/guardian-booking-android.md)와 [저장 원문 데이터 계층](../design/guardian-booking-android-drafts.md)을 따른다.
+서버의 원문 저장·목록·조회와 저장된 원문으로 승인·접수하는 경로는 아래와 같이 준비했다. Android에는 기존 직접 본문 전달 API의 Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면이 있다. 새 원문 API의 전용 Repository는 #502로 `dev`에 병합했다. 2026-11-07 후속 화면은 [수신함](../design/guardian-booking-inbox.md)의 목록·상세·마스킹 상대방 표시와 환자 승인/철회까지이며 개발 진입 기본 OFF·Release 고정 OFF다. 보호자 새 요청 작성·상대방 지정·접수 복구와 실제 환경 개방은 남아 있다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. [Android 연결 설계](../design/guardian-booking-android.md)와 [저장 원문 데이터 계층](../design/guardian-booking-android-drafts.md)을 따른다.
 
 ## 서버 원문 전달
 

@@ -2,7 +2,7 @@
 
 코드·문서·GitHub 확인일: 2026-09-27
 
-부분 갱신: #419 Android 준비·승인 철회·서버 원문 전달 준비는 2026-10-28, #448 종료 상태는 2026-09-29 기준이다. 다른 행의 확인일을 일괄 갱신한 것은 아니다.
+부분 갱신: #419 원문 데이터 계층 병합·수신함 화면 준비는 2026-11-07, #448 종료 상태는 2026-09-29 기준이다. 다른 행의 확인일을 일괄 갱신한 것은 아니다.
 
 최신 Notion MVP·내부 테스트, 현재 코드·PR과 같은 날의 개발·운영 환경 분리 검증 기록을 대조했다. 문서 갱신 과정에서 운영 데이터 쓰기나 실기기 검증을 다시 수행한 것은 아니다.
 
@@ -35,7 +35,7 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 - Android는 Java/XML, Activity·Coordinator·Binder·Repository 경계를 유지한다. Codex/CLI로 개발하며 Android Studio는 필수가 아니다.
 - ServiceLocator는 실제 인증 설정이 있으면 Core API와 Firebase 잔존 기능을 조합한다. Firebase 미설정 데모는 Mock이며 API 실패를 Firestore 쓰기로 우회하지 않는다.
 - 사용자·매니저는 Spring Core API, 관리자는 별도 Next.js 서버로 같은 환경의 PostgreSQL을 사용한다. 서버 사이 proxy는 없다.
-- DDL은 메인 core-api의 Flyway V1~V26이 소유한다. V24 승인 저장·V25 감사 조회 인덱스·V26 원문 저장은 #419 후속 소스다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했으며, 10월 28일 작업에서는 실제 DB migration 이력을 재조회하거나 적용하지 않았다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
+- DDL은 메인 core-api의 Flyway V1~V27이 소유한다. V24 승인 저장·V25 감사 조회 인덱스·V26 원문 저장·V27 파기 실행 집계는 #419 후속 소스다. 9월 27일 개발·운영 DB 모두 V23·실패 이력 0건을 확인했으며, 11월 7일 화면 작업에서는 실제 DB migration 이력을 재조회하거나 적용하지 않았다. [migration 목록](../architecture/database-migration-catalog.md)을 따른다.
 - 두 저장소는 `dev` 개발·`master` 운영을 구분한다. 기능 PR은 dev로 squash, 운영 승격은 merge commit이다. Core Preview는 dev push/수동, production 배포·migration은 보호된 수동 workflow를 유지한다.
 
 ## 3. 남은 범위
@@ -43,7 +43,7 @@ Firebase Auth·FCM·App Check·Storage와 인증 프로필·지원·서류 관�
 | 작업 | 현재 판단 |
 | --- | --- |
 | Preview API #429 | 9월 24일 종료. 9월 27일 인프라 작업에서 health 200·무인증 401 재확인. 모든 앱 화면의 E2E 성공을 뜻하지 않음 |
-| 보호자 예약 #419 | #440 정책·#476 저장·#477 API·#498 Android 기반·#499 기존 승인 조회·철회는 `dev` 반영. 기본 OFF·debug 합성 화면을 유지한다. 후속 변경으로 [서버 원문 전달·상대방 표시 준비](../reports/issue-419-draft-handoff-2026-10-28.md)를 추가. 새 API의 Android 연결, 파기 작업 연결, 실제 DEV migration·권한 확인과 두 계정 종단 검증은 남음. 일반 사용자 메뉴·release 진입점과 운영 권한을 열지 않음 |
+| 보호자 예약 #419 | #440 정책·#476 저장·#477 API·#498 Android 기반·#499 기존 승인 복구·#500 서버 원문·#501 파기 코드·#502 Android 원문 데이터 계층은 `dev` 반영. 후속 [수신함 화면](../design/guardian-booking-inbox.md)은 목록·상세·환자 승인/철회와 계정 변경 시 정리를 구현·합성 검증한 단계다. 개발 진입 기본 OFF·Release 고정 OFF. 보호자 새 요청 작성·상대방 지정·접수 복구, 실제 DEV V24~V27·권한·파기 스케줄·두 계정 종단 검증은 남음 |
 | 내부 STT #420 | Naver Cloud 연동·녹음 저장 목표. #443 화면은 병합됐지만 실제 녹음·저장·공급자 검증은 미완료. 추가 논의 메모를 기존 내부 개발 철회나 운영 승인으로 해석하지 않음 |
 | 가이드 진입·번호 #422 | 신규·기존 세션, legacy 7단계·13단계 snapshot과 재진입 상태를 구분해 시작 단계·중복 번호 확인 |
 | 메모·리포트 #423 | 종료 전 최신 메모 조합은 반영. 마지막 CTA가 채팅으로 연결된다는 새 보고는 역할·단계·빌드 확인 필요. 종료 후 매니저 접근 회수 유지 |

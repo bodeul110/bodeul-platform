@@ -21,6 +21,8 @@ Figma 원본의 현재 화면 구조, 구현에 적용할 수 있는 시각 기�
 
 ## 최근 화면 구현 근거
 
+- [보호자 예약 수신함](guardian-booking-inbox.md)
+  - 서버 원문 목록·상세·환자 승인/철회, 계정 수명주기와 기본 비활성 경계
 - [브랜드 스플래시](figma-brand-splash-implementation-2026-09-19.md)
 - [환자 홈](figma-patient-home-implementation-2026-09-12.md)
 - [환자 예약 메인](figma-patient-booking-main-implementation-2026-09-27.md)

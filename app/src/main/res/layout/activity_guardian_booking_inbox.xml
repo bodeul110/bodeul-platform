@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/guardianBookingInboxRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bodeul_background"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="8dp">
+        <ImageButton
+            android:id="@+id/buttonGuardianBookingInboxBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/guide_back"
+            android:src="@drawable/ic_figma_hospital_search_back" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:text="@string/guardian_booking_inbox_title"
+            android:textColor="@color/bodeul_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonGuardianBookingInboxReload"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:minHeight="48dp"
+        android:text="@string/guardian_booking_inbox_reload" />
+    <ProgressBar
+        android:id="@+id/progressGuardianBookingInbox"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center_horizontal"
+        android:visibility="gone" />
+    <TextView
+        android:id="@+id/textGuardianBookingInboxMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityLiveRegion="polite"
+        android:paddingHorizontal="20dp"
+        android:textColor="@color/bodeul_text_primary"
+        android:textSize="16sp" />
+    <ScrollView
+        android:id="@+id/scrollGuardianBookingInboxList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:id="@+id/layoutGuardianBookingInboxRows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp" />
+    </ScrollView>
+    <include
+        layout="@layout/guardian_booking_review"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+</LinearLayout>

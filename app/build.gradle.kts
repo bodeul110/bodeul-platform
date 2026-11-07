@@ -257,6 +257,8 @@ val bodeulCoreApiReleaseBaseUrl = localGradleOrEnvironmentProperty(
 check(effectiveBodeulCoreApiDebugBaseUrl.isNotEmpty()) { "Debug Core API 주소가 비어 있습니다." }
 val bodeulLegacyManagerLocationEnabled =
     localOrGradleProperty("bodeulLegacyManagerLocationEnabled").equals("true", ignoreCase = true)
+val bodeulGuardianBookingInboxEnabled =
+    localOrGradleProperty("bodeulGuardianBookingInboxEnabled").equals("true", ignoreCase = true)
 val bodeulSupabaseDebugUrl = localOrGradleProperty("bodeulSupabaseDebugUrl")
     .ifEmpty { localOrGradleProperty("bodeulSupabaseUrl") }
 val bodeulSupabaseDebugKey = localOrGradleProperty("bodeulSupabaseDebugPublishableKey")
@@ -304,6 +306,7 @@ android {
 
     buildTypes {
         debug {
+            resValue("bool", "bodeul_guardian_booking_inbox_enabled", bodeulGuardianBookingInboxEnabled.toString())
             resValue("string", "bodeul_supabase_url", bodeulSupabaseDebugUrl)
             resValue("string", "bodeul_supabase_publishable_key", bodeulSupabaseDebugKey)
             // 공개 Preview 주소를 기본으로 사용하되 local.properties로 다른 개발 서버를 선택할 수 있다.
@@ -320,6 +323,8 @@ android {
             )
         }
         release {
+            // 실제 DB·원문 파기·두 계정 연동 검증 전에는 운영 진입을 열지 않는다.
+            resValue("bool", "bodeul_guardian_booking_inbox_enabled", "false")
             // 운영 앱이 개발 서버를 바라보지 않도록 Preview 기본값을 상속하지 않는다.
             resValue("string", "bodeul_core_api_base_url", bodeulCoreApiReleaseBaseUrl)
             resValue("string", "bodeul_supabase_url", bodeulSupabaseReleaseUrl)
