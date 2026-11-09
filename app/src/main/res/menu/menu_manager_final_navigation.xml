@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navManagerHome"
+        android:icon="@drawable/bodeul_final_home_nav_home"
+        android:title="@string/client_nav_home" />
+    <item
+        android:id="@+id/navManagerCalendar"
+        android:icon="@drawable/bodeul_final_home_nav_calendar"
+        android:title="@string/final_home_calendar" />
+    <item
+        android:id="@+id/navManagerMatching"
+        android:icon="@drawable/bodeul_final_home_nav_matching"
+        android:title="@string/final_manager_matching" />
+    <item
+        android:id="@+id/navManagerChat"
+        android:icon="@drawable/bodeul_final_home_nav_chat"
+        android:title="@string/final_home_chat" />
+    <item
+        android:id="@+id/navManagerProfile"
+        android:icon="@drawable/bodeul_final_home_nav_profile"
+        android:title="@string/final_home_profile" />
+</menu>

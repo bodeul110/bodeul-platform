@@ -1,485 +1,491 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/figma_mvp_background">
-
+    android:background="@color/final_surface">
+    <View
+        android:layout_width="0dp"
+        android:layout_height="375dp"
+        android:background="@drawable/bg_final_home_gradient"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <LinearLayout
+        android:id="@+id/layoutManagerHomeTopBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="15dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <FrameLayout
+                android:layout_width="54dp"
+                android:layout_height="54dp">
+                <ImageView
+                    android:id="@+id/imageManagerLogo"
+                    android:layout_width="46dp"
+                    android:layout_height="45.13dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="6.87dp"
+                    android:src="@drawable/bodeul_final_home_logo"
+                    android:contentDescription="@string/app_name" />
+            </FrameLayout>
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+            <TextView
+                android:id="@+id/textManagerMode"
+                style="@style/FinalHomeCaption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="160dp"
+                android:layout_marginHorizontal="12dp"
+                android:gravity="end" />
+            <FrameLayout
+                android:id="@+id/buttonManagerSupport"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_final_home_bell"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/final_manager_support">
+                <FrameLayout
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="noHideDescendants">
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="-2dp"
+                        android:src="@drawable/bodeul_final_home_bell_base"
+                        android:contentDescription="@null" />
+                    <ImageView
+                        android:layout_width="10.25dp"
+                        android:layout_height="6dp"
+                        android:layout_marginStart="9.8dp"
+                        android:layout_marginTop="19.4dp"
+                        android:src="@drawable/bodeul_final_home_bell_lower"
+                        android:contentDescription="@null" />
+                    <ImageView
+                        android:layout_width="19dp"
+                        android:layout_height="16.75dp"
+                        android:layout_marginStart="5.5dp"
+                        android:layout_marginTop="4.4dp"
+                        android:src="@drawable/bodeul_final_home_bell_upper"
+                        android:contentDescription="@null" />
+                </FrameLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
     <ScrollView
         android:id="@+id/scrollManagerHome"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="68dp"
-        android:layout_marginBottom="88dp"
-        android:clipToPadding="false"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:fillViewport="true"
-        android:overScrollMode="never"
-        android:scrollbars="none">
-
+        android:clipToPadding="false"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/layoutManagerHomeTopBar"
+        app:layout_constraintBottom_toTopOf="@id/layoutManagerHomeBottomNav"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingTop="28dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="120dp">
-
-            <TextView
-                android:id="@+id/textManagerMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/textManagerGreeting"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/pretendard_bold"
-                android:includeFontPadding="false"
-                android:lineSpacingExtra="2dp"
-                android:text="@string/manager_home_greeting_default"
-                android:textColor="@color/figma_mvp_text_primary"
-                android:textSize="36sp" />
-
-            <TextView
-                android:id="@+id/textManagerSubtitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:fontFamily="@font/pretendard_semibold"
-                android:text="@string/manager_home_subtitle"
-                android:textColor="@color/figma_mvp_text_secondary"
-                android:textSize="18sp" />
-
+            android:paddingHorizontal="15dp"
+            android:paddingBottom="30dp">
             <include
                 android:id="@+id/managerStatePanel"
-                layout="@layout/include_state_panel"
-                android:layout_marginTop="20dp" />
-
+                layout="@layout/include_state_panel" />
             <LinearLayout
                 android:id="@+id/managerContentContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <com.google.android.material.card.MaterialCardView
+                android:orientation="vertical"
+                android:visibility="gone">
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="48dp"
-                    app:cardElevation="8dp">
-
+                    android:layout_marginTop="52dp"
+                    android:paddingHorizontal="5dp"
+                    android:orientation="vertical">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_manager_home_hero"
-                        android:orientation="vertical"
-                        android:padding="24dp">
-
+                        android:orientation="horizontal"
+                        android:gravity="top">
+                        <TextView
+                            android:id="@+id/textManagerGreeting"
+                            style="@style/FinalHomeTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="22sp"
+                            app:lineHeight="28sp" />
+                        <ImageView
+                            android:id="@+id/buttonManagerProfile"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_marginStart="15dp"
+                            android:background="@drawable/bg_final_home_more"
+                            android:padding="10dp"
+                            android:src="@drawable/bodeul_final_home_nav_profile"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:contentDescription="@string/final_manager_profile" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/textManagerSubtitle"
+                        style="@style/FinalHomeValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/final_manager_subtitle"
+                        android:textSize="15sp"
+                        android:textColor="@color/final_text_accent_accessible"
+                        android:fontFamily="@font/pretendard_medium" />
+                </LinearLayout>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardManagerMatching"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="30dp"
+                    app:cardBackgroundColor="@color/final_surface"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="3dp"
+                    app:strokeColor="@color/final_brand_primary"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:paddingHorizontal="15dp"
                             android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
+                            android:orientation="horizontal"
+                            android:background="@drawable/bg_final_manager_matching_header">
                             <TextView
-                                android:id="@+id/textManagerHeroBadge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_manager_home_hero_badge"
-                                android:drawableStart="@drawable/manager_home_icon_location"
-                                android:drawablePadding="8dp"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:gravity="center_vertical"
-                                android:paddingStart="12dp"
-                                android:paddingTop="6dp"
-                                android:paddingEnd="12dp"
-                                android:paddingBottom="6dp"
-                                android:text="@string/manager_home_waiting_badge"
-                                android:textColor="@color/white"
-                                android:textSize="14sp" />
-
-                            <Space
+                                style="@style/FinalHomeTitle"
                                 android:layout_width="0dp"
-                                android:layout_height="1dp"
-                                android:layout_weight="1" />
-
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/final_manager_matching_status"
+                                android:textSize="15sp"
+                                app:lineHeight="22sp" />
                             <TextView
-                                android:id="@+id/textManagerHeroStatus"
+                                android:id="@+id/buttonManagerMatchingHistory"
+                                style="@style/BodeulFinalLink"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginEnd="8dp"
-                                android:background="@drawable/bg_manager_home_hero_badge"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:paddingStart="10dp"
-                                android:paddingTop="6dp"
-                                android:paddingEnd="10dp"
-                                android:paddingBottom="6dp"
-                                android:text="@string/manager_home_waiting_status"
-                                android:textColor="@color/white"
-                                android:textSize="11sp" />
-
+                                android:gravity="center"
+                                android:paddingHorizontal="5dp"
+                                android:text="@string/final_manager_matching_history"
+                                android:textSize="13sp"
+                                android:textColor="@color/final_text_on_primary" />
                             <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:background="@drawable/bg_manager_home_icon_yellow"
-                                android:contentDescription="@null"
-                                android:padding="10dp"
-                                android:src="@drawable/manager_home_icon_lightning" />
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:rotation="180"
+                                android:src="@drawable/bodeul_final_home_next"
+                                app:tint="@color/final_text_on_primary"
+                                android:contentDescription="@null" />
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/textManagerHeroTitle"
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="20dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:includeFontPadding="false"
-                            android:text="@string/manager_home_waiting_title"
-                            android:textColor="@color/white"
-                            android:textSize="24sp" />
-
-                        <TextView
-                            android:id="@+id/textManagerHeroBody"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:lineSpacingExtra="2dp"
-                            android:text="@string/manager_home_waiting_body"
-                            android:textColor="@color/figma_mvp_hero_content"
-                            android:textSize="14sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonManagerHeroPrimary"
-                            android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:layout_marginTop="22dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:text="@string/manager_home_waiting_button"
-                            android:textAllCaps="false"
-                            android:textColor="@color/figma_mvp_hero_action_text"
-                            android:textSize="16sp"
-                            app:backgroundTint="@color/figma_mvp_patient_icon_background"
-                            app:cornerRadius="28dp"
-                            app:icon="@drawable/manager_home_icon_arrow"
-                            app:iconGravity="textEnd"
-                            app:iconPadding="8dp"
-                            app:iconTint="@null" />
+                            android:paddingHorizontal="15dp"
+                            android:paddingVertical="20dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center">
+                                <TextView
+                                    android:id="@+id/textManagerOngoingCount"
+                                    style="@style/FinalHomeTitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/final_manager_unknown_count" />
+                                <TextView
+                                    style="@style/FinalHomeCaption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="5dp"
+                                    android:text="@string/final_manager_ongoing" />
+                            </LinearLayout>
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="32dp"
+                                android:background="@color/final_line" />
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center">
+                                <TextView
+                                    android:id="@+id/textManagerCompletedCount"
+                                    style="@style/FinalHomeTitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/final_manager_unknown_count" />
+                                <TextView
+                                    style="@style/FinalHomeCaption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="5dp"
+                                    android:text="@string/final_manager_completed" />
+                            </LinearLayout>
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="32dp"
+                                android:background="@color/final_line" />
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                android:gravity="center">
+                                <TextView
+                                    android:id="@+id/textManagerCanceledCount"
+                                    style="@style/FinalHomeTitle"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/final_manager_unknown_count" />
+                                <TextView
+                                    style="@style/FinalHomeCaption"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="5dp"
+                                    android:text="@string/final_manager_canceled" />
+                            </LinearLayout>
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:id="@+id/managerActionContainer"
+                <TextView
+                    android:id="@+id/textManagerCountState"
+                    style="@style/FinalHomeCaption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    android:orientation="vertical" />
-
+                    android:layout_marginTop="8dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="@string/final_manager_count_loading" />
+                <TextView
+                    android:id="@+id/buttonManagerCountRetry"
+                    style="@style/BodeulFinalLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/state_action_retry"
+                    android:visibility="gone" />
                 <LinearLayout
+                    android:id="@+id/buttonManagerDocuments"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
+                    android:minHeight="50dp"
+                    android:layout_marginTop="20dp"
+                    android:paddingHorizontal="15dp"
+                    android:paddingVertical="10dp"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_final_manager_documents"
+                    android:foreground="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
                     <TextView
-                        android:id="@+id/textManagerSectionTitle"
+                        android:id="@+id/textManagerDocuments"
+                        style="@style/FinalHomeValue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:text="@string/manager_home_service_title"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="20sp" />
-
+                        android:text="@string/final_manager_docs"
+                        android:textSize="14sp"
+                        android:textColor="@color/final_surface" />
                     <TextView
-                        android:id="@+id/textManagerSectionAction"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/textManagerDocumentDetail"
+                        style="@style/FinalHomeCaption"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:paddingStart="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp"
-                        android:text="@string/manager_home_service_more"
-                        android:textColor="@color/figma_mvp_primary"
-                        android:textSize="13sp" />
+                        android:layout_weight="1.15"
+                        android:text="@string/final_manager_docs_detail"
+                        android:textSize="13sp"
+                        android:gravity="end"
+                        android:textColor="@color/final_surface" />
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginStart="5dp"
+                        android:rotation="180"
+                        android:src="@drawable/bodeul_final_home_next"
+                        app:tint="@color/final_surface"
+                        android:contentDescription="@null" />
                 </LinearLayout>
-
-                <HorizontalScrollView
-                    android:id="@+id/managerPromoScroll"
+                <LinearLayout
+                    android:id="@+id/layoutManagerActiveSession"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:clipToPadding="false"
-                    android:overScrollMode="never"
-                    android:paddingEnd="12dp"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:id="@+id/managerPromoContainer"
-                        android:layout_width="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+                    <TextView
+                        style="@style/FinalHomeCaption"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal" />
-                </HorizontalScrollView>
-
+                        android:text="@string/final_manager_current_session" />
+                    <TextView
+                        android:id="@+id/textManagerActiveTitle"
+                        style="@style/FinalHomeTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp" />
+                    <TextView
+                        android:id="@+id/textManagerActiveBody"
+                        style="@style/FinalHomeValue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp" />
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/buttonManagerHeroPrimary"
+                        style="@style/BodeulFinalPrimaryButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="50dp"
+                        android:layout_marginTop="10dp" />
+                </LinearLayout>
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardManagerLiveFeed"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:visibility="gone"
-                    app:cardBackgroundColor="@color/figma_mvp_surface"
-                    app:cardCornerRadius="32dp"
-                    app:cardElevation="4dp"
-                    app:strokeColor="@color/figma_mvp_card_outline"
-                    app:strokeWidth="1dp">
-
+                    android:layout_marginTop="20dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardBackgroundColor="@color/final_surface"
+                    app:cardElevation="3dp"
+                    app:strokeWidth="0dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="18dp">
-
-                        <View
-                            android:id="@+id/viewManagerLiveFeedBanner"
+                        android:paddingHorizontal="15dp"
+                        android:paddingVertical="20dp"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/FinalHomeTitle"
                             android:layout_width="match_parent"
-                            android:layout_height="144dp"
-                            android:background="@drawable/bg_service_thumb_warm" />
-
+                            android:layout_height="wrap_content"
+                            android:text="@string/final_home_book" />
                         <LinearLayout
+                            android:id="@+id/layoutManagerNoticeContainer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
+                            android:orientation="vertical"
+                            android:layout_marginTop="20dp" />
+                        <LinearLayout
+                            android:id="@+id/buttonManagerNoticeMore"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:layout_marginTop="25dp"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:background="@drawable/bg_final_home_more">
                             <TextView
-                                android:id="@+id/textManagerLiveBadge"
+                                style="@style/FinalHomeValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:background="@drawable/bg_badge_blue"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:paddingStart="10dp"
-                                android:paddingTop="4dp"
-                                android:paddingEnd="10dp"
-                                android:paddingBottom="4dp"
-                                android:textColor="@color/figma_mvp_primary"
-                                android:textSize="11sp" />
-
-                            <Space
-                                android:layout_width="0dp"
-                                android:layout_height="1dp"
-                                android:layout_weight="1" />
-
-                            <TextView
-                                android:id="@+id/textManagerLiveTime"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_semibold"
-                                android:textColor="@color/figma_mvp_text_secondary"
-                                android:textSize="12sp" />
+                                android:textSize="14sp"
+                                android:text="@string/final_home_more" />
+                            <ImageView
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:layout_marginStart="5dp"
+                                android:src="@drawable/bodeul_final_home_next"
+                                android:rotation="180"
+                                android:contentDescription="@null" />
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/textManagerLiveTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="22sp" />
-
-                        <TextView
-                            android:id="@+id/textManagerLiveSubtitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:fontFamily="@font/pretendard_medium"
-                            android:textColor="@color/figma_mvp_text_secondary"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/textManagerLiveNote"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/pretendard_medium"
-                            android:lineSpacingExtra="3dp"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/textManagerLiveFooter"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:textColor="@color/figma_mvp_primary"
-                            android:textSize="13sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonManagerLogout"
-                    android:layout_width="1dp"
-                    android:layout_height="1dp"
-                    android:visibility="gone" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/buttonManagerHistory"
+                        style="@style/BodeulFinalLink"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/final_manager_completed_history"
+                        android:textSize="12sp" />
+                    <TextView
+                        android:id="@+id/buttonManagerFooterSupport"
+                        style="@style/BodeulFinalLink"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/final_home_support"
+                        android:textSize="12sp" />
+                    <TextView
+                        android:id="@+id/buttonManagerLogout"
+                        style="@style/BodeulFinalLink"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/final_home_sign_out"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <TextView
+                    style="@style/FinalHomeCaption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/final_home_copyright" />
             </LinearLayout>
+            <include
+                android:id="@+id/managerAppointmentsPanel"
+                layout="@layout/include_manager_appointments"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
-
-    <LinearLayout
-        android:id="@+id/layoutManagerHomeTopBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="@color/figma_mvp_surface"
-        android:elevation="4dp"
-        android:gravity="center_vertical"
-        android:minHeight="68dp"
-        android:orientation="horizontal"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp">
-
-        <ImageView
-            android:layout_width="94dp"
-            android:layout_height="48dp"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/app_name"
-            android:scaleType="centerInside"
-            android:src="@drawable/bodeul_logo_figma" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:contentDescription="@null"
-            android:padding="10dp"
-            android:src="@drawable/manager_home_icon_bell" />
-    </LinearLayout>
-
-    <LinearLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/layoutManagerHomeBottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="@drawable/bg_bottom_nav"
-        android:baselineAligned="false"
-        android:elevation="12dp"
-        android:gravity="center"
-        android:minHeight="88dp"
-        android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingTop="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="16dp">
-
-        <FrameLayout
-            android:id="@+id/navManagerHome"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_manager_home_nav_active"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp">
-
-                <ImageView
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/manager_home_icon_nav_home" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:text="@string/manager_home_nav_home"
-                    android:textColor="@color/figma_mvp_primary"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </FrameLayout>
-
-        <LinearLayout
-            android:id="@+id/navManagerHistory"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:contentDescription="@null"
-                android:src="@drawable/manager_home_icon_nav_history" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/pretendard_semibold"
-                android:text="@string/manager_home_nav_history"
-                android:textColor="@color/figma_mvp_nav_inactive"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/navManagerGuide"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="18dp"
-                android:contentDescription="@null"
-                android:src="@drawable/manager_home_icon_nav_guide" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/pretendard_semibold"
-                android:text="@string/manager_home_nav_guide"
-                android:textColor="@color/figma_mvp_nav_inactive"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/navManagerProfile"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:contentDescription="@null"
-                android:src="@drawable/manager_home_icon_nav_profile" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/pretendard_semibold"
-                android:text="@string/manager_home_nav_profile"
-                android:textColor="@color/figma_mvp_nav_inactive"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </LinearLayout>
-</FrameLayout>
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:background="@color/final_surface"
+        android:elevation="4dp"
+        android:paddingVertical="4dp"
+        app:itemIconSize="30dp"
+        app:itemHorizontalTranslationEnabled="false"
+        app:itemTextAppearanceActive="@style/FinalHomeNavText"
+        app:itemTextAppearanceInactive="@style/FinalHomeNavText"
+        app:itemIconTint="@color/client_bottom_navigation_item"
+        app:itemTextColor="@color/client_bottom_navigation_item"
+        app:itemRippleColor="@color/bodeul_soft_blue"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/menu_manager_final_navigation"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

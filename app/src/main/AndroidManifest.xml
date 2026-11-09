@@ -109,6 +109,7 @@
             android:exported="false" />
         <activity
             android:name=".ui.manager.ManagerActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome"
             android:exported="false" />
         <activity
             android:name=".ui.auth.ProfileCompletionActivity"

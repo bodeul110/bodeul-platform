@@ -20,6 +20,16 @@ import java.util.UUID;
 public class CoreApiAppointmentClientTest {
     private static final String UPDATE_MESSAGE = "예약 요금 업데이트를 준비 중입니다.";
 
+    @Test public void managerListAcceptsOnlyAnExplicitArray() throws Exception {
+        assertEquals(0, CoreApiAppointmentClient.requireAppointmentArray(new JSONObject("{\"appointments\":[]}")).length());
+        for (String body : new String[]{"{}", "{\"appointments\":null}", "{\"appointments\":{}}", "{\"appointments\":[null]}", "{\"appointments\":[3]}"}) {
+            try {
+                CoreApiAppointmentClient.requireAppointmentArray(new JSONObject(body));
+                fail("잘못된 응답은 빈 목록으로 처리할 수 없습니다.");
+            } catch (org.json.JSONException expected) { /* 집계 오류로 전달한다. */ }
+        }
+    }
+
     @Test
     public void createBodySendsTheDisplayedAmountInsteadOfReplacingItWithServerPrice() throws Exception {
         for (int amount : new int[]{0, 40_000, 69_000, 96_000}) {

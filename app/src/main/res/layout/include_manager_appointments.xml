@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="24dp">
+    <TextView
+        android:id="@+id/textManagerAppointmentsTitle"
+        style="@style/FinalHomeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <TextView
+        style="@style/FinalHomeCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/final_manager_recent_scope" />
+    <TextView
+        style="@style/FinalHomeCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="@string/final_manager_scope_detail" />
+    <CalendarView
+        android:id="@+id/calendarManagerAppointments"
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:layout_marginTop="15dp"
+        android:firstDayOfWeek="2" />
+    <TextView
+        android:id="@+id/textManagerSelectedDate"
+        style="@style/FinalHomeValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <TextView
+        android:id="@+id/textManagerUndated"
+        style="@style/FinalHomeCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="@string/final_manager_undated" />
+    <TextView
+        android:id="@+id/buttonManagerScheduleNote"
+        style="@style/BodeulFinalLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/final_manager_schedule_note" />
+    <TextView
+        android:id="@+id/textManagerScheduleNote"
+        style="@style/FinalHomeCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chipsManagerMatching"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        app:singleSelection="true"
+        app:selectionRequired="true"
+        app:checkedChip="@id/chipManagerAll">
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipManagerAll"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true"
+            android:text="@string/final_manager_all"
+            android:textColor="@color/final_text_primary"
+            app:ensureMinTouchTargetSize="true" />
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipManagerOngoing"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true"
+            android:text="@string/final_manager_ongoing"
+            android:textColor="@color/final_text_primary"
+            app:ensureMinTouchTargetSize="true" />
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipManagerCompleted"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true"
+            android:text="@string/final_manager_completed"
+            android:textColor="@color/final_text_primary"
+            app:ensureMinTouchTargetSize="true" />
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipManagerCanceled"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true"
+            android:text="@string/final_manager_canceled"
+            android:textColor="@color/final_text_primary"
+            app:ensureMinTouchTargetSize="true" />
+    </com.google.android.material.chip.ChipGroup>
+    <TextView
+        android:id="@+id/textManagerAppointmentsState"
+        style="@style/FinalHomeValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="15dp"
+        android:accessibilityLiveRegion="polite" />
+    <LinearLayout
+        android:id="@+id/layoutManagerAppointmentsList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+    <TextView
+        android:id="@+id/buttonManagerAppointmentsRefresh"
+        style="@style/BodeulFinalLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/final_manager_refresh" />
+    <TextView
+        android:id="@+id/buttonManagerAppointmentsHistory"
+        style="@style/BodeulFinalLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/final_manager_completed_history" />
+</LinearLayout>
