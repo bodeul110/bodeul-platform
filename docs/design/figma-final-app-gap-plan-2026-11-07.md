@@ -16,6 +16,8 @@
 
 **반영 순서:** 공통 스타일·로그인 → 홈 → 예약 → 이용내역 → 동행 진행 → 리포트 → 채팅·내 정보. 계약이 필요한 신규 기능은 이 순서를 막지 않고 별도 작업으로 분리한다.
 
+**11월 7일 후속 적용:** 공통 스타일·로그인 #510은 `dev`에 병합됐다(`1aa8ba6`). 다음 환자·보호자 홈과 일반 사용자 5탭은 [별도 구현 기록](figma-final-client-home-implementation-2026-11-07.md)에 정리하며, 현재는 로컬 구현·검증 단계다. 이어갈 화면은 매니저 홈이다. 아래 비교표는 최초 조사 당시 차이를 보존한다.
+
 ## 비교 기준과 확인 범위
 
 | 대상 | 이번 확인 |
@@ -59,13 +61,13 @@
 | --- | --- | --- |
 | [로그인 `1:13671`](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-13671) | 현재 큰 로고·버튼 구성과 간격이 다름. 이메일·Kakao·Google 경로는 이미 있음 | 1차: 원본 로고·입력·오류·보조 링크·3개 소셜 버튼 적용. Apple은 제공자 미연동 안내를 명확히 하고 실제 인증 연결은 선행 설정 후 구현 |
 | [회원가입 본인인증 `1:13797`](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-13797) | 6자리 문자 코드·3분 만료 시안. 현재 이름·전화 형식 입력과 이메일 인증은 같은 기능이 아님 | 기존 가입 화면 스타일은 반영 가능. 실제 SMS·본인확인은 별도 제공자·비용·오용 방지 계약 필요 |
-| [일반 홈 `1:6666`](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-6666) | 현재 큰 인사말·진행 카드에서 작은 제목·예약 진입 영역·콘텐츠 목록으로 변경 | 2차: 실제 예약 상태와 주 CTA를 유지하면서 밀도 조정. 홈에서 입력한 값은 예약 초안으로 전달하고 뒤로 이동해도 유지 |
+| [일반 홈 `1:6666`](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-6666) | 현재 큰 인사말·진행 카드에서 작은 제목·예약 진입 영역·콘텐츠 목록으로 변경 | 2차: 실제 예약 상태를 유지하면서 밀도 조정. 이번에는 홈의 위치·날짜·시간 영역을 기존 예약 폼 진입으로 연결한다. 홈 자체 입력과 별도 만남 시각 초안은 3차 예약 계약과 함께 반영 |
 | [매니저 홈 `1:7071`](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-7071) | 진행·완료·취소 집계, 서류 진입, 콘텐츠가 중심 | 2차: 본인에게 허용된 데이터로 상태별 카드 표시. 전체 건수가 없는 API 응답을 전체 집계처럼 표현하지 않음 |
 | [캘린더 `1:7866`](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=1-7866)와 홈 하단 메뉴 | 시안은 일반 5탭, 매니저 5탭. 현재 환자·보호자는 공통 4탭 | 2차부터 Figma의 역할별 5탭을 목표로 이동·복귀·딥링크 계약 변경. 연결 기능이 없으면 별도 기능 작업을 함께 마련하고 기존 4탭을 최종 기준으로 고정하지 않음 |
 
 근거: [LoginActivity](../../app/src/main/java/com/example/bodeul/ui/auth/LoginActivity.java), [MainActivity](../../app/src/main/java/com/example/bodeul/MainActivity.java), [ManagerActivity](../../app/src/main/java/com/example/bodeul/ui/manager/ManagerActivity.java), [공통 내비게이션 계약](client-bottom-navigation.md).
 
-홈의 보들백서 썸네일·본문은 실제 제공 콘텐츠와 사용 가능한 자산이 준비된 범위만 노출한다. 시안 예시 글·병원 사진·인물 사진을 실제 콘텐츠나 사용자 정보로 고정하지 않는다.
+홈의 보들백서 썸네일은 완성본 원본 자산을 사용하고 본문은 실제 앱 안내에 연결한다. 사진을 실제 사용자 정보로 쓰거나 예시 게시일·미구현 AI 매칭을 실제 서비스처럼 고정하지 않는다.
 
 ### 예약
 
@@ -146,7 +148,7 @@
 | 7 | 채팅 상세, 내 정보·문의 메뉴 | 첨부/읽음/알림·종료 제한·계정 전환·로그아웃 유지 | 공통 컴포넌트 재사용. 채팅 목록·검색은 계약 확인 후 분리 |
 | 별도 | 예약 새 필드, 3항목 평가, 방 목록 등 | DTO·서버 인가·기존 데이터 호환·화면 검증을 갖춘 독립 기능 | 화면만 있는 완료 상태를 만들지 않음 |
 
-**1차 공통 스타일·로그인은 로컬 구현과 에뮬레이터 검증을 마쳤으며 [구현 기록](figma-final-login-implementation-2026-11-07.md)에 결과를 분리한다.** 실제 외부 인증·실기기·개발 배포 검증은 남아 있다. 로그인 한 화면에서 새 스타일의 밀도·오류·IME 처리를 검증한 뒤 다른 화면으로 확장한다. 전역 테마를 먼저 바꿔 모든 구형 화면에 동시에 영향을 주거나 500개 frame마다 Activity를 만드는 방식은 쓰지 않는다.
+**1차 공통 스타일·로그인은 #510으로 `dev`에 병합됐으며 [구현 기록](figma-final-login-implementation-2026-11-07.md)에 검증을 분리한다.** 2차의 환자·보호자 홈과 일반 사용자 5탭은 [홈 구현 기록](figma-final-client-home-implementation-2026-11-07.md)을 따른다. 캘린더는 본인 예약의 날짜 필터부터 연결했고 전체 시각 개편은 4차에서 이어간다. 실제 외부 인증·실기기·개발 API 종단 검증은 이 작업에서 수행하지 않았다. 전역 테마를 먼저 바꿔 모든 구형 화면에 동시에 영향을 주거나 500개 frame마다 Activity를 만드는 방식은 쓰지 않는다.
 
 보호자 예약 #419는 디자인 전체 교체를 기다릴 필요가 없다. 승인/철회 수신함에 이어 초안 작성·수신자 지정·제출/복구를 기능 단위로 진행하고, 새 예약 UI가 준비되면 같은 계약에 연결한다. 실제 두 계정 개발 환경 검증 전에는 기본 비활성 경계를 유지한다.
 
@@ -160,7 +162,7 @@
 | [#422 단계](https://github.com/bodeul110/bodeul-platform/issues/422), [#423 메모](https://github.com/bodeul110/bodeul-platform/issues/423), [#424 위치](https://github.com/bodeul110/bodeul-platform/issues/424) | 기존 구현을 디자인에 연결하고 남은 검증만 유지. 새 시안 때문에 동일 기능의 이슈를 중복 생성하지 않음 |
 | [#313 서류](https://github.com/bodeul110/bodeul-platform/issues/313), [#27 결제](https://github.com/bodeul110/bodeul-platform/issues/27), [#420 STT](https://github.com/bodeul110/bodeul-platform/issues/420), [#391 영상](https://github.com/bodeul110/bodeul-platform/issues/391) | 시안의 수집·금전·미디어 기능을 활성화하는 근거가 아니라 별도 범위·조건을 확인하는 연결점 |
 
-비교 단계에서는 GitHub 이슈·PR 본문이나 상태를 수정하지 않았다. 후속 공통 스타일·로그인 변경도 이 로컬 작업에서 검증하며, 원격 반영 여부와 배포 여부는 구분한다.
+최초 비교 단계에서는 GitHub 이슈·PR 본문이나 상태를 수정하지 않았다. 이후 공통 스타일·로그인은 #510으로 별도 반영했으며, 이번 환자 홈의 원격 반영·배포 여부는 해당 PR 기록과 구분한다.
 
 ## 구현 시 검증 기준
 
@@ -174,7 +176,7 @@
 
 ## 이번 검증과 남은 범위
 
-아래 표는 최초 비교 단계의 증적이다. 이후 1차 앱 변경·검증 결과는 [로그인 구현 기록](figma-final-login-implementation-2026-11-07.md)을 따른다.
+아래 표는 최초 비교 단계의 증적이다. 이후 앱 변경·검증 결과는 [로그인 구현 기록](figma-final-login-implementation-2026-11-07.md)과 [환자 홈 구현 기록](figma-final-client-home-implementation-2026-11-07.md)을 따른다.
 
 | 구분 | 결과 |
 | --- | --- |

@@ -149,7 +149,9 @@
             android:exported="false" />
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome"
             android:exported="false" />
+        <activity android:name=".ui.booking.ClientCalendarActivity" android:exported="false" />
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">

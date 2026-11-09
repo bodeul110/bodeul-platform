@@ -1,658 +1,461 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/figma_mvp_background"
-    tools:ignore="Overdraw">
-
+    android:background="@color/final_surface">
+    <View
+        android:layout_width="0dp"
+        android:layout_height="375dp"
+        android:background="@drawable/bg_final_home_gradient"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <LinearLayout
+        android:id="@+id/layoutClientHomeTopBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <FrameLayout
+                android:layout_width="54dp"
+                android:layout_height="54dp">
+                <ImageView
+                    android:id="@+id/imageHomeLogo"
+                    android:layout_width="46dp"
+                    android:layout_height="45.13dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="6.87dp"
+                    android:src="@drawable/bodeul_final_home_logo"
+                    android:contentDescription="@string/app_name" />
+            </FrameLayout>
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+            <TextView
+                android:id="@+id/textHomeMode"
+                style="@style/FinalHomeCaption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxWidth="200dp"
+                android:layout_marginHorizontal="12dp"
+                android:gravity="end" />
+            <FrameLayout
+                android:id="@+id/buttonHomeSupport"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_final_home_bell"
+                android:foreground="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/final_home_notifications">
+                <FrameLayout
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="noHideDescendants">
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="-2dp"
+                        android:src="@drawable/bodeul_final_home_bell_base"
+                        android:contentDescription="@null" />
+                    <ImageView
+                        android:layout_width="10.25dp"
+                        android:layout_height="6dp"
+                        android:layout_marginStart="9.8dp"
+                        android:layout_marginTop="19.4dp"
+                        android:src="@drawable/bodeul_final_home_bell_lower"
+                        android:contentDescription="@null" />
+                    <ImageView
+                        android:layout_width="19dp"
+                        android:layout_height="16.75dp"
+                        android:layout_marginStart="5.5dp"
+                        android:layout_marginTop="4.4dp"
+                        android:src="@drawable/bodeul_final_home_bell_upper"
+                        android:contentDescription="@null" />
+                </FrameLayout>
+                <TextView
+                    android:id="@+id/textHomeSupportHeaderBadge"
+                    style="@style/FinalHomeCaption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:minWidth="18dp"
+                    android:gravity="center"
+                    android:paddingHorizontal="4dp"
+                    android:background="@drawable/bg_final_auth_message"
+                    android:backgroundTint="@color/final_text_error"
+                    android:textColor="@color/final_surface"
+                    android:textSize="10sp"
+                    android:visibility="gone" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
     <ScrollView
         android:id="@+id/scrollClientHome"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="68dp"
-        android:layout_marginBottom="88dp"
-        android:clipToPadding="false"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:fillViewport="true"
-        android:overScrollMode="never"
-        android:scrollbars="none">
-
+        android:clipToPadding="false"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/layoutClientHomeTopBar"
+        app:layout_constraintBottom_toTopOf="@id/clientBottomNavigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingTop="28dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="120dp">
-
+            android:paddingHorizontal="15dp"
+            android:paddingBottom="30dp">
             <include
                 android:id="@+id/homeStatePanel"
                 layout="@layout/include_state_panel" />
-
             <LinearLayout
                 android:id="@+id/homeContentContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textHomeGreeting"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_bold"
-                    android:includeFontPadding="false"
-                    android:letterSpacing="-0.02"
-                    android:lineSpacingExtra="2dp"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="36sp"
-                    tools:text="김승민 환자님,&#10;안녕하세요." />
-
-                <TextView
-                    android:id="@+id/textHomeSubtitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:includeFontPadding="false"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="18sp"
-                    tools:text="오늘도 건강한 하루되세요." />
-
+                    android:paddingTop="40dp"
+                    android:paddingBottom="30dp"
+                    android:paddingHorizontal="5dp"
+                    android:orientation="horizontal"
+                    android:gravity="top">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingTop="12dp">
+                        <TextView
+                            android:id="@+id/textHomeGreeting"
+                            style="@style/FinalHomeTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/final_home_heading"
+                            android:textSize="22sp"
+                            app:lineHeight="28sp" />
+                        <TextView
+                            android:id="@+id/textHomeSubtitle"
+                            style="@style/FinalHomeValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:text="@string/final_home_tagline"
+                            android:textColor="@color/final_text_secondary"
+                            android:textSize="15sp" />
+                    </LinearLayout>
+                    <FrameLayout
+                        android:layout_width="68dp"
+                        android:layout_height="68dp"
+                        android:layout_marginStart="8dp">
+                        <ImageView
+                            android:id="@+id/imageHomeBanner"
+                            android:layout_width="59.807dp"
+                            android:layout_height="63.143dp"
+                            android:layout_marginStart="4.31dp"
+                            android:layout_marginTop="1.94dp"
+                            android:src="@drawable/bodeul_final_home_banner"
+                            android:contentDescription="@null" />
+                    </FrameLayout>
+                </LinearLayout>
                 <include
                     android:id="@+id/layoutHomeSupportBanner"
                     layout="@layout/view_attention_banner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp" />
-
+                    android:visibility="gone" />
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardActionBooking"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    app:cardBackgroundColor="@android:color/transparent"
-                    app:cardCornerRadius="48dp"
-                    app:cardElevation="8dp">
-
+                    android:layout_marginBottom="20dp"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="3dp"
+                    app:cardBackgroundColor="@color/final_surface"
+                    app:strokeColor="@color/final_brand_primary"
+                    app:strokeWidth="1dp">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_manager_home_hero"
                         android:orientation="vertical"
-                        android:padding="24dp">
-
+                        android:paddingHorizontal="15dp"
+                        android:paddingTop="20dp"
+                        android:paddingBottom="15dp">
+                        <TextView
+                            style="@style/FinalHomeTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/final_home_booking_title"
+                            android:textColor="@color/final_text_secondary" />
+                        <LinearLayout
+                            android:id="@+id/buttonHomePickup"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:layout_marginTop="24dp"
+                            android:orientation="vertical"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true">
+                            <TextView
+                                style="@style/FinalHomeCaption"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/final_home_location" />
+                            <TextView
+                                style="@style/FinalHomeValue"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:text="@string/final_home_location_hint" />
+                        </LinearLayout>
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/textHomeHeroBadge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:background="@drawable/bg_manager_home_hero_badge"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:gravity="center_vertical"
-                                android:paddingStart="12dp"
-                                android:paddingTop="6dp"
-                                android:paddingEnd="12dp"
-                                android:paddingBottom="6dp"
-                                android:textColor="@color/white"
-                                android:textSize="14sp"
-                                tools:text="접수 대기" />
-
-                            <Space
+                            android:layout_marginTop="19dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+                            <LinearLayout
+                                android:id="@+id/buttonHomeDate"
                                 android:layout_width="0dp"
-                                android:layout_height="1dp"
-                                android:layout_weight="1" />
-
-                            <ImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:background="@drawable/bg_manager_home_icon_yellow"
-                                android:contentDescription="@null"
-                                android:padding="10dp"
-                                android:src="@drawable/manager_home_icon_lightning" />
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:minHeight="48dp"
+                                android:orientation="vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true">
+                                <TextView
+                                    style="@style/FinalHomeCaption"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/final_home_date" />
+                                <TextView
+                                    style="@style/FinalHomeValue"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="5dp"
+                                    android:text="@string/final_home_date_hint" />
+                            </LinearLayout>
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="39dp"
+                                android:layout_marginHorizontal="15dp"
+                                android:background="@color/final_line" />
+                            <LinearLayout
+                                android:id="@+id/buttonHomeTime"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:minHeight="48dp"
+                                android:orientation="vertical"
+                                android:background="?attr/selectableItemBackground"
+                                android:clickable="true"
+                                android:focusable="true">
+                                <TextView
+                                    style="@style/FinalHomeCaption"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/final_home_time" />
+                                <TextView
+                                    style="@style/FinalHomeValue"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="5dp"
+                                    android:text="@string/final_home_time_hint" />
+                            </LinearLayout>
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/textHomeHeroTitle"
+                        <FrameLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="20dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:includeFontPadding="false"
-                            android:textColor="@color/white"
-                            android:textSize="24sp"
-                            tools:text="매칭 대기 중입니다." />
-
-                        <TextView
-                            android:id="@+id/textHomeHeroBody"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:fontFamily="@font/pretendard_medium"
-                            android:lineSpacingExtra="3dp"
-                            android:textColor="@color/figma_mvp_hero_content"
-                            android:textSize="14sp"
-                            tools:text="서울대학교병원 · 내과&#10;2026-08-20 09:30" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonHomeHeroPrimary"
-                            android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:layout_marginTop="22dp"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:text="@string/client_home_hero_request_button"
-                            android:textAllCaps="false"
-                            android:textColor="@color/figma_mvp_hero_action_text"
-                            android:textSize="16sp"
-                            app:backgroundTint="@color/figma_mvp_patient_icon_background"
-                            app:cornerRadius="28dp"
-                            app:icon="@drawable/manager_home_icon_arrow"
-                            app:iconGravity="textEnd"
-                            app:iconPadding="8dp"
-                            app:iconTint="@null" />
+                            android:layout_marginTop="24dp">
+                            <androidx.appcompat.widget.AppCompatButton
+                                android:id="@+id/buttonHomeHeroPrimary"
+                                style="@style/BodeulFinalPrimaryButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:minHeight="50dp"
+                                android:paddingHorizontal="40dp"
+                                android:textSize="16sp"
+                                android:text="@string/final_home_booking_start" />
+                            <FrameLayout
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="end|center_vertical"
+                                android:layout_marginEnd="15dp"
+                                android:background="@drawable/bg_final_home_arrow_circle"
+                                android:importantForAccessibility="noHideDescendants">
+                                <ImageView
+                                    android:layout_width="14dp"
+                                    android:layout_height="14dp"
+                                    android:layout_gravity="center"
+                                    android:rotation="-90"
+                                    android:src="@drawable/bodeul_final_home_button_arrow"
+                                    android:contentDescription="@null" />
+                            </FrameLayout>
+                        </FrameLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardActionBooking"
-                        android:layout_width="0dp"
-                        android:layout_height="164dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/figma_mvp_surface"
-                        app:cardCornerRadius="32dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="@color/figma_mvp_card_outline"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@drawable/bg_manager_home_icon_blue"
-                                android:contentDescription="@null"
-                                android:padding="14dp"
-                                android:src="@drawable/manager_home_icon_calendar" />
-
-                            <Space
-                                android:layout_width="1dp"
-                                android:layout_height="14dp" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_semibold"
-                                android:text="@string/client_home_action_booking_title"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="18sp" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:maxLines="2"
-                                android:text="@string/client_home_action_booking_body"
-                                android:textColor="@color/figma_mvp_text_secondary"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <Space
-                        android:layout_width="16dp"
-                        android:layout_height="1dp" />
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardActionSecondary"
-                        android:layout_width="0dp"
-                        android:layout_height="164dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/figma_mvp_surface"
-                        app:cardCornerRadius="32dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="@color/figma_mvp_card_outline"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@drawable/bg_manager_home_icon_green"
-                                android:contentDescription="@null"
-                                android:padding="14dp"
-                                android:src="@drawable/manager_home_icon_document" />
-
-                            <Space
-                                android:layout_width="1dp"
-                                android:layout_height="14dp" />
-
-                            <TextView
-                                android:id="@+id/textActionSecondaryTitle"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_semibold"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="18sp"
-                                tools:text="건강정보" />
-
-                            <TextView
-                                android:id="@+id/textActionSecondaryBody"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:maxLines="2"
-                                android:textColor="@color/figma_mvp_text_secondary"
-                                android:textSize="12sp"
-                                tools:text="복약·건강정보 관리" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardActionHistory"
-                        android:layout_width="0dp"
-                        android:layout_height="164dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/figma_mvp_surface"
-                        app:cardCornerRadius="32dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="@color/figma_mvp_card_outline"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@drawable/bg_manager_home_icon_purple"
-                                android:contentDescription="@null"
-                                android:padding="14dp"
-                                android:src="@drawable/manager_home_icon_history" />
-
-                            <Space
-                                android:layout_width="1dp"
-                                android:layout_height="14dp" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_semibold"
-                                android:text="@string/client_home_action_history_title"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="18sp" />
-
-                            <TextView
-                                android:id="@+id/textActionHistoryBody"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:maxLines="2"
-                                android:textColor="@color/figma_mvp_text_secondary"
-                                android:textSize="12sp"
-                                tools:text="전체 2건 · 완료 1건" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <Space
-                        android:layout_width="16dp"
-                        android:layout_height="1dp" />
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardActionSupport"
-                        android:layout_width="0dp"
-                        android:layout_height="164dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/figma_mvp_surface"
-                        app:cardCornerRadius="32dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="@color/figma_mvp_card_outline"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <FrameLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content">
-
-                                <ImageView
-                                    android:layout_width="48dp"
-                                    android:layout_height="48dp"
-                                    android:background="@drawable/bg_manager_home_icon_green"
-                                    android:contentDescription="@null"
-                                    android:padding="14dp"
-                                    android:src="@drawable/manager_home_icon_support" />
-
-                                <TextView
-                                    android:id="@+id/textActionSupportCounter"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_gravity="top|end"
-                                    android:layout_marginTop="-4dp"
-                                    android:layout_marginEnd="-8dp"
-                                    android:background="@drawable/bg_surface_pill"
-                                    android:backgroundTint="@color/bodeul_error"
-                                    android:fontFamily="@font/pretendard_bold"
-                                    android:gravity="center"
-                                    android:minWidth="22dp"
-                                    android:paddingStart="7dp"
-                                    android:paddingTop="4dp"
-                                    android:paddingEnd="7dp"
-                                    android:paddingBottom="4dp"
-                                    android:textColor="@color/white"
-                                    android:textSize="11sp"
-                                    android:visibility="gone"
-                                    tools:text="2"
-                                    tools:visibility="visible" />
-                            </FrameLayout>
-
-                            <Space
-                                android:layout_width="1dp"
-                                android:layout_height="14dp" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_semibold"
-                                android:text="@string/client_home_action_support_title"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="18sp" />
-
-                            <TextView
-                                android:id="@+id/textActionSupportBody"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:ellipsize="end"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:maxLines="2"
-                                android:textColor="@color/figma_mvp_text_secondary"
-                                android:textSize="12sp"
-                                tools:text="지원 센터" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
                 <LinearLayout
                     android:id="@+id/layoutHomeProgressSection"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
+                    android:layout_marginBottom="20dp"
+                    android:padding="15dp"
                     android:orientation="vertical"
-                    android:visibility="gone"
-                    tools:visibility="visible">
-
+                    android:visibility="gone">
                     <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:text="@string/client_home_progress_title"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="20sp" />
-
+                        android:id="@+id/textHomeProgressBadge"
+                        style="@style/FinalHomeCaption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
                     <TextView
+                        android:id="@+id/textHomeProgressTitle"
+                        style="@style/FinalHomeTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:text="@string/client_home_progress_helper"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="13sp" />
-
-                    <com.google.android.material.card.MaterialCardView
+                        android:layout_marginTop="6dp" />
+                    <TextView
+                        android:id="@+id/textHomeProgressBody"
+                        style="@style/FinalHomeValue"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        app:cardBackgroundColor="@color/figma_mvp_surface"
-                        app:cardCornerRadius="32dp"
-                        app:cardElevation="4dp"
-                        app:strokeColor="@color/figma_mvp_card_outline"
-                        app:strokeWidth="1dp">
-
+                        android:layout_marginTop="8dp" />
+                    <LinearLayout
+                        android:id="@+id/layoutHomeProgressStageContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical" />
+                    <TextView
+                        android:id="@+id/buttonHomeProgressDetail"
+                        style="@style/BodeulFinalLink"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/client_home_progress_detail_button" />
+                </LinearLayout>
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="3dp"
+                    app:cardBackgroundColor="@color/final_surface"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="15dp"
+                        android:paddingVertical="20dp"
+                        android:orientation="vertical">
+                        <TextView
+                            style="@style/FinalHomeTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/final_home_book" />
                         <LinearLayout
+                            android:id="@+id/layoutHomeNoticeContainer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="vertical"
-                            android:padding="20dp">
-
+                            android:layout_marginTop="20dp" />
+                        <LinearLayout
+                            android:id="@+id/textHomeNoticeMore"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="48dp"
+                            android:orientation="horizontal"
+                            android:gravity="center"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:layout_marginTop="25dp"
+                            android:background="@drawable/bg_final_home_more"
+                            android:foreground="?attr/selectableItemBackground">
                             <TextView
-                                android:id="@+id/textHomeProgressBadge"
+                                style="@style/FinalHomeValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:background="@drawable/bg_surface_pill"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:paddingStart="10dp"
-                                android:paddingTop="6dp"
-                                android:paddingEnd="10dp"
-                                android:paddingBottom="6dp"
-                                android:textSize="11sp"
-                                tools:text="매칭 진행" />
-
-                            <TextView
-                                android:id="@+id/textHomeProgressTitle"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="16dp"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="22sp"
-                                tools:text="매니저를 찾고 있어요." />
-
-                            <TextView
-                                android:id="@+id/textHomeProgressBody"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:lineSpacingExtra="4dp"
-                                android:textColor="@color/figma_mvp_text_secondary"
                                 android:textSize="14sp"
-                                tools:text="배정 상태가 바뀌면 바로 알려드릴게요." />
-
-                            <LinearLayout
-                                android:id="@+id/layoutHomeProgressStageContainer"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="16dp"
-                                android:orientation="vertical" />
-
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/buttonHomeProgressDetail"
-                                style="@style/BodeulOutlinedButton"
-                                android:layout_marginTop="8dp"
-                                android:fontFamily="@font/pretendard_semibold"
-                                android:text="@string/client_home_progress_detail_button" />
+                                android:text="@string/final_home_more" />
+                            <ImageView
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:layout_marginStart="5dp"
+                                android:src="@drawable/bodeul_final_home_next"
+                                android:rotation="180"
+                                android:contentDescription="@null" />
                         </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    android:gravity="center_vertical"
+                    android:layout_marginTop="20dp"
                     android:orientation="horizontal">
-
                     <TextView
+                        android:id="@+id/cardActionSecondary"
+                        style="@style/BodeulFinalLink"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:text="@string/client_home_notice_title"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="20sp" />
-
+                        android:text="@string/final_home_health"
+                        android:gravity="center" />
                     <TextView
-                        android:id="@+id/textHomeNoticeMore"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/cardActionSupport"
+                        style="@style/BodeulFinalLink"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:paddingStart="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="8dp"
-                        android:text="@string/client_home_notice_more"
-                        android:textColor="@color/figma_mvp_primary"
-                        android:textSize="13sp" />
+                        android:layout_weight="1"
+                        android:text="@string/final_home_support"
+                        android:gravity="center" />
+                    <TextView
+                        android:id="@+id/buttonHomeSignOut"
+                        style="@style/BodeulFinalLink"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/final_home_sign_out"
+                        android:gravity="center" />
                 </LinearLayout>
-
-                <HorizontalScrollView
+                <TextView
+                    style="@style/FinalHomeCaption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:clipToPadding="false"
-                    android:overScrollMode="never"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="12dp"
-                    android:scrollbars="none">
-
-                    <LinearLayout
-                        android:id="@+id/layoutHomeNoticeContainer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal" />
-                </HorizontalScrollView>
+                    android:layout_marginTop="3dp"
+                    android:text="@string/final_home_copyright" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
-
     <ProgressBar
         android:id="@+id/progressHome"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center" />
-
-    <LinearLayout
-        android:id="@+id/layoutClientHomeTopBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="@color/figma_mvp_surface"
-        android:elevation="4dp"
-        android:gravity="center_vertical"
-        android:minHeight="68dp"
-        android:orientation="horizontal"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp">
-
-        <ImageView
-            android:layout_width="94dp"
-            android:layout_height="48dp"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/app_name"
-            android:scaleType="centerInside"
-            android:src="@drawable/bodeul_logo_figma" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <FrameLayout
-            android:id="@+id/buttonHomeSupport"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:clickable="true"
-            android:contentDescription="@string/client_home_action_support_title"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:padding="10dp"
-                android:src="@drawable/manager_home_icon_bell" />
-
-            <TextView
-                android:id="@+id/textHomeSupportHeaderBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="top|end"
-                android:background="@drawable/bg_surface_pill"
-                android:fontFamily="@font/pretendard_bold"
-                android:gravity="center"
-                android:minWidth="20dp"
-                android:paddingStart="5dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="5dp"
-                android:paddingBottom="2dp"
-                android:textColor="@color/white"
-                android:textSize="11sp"
-                android:visibility="gone"
-                tools:text="문의 1"
-                tools:visibility="visible" />
-        </FrameLayout>
-
-        <TextView
-            android:id="@+id/textHomeMode"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:visibility="gone" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonHomeSignOut"
-            android:layout_width="1dp"
-            android:layout_height="1dp"
-            android:visibility="gone" />
-    </LinearLayout>
-
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/layoutClientHomeTopBar"
+        app:layout_constraintBottom_toTopOf="@id/clientBottomNavigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
     <include
+        android:id="@+id/clientBottomNavigation"
         layout="@layout/include_client_bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="88dp"
-        android:layout_gravity="bottom" />
-</FrameLayout>
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

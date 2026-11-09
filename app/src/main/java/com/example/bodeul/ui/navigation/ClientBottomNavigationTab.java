@@ -5,6 +5,7 @@ package com.example.bodeul.ui.navigation;
  */
 public enum ClientBottomNavigationTab {
     HOME,
+    CALENDAR,
     SCHEDULE_HISTORY,
     COMPANION_ROOM,
     PROFILE
