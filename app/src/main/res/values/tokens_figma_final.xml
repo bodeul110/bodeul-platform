@@ -3,6 +3,8 @@
     <!-- 완성본의 실제 컴포넌트 값을 사용하며 이전 화면의 토큰은 바꾸지 않는다. -->
     <color name="final_brand_primary">#01A1FF</color>
     <color name="final_text_accent">#018DFF</color>
+    <!-- 원본 하늘색 배경에서도 작은 강조 글자의 대비를 유지한다. -->
+    <color name="final_text_accent_accessible">#006BBD</color>
     <color name="final_surface">#FFFFFF</color>
     <color name="final_input_surface">#F2F5F8</color>
     <color name="final_line">#EDF1F7</color>

@@ -4,215 +4,123 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
+import androidx.annotation.Nullable;
 import com.example.bodeul.R;
-import com.example.bodeul.util.EnvironmentModeBadgeHelper;
-import com.google.android.material.button.MaterialButton;
-
+import com.example.bodeul.domain.model.AppointmentRequest;
+import com.example.bodeul.domain.model.AppointmentStatus;
+import com.example.bodeul.domain.model.User;
+import com.example.bodeul.ui.common.FinalHomeNoticeBinder;
+import com.example.bodeul.ui.home.ClientHomeNotice;
+import java.util.Arrays;
 import java.util.List;
 
-/**
- * 매니저 홈 화면 모델을 실제 레이아웃 뷰에 연결한다.
- */
+/** 완성본 매니저 홈의 표시만 담당하며 조회와 화면 이동은 Activity에 위임한다. */
 public final class ManagerHomeDashboardBinder {
-    public interface Listener {
-        void onQuickActionSelected(ManagerHomeActionType actionType);
-    }
-
     private final Context context;
-    private final LayoutInflater inflater;
-    private final Listener listener;
-    private final TextView textManagerMode;
-    private final TextView textManagerGreeting;
-    private final TextView textManagerSubtitle;
-    private final TextView textManagerHeroBadge;
-    private final TextView textManagerHeroStatus;
-    private final TextView textManagerHeroTitle;
-    private final TextView textManagerHeroBody;
-    private final MaterialButton buttonManagerHeroPrimary;
-    private final LinearLayout managerActionContainer;
-    private final TextView textManagerSectionTitle;
-    private final TextView textManagerSectionAction;
-    private final View managerPromoScroll;
-    private final LinearLayout managerPromoContainer;
-    private final View cardManagerLiveFeed;
-    private final View viewManagerLiveFeedBanner;
-    private final TextView textManagerLiveBadge;
-    private final TextView textManagerLiveTime;
-    private final TextView textManagerLiveTitle;
-    private final TextView textManagerLiveSubtitle;
-    private final TextView textManagerLiveNote;
-    private final TextView textManagerLiveFooter;
-    private final ManagerHomeActionCardBinder actionCardBinder;
-    private final ManagerHomePromoCardBinder promoCardBinder;
+    private final View root;
 
-    public ManagerHomeDashboardBinder(
-            Context context,
-            LayoutInflater inflater,
-            Listener listener,
-            TextView textManagerMode,
-            TextView textManagerGreeting,
-            TextView textManagerSubtitle,
-            TextView textManagerHeroBadge,
-            TextView textManagerHeroStatus,
-            TextView textManagerHeroTitle,
-            TextView textManagerHeroBody,
-            MaterialButton buttonManagerHeroPrimary,
-            LinearLayout managerActionContainer,
-            TextView textManagerSectionTitle,
-            TextView textManagerSectionAction,
-            View managerPromoScroll,
-            LinearLayout managerPromoContainer,
-            View cardManagerLiveFeed,
-            View viewManagerLiveFeedBanner,
-            TextView textManagerLiveBadge,
-            TextView textManagerLiveTime,
-            TextView textManagerLiveTitle,
-            TextView textManagerLiveSubtitle,
-            TextView textManagerLiveNote,
-            TextView textManagerLiveFooter
-    ) {
+    public ManagerHomeDashboardBinder(Context context, View root) {
         this.context = context;
-        this.inflater = inflater;
-        this.listener = listener;
-        this.textManagerMode = textManagerMode;
-        this.textManagerGreeting = textManagerGreeting;
-        this.textManagerSubtitle = textManagerSubtitle;
-        this.textManagerHeroBadge = textManagerHeroBadge;
-        this.textManagerHeroStatus = textManagerHeroStatus;
-        this.textManagerHeroTitle = textManagerHeroTitle;
-        this.textManagerHeroBody = textManagerHeroBody;
-        this.buttonManagerHeroPrimary = buttonManagerHeroPrimary;
-        this.managerActionContainer = managerActionContainer;
-        this.textManagerSectionTitle = textManagerSectionTitle;
-        this.textManagerSectionAction = textManagerSectionAction;
-        this.managerPromoScroll = managerPromoScroll;
-        this.managerPromoContainer = managerPromoContainer;
-        this.cardManagerLiveFeed = cardManagerLiveFeed;
-        this.viewManagerLiveFeedBanner = viewManagerLiveFeedBanner;
-        this.textManagerLiveBadge = textManagerLiveBadge;
-        this.textManagerLiveTime = textManagerLiveTime;
-        this.textManagerLiveTitle = textManagerLiveTitle;
-        this.textManagerLiveSubtitle = textManagerLiveSubtitle;
-        this.textManagerLiveNote = textManagerLiveNote;
-        this.textManagerLiveFooter = textManagerLiveFooter;
-        actionCardBinder = new ManagerHomeActionCardBinder();
-        promoCardBinder = new ManagerHomePromoCardBinder(context);
+        this.root = root;
+        FinalHomeNoticeBinder.bind(context, root.findViewById(R.id.layoutManagerNoticeContainer), Arrays.asList(
+                new ClientHomeNotice(R.drawable.bodeul_final_home_article_1, R.string.final_manager_prepare_label,
+                        R.string.final_manager_notice_prepare_title, R.string.final_manager_notice_prepare_body),
+                new ClientHomeNotice(R.drawable.bodeul_final_home_article_2, R.string.final_manager_matching_history,
+                        R.string.final_manager_notice_matching_title, R.string.final_manager_notice_matching_body),
+                new ClientHomeNotice(R.drawable.bodeul_final_home_article_3, R.string.final_manager_guide_label,
+                        R.string.final_home_guide_steps_title, R.string.final_manager_notice_steps_body),
+                new ClientHomeNotice(R.drawable.bodeul_final_home_article_4, R.string.final_home_support,
+                        R.string.final_manager_notice_support_title, R.string.final_manager_notice_support_body)));
     }
 
-    public void bindScreen(ManagerHomeScreenModel screenModel) {
-        bindHeader(screenModel);
-        bindHero(screenModel.getHeroModel());
-        bindActionCards(screenModel.getActionCards());
-        bindSection(screenModel);
-        bindFeed(screenModel);
+    public void bindUser(User user) {
+        String name = TextUtils.isEmpty(user.getName()) ? context.getString(R.string.final_manager_name_fallback) : user.getName();
+        text(R.id.textManagerGreeting, context.getString(R.string.final_manager_greeting, name));
     }
 
-    private void bindHeader(ManagerHomeScreenModel screenModel) {
-        EnvironmentModeBadgeHelper.bind(textManagerMode, screenModel.getModeText());
-        textManagerGreeting.setText(screenModel.getGreetingText());
-        textManagerSubtitle.setText(screenModel.getSubtitleText());
+    public void bindCounts(@Nullable ManagerMatchingOverview overview, boolean failed) {
+        int[] views = {R.id.textManagerOngoingCount, R.id.textManagerCompletedCount, R.id.textManagerCanceledCount};
+        ManagerMatchingOverview.Filter[] filters = {ManagerMatchingOverview.Filter.ONGOING,
+                ManagerMatchingOverview.Filter.COMPLETED, ManagerMatchingOverview.Filter.CANCELED};
+        for (int i = 0; i < views.length; i++) text(views[i], overview == null
+                ? context.getString(R.string.final_manager_unknown_count) : String.valueOf(overview.count(filters[i])));
+        text(R.id.textManagerCountState, context.getString(overview != null ? R.string.final_manager_recent_scope
+                : failed ? R.string.final_manager_count_error : R.string.final_manager_count_loading));
+        root.findViewById(R.id.buttonManagerCountRetry).setVisibility(failed ? View.VISIBLE : View.GONE);
     }
 
-    private void bindHero(ManagerHomeHeroModel heroModel) {
-        textManagerHeroBadge.setText(heroModel.getBadgeText());
-        textManagerHeroStatus.setText(heroModel.getStatusText());
-        textManagerHeroStatus.setVisibility(TextUtils.isEmpty(heroModel.getStatusText()) ? View.GONE : View.VISIBLE);
-        textManagerHeroTitle.setText(heroModel.getTitleText());
-        textManagerHeroBody.setText(heroModel.getBodyText());
-        buttonManagerHeroPrimary.setText(heroModel.getActionText());
-        buttonManagerHeroPrimary.setEnabled(heroModel.isActionEnabled());
-        buttonManagerHeroPrimary.setAlpha(heroModel.isActionEnabled() ? 1f : 0.5f);
-    }
-
-    private void bindActionCards(List<ManagerHomeActionCardModel> actionCards) {
-        managerActionContainer.removeAllViews();
-        for (int index = 0; index < actionCards.size(); index += 2) {
-            LinearLayout row = createActionRow();
-            addActionCard(row, actionCards.get(index), true);
-            if (index + 1 < actionCards.size()) {
-                addActionCard(row, actionCards.get(index + 1), false);
-            }
-            managerActionContainer.addView(row);
-        }
-    }
-
-    private LinearLayout createActionRow() {
-        LinearLayout row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        if (managerActionContainer.getChildCount() > 0) {
-            rowParams.topMargin = dp(16);
-        }
-        row.setLayoutParams(rowParams);
-        return row;
-    }
-
-    private void addActionCard(LinearLayout row, ManagerHomeActionCardModel actionCardModel, boolean isStartCard) {
-        View itemView = inflater.inflate(R.layout.item_manager_home_action_card, row, false);
-        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) itemView.getLayoutParams();
-        if (isStartCard) {
-            layoutParams.setMarginEnd(dp(8));
+    public void bindSession(@Nullable ManagerHomeScreenModel model, boolean loaded, boolean failed) {
+        boolean active = model != null && model.hasActiveSession();
+        root.findViewById(R.id.layoutManagerActiveSession).setVisibility(active || !loaded || failed ? View.VISIBLE : View.GONE);
+        if (active) {
+            ManagerHomeHeroModel hero = model.getHeroModel();
+            text(R.id.textManagerActiveTitle, hero.getTitleText());
+            String body = hero.getStatusText() + "\n" + hero.getBodyText();
+            ManagerHomeLiveFeedModel feed = model.getLiveFeedModel();
+            if (feed != null) body += "\n" + feed.getTimeText() + "\n" + feed.getTitleText()
+                    + "\n" + feed.getSubtitleText() + "\n" + feed.getNoteText() + "\n" + feed.getFooterText();
+            text(R.id.textManagerActiveBody, body);
+            text(R.id.buttonManagerHeroPrimary, hero.getActionText());
         } else {
-            layoutParams.setMarginStart(dp(8));
+            text(R.id.textManagerActiveTitle, context.getString(failed
+                    ? R.string.final_manager_session_error : R.string.final_manager_session_loading));
+            text(R.id.textManagerActiveBody, "");
+            text(R.id.buttonManagerHeroPrimary, context.getString(R.string.state_action_retry));
         }
-        itemView.setLayoutParams(layoutParams);
-        actionCardBinder.bind(itemView, actionCardModel);
-        itemView.setOnClickListener(view -> listener.onQuickActionSelected(actionCardModel.getActionType()));
-        row.addView(itemView);
+        root.findViewById(R.id.buttonManagerHeroPrimary).setVisibility(active || failed ? View.VISIBLE : View.GONE);
     }
 
-    private void bindSection(ManagerHomeScreenModel screenModel) {
-        textManagerSectionTitle.setText(screenModel.getSectionTitleText());
-        textManagerSectionAction.setText(screenModel.getSectionActionText());
-        textManagerSectionAction.setVisibility(screenModel.isSectionActionVisible() ? View.VISIBLE : View.GONE);
-    }
-
-    private void bindFeed(ManagerHomeScreenModel screenModel) {
-        ManagerHomeLiveFeedModel liveFeedModel = screenModel.getLiveFeedModel();
-        if (liveFeedModel != null) {
-            managerPromoScroll.setVisibility(View.GONE);
-            cardManagerLiveFeed.setVisibility(View.VISIBLE);
-            bindLiveFeed(liveFeedModel);
-            return;
+    public void bindAppointments(@Nullable ManagerMatchingOverview overview, boolean failed,
+                                 boolean calendar, String date, ManagerMatchingOverview.Filter filter,
+                                 @Nullable String activeRequestId, View.OnClickListener openGuide) {
+        text(R.id.textManagerAppointmentsTitle, context.getString(calendar
+                ? R.string.final_home_calendar : R.string.final_manager_matching_history));
+        root.findViewById(R.id.calendarManagerAppointments).setVisibility(calendar ? View.VISIBLE : View.GONE);
+        root.findViewById(R.id.textManagerSelectedDate).setVisibility(calendar ? View.VISIBLE : View.GONE);
+        text(R.id.textManagerSelectedDate, date);
+        root.findViewById(R.id.textManagerUndated).setVisibility(calendar && overview != null && overview.hasUndatedRequests()
+                ? View.VISIBLE : View.GONE);
+        root.findViewById(R.id.buttonManagerScheduleNote).setVisibility(calendar ? View.VISIBLE : View.GONE);
+        root.findViewById(R.id.textManagerScheduleNote).setVisibility(calendar ? View.VISIBLE : View.GONE);
+        LinearLayout list = root.findViewById(R.id.layoutManagerAppointmentsList);
+        list.removeAllViews();
+        List<AppointmentRequest> requests = overview == null ? java.util.Collections.emptyList()
+                : overview.select(filter, calendar ? date : null);
+        int state = overview == null ? (failed ? R.string.final_manager_count_error : R.string.final_manager_count_loading)
+                : overview.count(ManagerMatchingOverview.Filter.ALL) == 0 ? R.string.final_manager_empty_matches
+                : R.string.final_manager_filtered_empty;
+        text(R.id.textManagerAppointmentsState, context.getString(state));
+        root.findViewById(R.id.textManagerAppointmentsState).setVisibility(requests.isEmpty() ? View.VISIBLE : View.GONE);
+        for (AppointmentRequest request : requests) {
+            View row = LayoutInflater.from(context).inflate(R.layout.item_manager_matching, list, false);
+            ((TextView) row.findViewById(R.id.textManagerMatchingStatus)).setText(statusLabel(request.getStatus()));
+            ((TextView) row.findViewById(R.id.textManagerMatchingHospital)).setText(orMissing(request.getHospitalName()));
+            ((TextView) row.findViewById(R.id.textManagerMatchingDetails)).setText(context.getString(
+                    R.string.final_manager_item_summary, orMissing(request.getAppointmentAt()),
+                    orMissing(request.getDepartmentName()), orMissing(request.getMeetingPlace())));
+            View guide = row.findViewById(R.id.buttonManagerMatchingGuide);
+            // 가이드는 현재 활성 세션 하나를 연다. 다른 예약 행에서 그 세션으로 잘못 이동하지 않는다.
+            boolean active = activeRequestId != null && activeRequestId.equals(request.getId());
+            guide.setVisibility(active ? View.VISIBLE : View.GONE);
+            guide.setOnClickListener(openGuide);
+            list.addView(row);
         }
-
-        cardManagerLiveFeed.setVisibility(View.GONE);
-        managerPromoScroll.setVisibility(View.VISIBLE);
-        bindPromoCards(screenModel.getPromoCards());
     }
 
-    private void bindPromoCards(List<ManagerHomePromoCardModel> promoCards) {
-        managerPromoContainer.removeAllViews();
-        for (int index = 0; index < promoCards.size(); index++) {
-            View itemView = inflater.inflate(R.layout.item_manager_home_promo_card, managerPromoContainer, false);
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) itemView.getLayoutParams();
-            if (index < promoCards.size() - 1) {
-                layoutParams.setMarginEnd(dp(14));
-            }
-            itemView.setLayoutParams(layoutParams);
-            promoCardBinder.bind(itemView, promoCards.get(index));
-            managerPromoContainer.addView(itemView);
-        }
+    private int statusLabel(@Nullable AppointmentStatus status) {
+        if (status == AppointmentStatus.REQUESTED) return R.string.final_manager_item_requested;
+        if (status == AppointmentStatus.MATCHED) return R.string.final_manager_item_matched;
+        if (status == AppointmentStatus.IN_PROGRESS) return R.string.final_manager_item_in_progress;
+        if (status == AppointmentStatus.COMPLETED) return R.string.final_manager_completed;
+        if (status == AppointmentStatus.CANCELED) return R.string.final_manager_canceled;
+        return R.string.final_manager_item_missing;
     }
 
-    private void bindLiveFeed(ManagerHomeLiveFeedModel liveFeedModel) {
-        viewManagerLiveFeedBanner.setBackgroundResource(liveFeedModel.getBannerBackgroundResId());
-        textManagerLiveBadge.setText(liveFeedModel.getBadgeText());
-        textManagerLiveTime.setText(liveFeedModel.getTimeText());
-        textManagerLiveTitle.setText(liveFeedModel.getTitleText());
-        textManagerLiveSubtitle.setText(liveFeedModel.getSubtitleText());
-        textManagerLiveNote.setText(liveFeedModel.getNoteText());
-        textManagerLiveFooter.setText(liveFeedModel.getFooterText());
+    private String orMissing(String value) {
+        return TextUtils.isEmpty(value) ? context.getString(R.string.final_manager_item_missing) : value;
     }
 
-    private int dp(int value) {
-        return (int) (value * context.getResources().getDisplayMetrics().density);
-    }
+    private void text(int id, CharSequence text) { ((TextView) root.findViewById(id)).setText(text); }
 }

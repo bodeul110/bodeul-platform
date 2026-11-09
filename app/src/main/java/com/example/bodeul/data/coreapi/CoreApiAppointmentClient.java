@@ -64,6 +64,22 @@ final class CoreApiAppointmentClient {
         );
     }
 
+    void getManagerAppointments(String expectedUid, RepositoryCallback<List<AppointmentRequest>> callback) {
+        authenticatedClient.executeForAccount(expectedUid, (idToken, appCheckToken) -> {
+            JSONArray items = requireAppointmentArray(requestJson("GET", "/api/appointments", null, idToken, appCheckToken));
+            List<AppointmentRequest> result = new ArrayList<>();
+            for (int index = 0; index < items.length(); index++) result.add(parseAndRemember(items.getJSONObject(index)).request);
+            return result;
+        }, callback, "매칭 목록을 불러오지 못했습니다.", "매니저 매칭 목록");
+    }
+
+    static JSONArray requireAppointmentArray(JSONObject response) throws JSONException {
+        // 잘못된 응답을 빈 목록으로 바꾸면 매칭 집계가 거짓 0건으로 표시된다.
+        JSONArray items = response.getJSONArray("appointments");
+        for (int index = 0; index < items.length(); index++) items.getJSONObject(index);
+        return items;
+    }
+
     void getAppointment(
             String requestId,
             RepositoryCallback<AppointmentRequest> callback

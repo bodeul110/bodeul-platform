@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="15dp">
+    <TextView
+        android:id="@+id/textManagerMatchingStatus"
+        style="@style/FinalHomeCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+    <TextView
+        android:id="@+id/textManagerMatchingHospital"
+        style="@style/FinalHomeTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:textSize="16sp" />
+    <TextView
+        android:id="@+id/textManagerMatchingDetails"
+        style="@style/FinalHomeValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="14sp" />
+    <TextView
+        android:id="@+id/buttonManagerMatchingGuide"
+        style="@style/BodeulFinalLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/final_manager_open_guide"
+        android:visibility="gone" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="15dp"
+        android:background="@color/final_line" />
+</LinearLayout>

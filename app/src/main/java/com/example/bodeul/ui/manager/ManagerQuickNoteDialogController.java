@@ -8,6 +8,7 @@ import android.view.View;
 import androidx.appcompat.app.AlertDialog;
 
 import com.example.bodeul.R;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -23,7 +24,7 @@ public final class ManagerQuickNoteDialogController {
         this.inflater = inflater;
     }
 
-    public void show(ManagerQuickNoteType noteType, String initialValue, Listener listener) {
+    public AlertDialog show(ManagerQuickNoteType noteType, String initialValue, Listener listener) {
         View dialogView = inflater.inflate(R.layout.dialog_manager_quick_note, null, false);
         TextInputLayout inputLayout = dialogView.findViewById(R.id.layoutManagerQuickNote);
         TextInputEditText inputEditText = dialogView.findViewById(R.id.inputManagerQuickNote);
@@ -41,7 +42,7 @@ public final class ManagerQuickNoteDialogController {
             inputEditText.setSelection(inputEditText.getText().length());
         }
 
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
                 .setTitle(noteType == ManagerQuickNoteType.DOCUMENT
                         ? R.string.manager_action_docs_dialog_title
                         : R.string.manager_action_schedule_dialog_title)
@@ -63,6 +64,7 @@ public final class ManagerQuickNoteDialogController {
                     listener.onSave(noteType, value, dialog);
                 }));
         dialog.show();
+        return dialog;
     }
 
     public interface Listener {

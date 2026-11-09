@@ -2,6 +2,7 @@ package com.example.bodeul.data;
 
 import android.net.Uri;
 
+import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentRequestDetail;
 import com.example.bodeul.domain.model.CompanionChatAttachment;
 import com.example.bodeul.domain.model.ManagerDashboard;
@@ -303,6 +304,14 @@ public interface ManagerRepository {
     }
 
     void getManagerHomeProfile(String managerUserId, RepositoryCallback<ManagerHomeProfile> callback);
+
+    /** 인증된 매니저 본인에게 배정된 목록만 반환한다. 미지원 저장소는 0건으로 위장하지 않는다. */
+    default void getManagerAppointments(
+            String managerUserId,
+            RepositoryCallback<List<AppointmentRequest>> callback
+    ) {
+        callback.onError("현재 연결에서는 매칭 목록을 조회할 수 없습니다.");
+    }
 
     void getManagerDocumentOverview(String managerUserId, RepositoryCallback<ManagerDocumentOverview> callback);
 

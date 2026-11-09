@@ -540,6 +540,15 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public void getManagerAppointments(
+            String managerUserId,
+            RepositoryCallback<List<AppointmentRequest>> callback
+    ) {
+        // 서버가 ID 토큰의 매니저에게 배정된 최대 100건만 반환한다. 응답 ID는 Firebase UID가 아닌 DB UUID다.
+        appointmentClient.getManagerAppointments(managerUserId, callback);
+    }
+
+    @Override
     public void getManagerHistoryDetails(
             String managerUserId,
             RepositoryCallback<List<AppointmentRequestDetail>> callback

@@ -54,6 +54,17 @@ public class MockManagerRepository implements ManagerRepository {
     }
 
     @Override
+    public void getManagerAppointments(String managerUserId, RepositoryCallback<List<AppointmentRequest>> callback) {
+        List<AppointmentRequest> result = new ArrayList<>();
+        if (managerUserId != null && !managerUserId.trim().isEmpty()) {
+            for (AppointmentRequest request : repository.getAppointmentRequests()) {
+                if (managerUserId.equals(request.getManagerUserId())) result.add(request);
+            }
+        }
+        callback.onSuccess(result);
+    }
+
+    @Override
     public synchronized void advanceCurrentStep(
             String managerUserId,
             String expectedSessionId,

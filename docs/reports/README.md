@@ -4,6 +4,7 @@
 
 ## 최신 점검
 
+- [완성본 매니저 홈 검증 (2026-11-09)](figma-final-manager-home-validation-2026-11-09.md)
 - [보호자 예약 수신함 구현·검증 (2026-11-07)](issue-419-guardian-booking-inbox-2026-11-07.md)
 - [공용 소유권과 개인 개발 권한 정리 (2026-11-07)](shared-ownership-access-cleanup-2026-11-07.md)
 - [보호자 예약 원문 전달 서버 검증 (2026-10-28)](issue-419-draft-handoff-2026-10-28.md)
