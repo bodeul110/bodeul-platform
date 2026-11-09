@@ -13,7 +13,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.WindowCompat;
@@ -42,6 +41,7 @@ import com.example.bodeul.util.EnvironmentModeBadgeHelper;
 import com.example.bodeul.util.StatePanelHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -669,7 +669,7 @@ public class BookingActivity extends AppCompatActivity {
         int bodyResId = request.getStatus() == AppointmentStatus.MATCHED
                 ? R.string.booking_cancel_dialog_body_matched
                 : R.string.booking_cancel_dialog_body_requested;
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.booking_cancel_dialog_title)
                 .setMessage(bodyResId)
                 .setPositiveButton(R.string.booking_cancel_dialog_confirm, (dialogInterface, which) ->
@@ -717,7 +717,7 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     private void showGuardianMutationBlockedDialog() {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.booking_guardian_creation_blocked_title)
                 .setMessage(R.string.booking_guardian_creation_blocked_body)
                 .setPositiveButton(android.R.string.ok, null)
@@ -895,7 +895,7 @@ public class BookingActivity extends AppCompatActivity {
         } else if (wizard.step() != BookingStep.PARTICIPANT) {
             wizard.showStep(wizard.step().previous());
         } else if (wizard.hasParticipant()) {
-            new AlertDialog.Builder(this).setTitle(R.string.final_booking_leave_title)
+            new MaterialAlertDialogBuilder(this).setTitle(R.string.final_booking_leave_title)
                     .setMessage(R.string.final_booking_leave_body)
                     .setPositiveButton(R.string.final_booking_leave, (dialog, which) -> finish())
                     .setNegativeButton(R.string.final_booking_stay, null).show();

@@ -42,6 +42,8 @@ public class BookingFigmaPreviewTest {
             capture("entry");
             onView(withId(R.id.buttonBookingGuardian)).perform(click());
             onView(withText(R.string.booking_guardian_creation_blocked_title)).check(matches(isDisplayed()));
+            assertDialogButtonContrast(android.R.id.button1);
+            capture("guardian-dialog");
             onView(withId(android.R.id.button1)).perform(click());
             scenario.onActivity(activity -> {
                 assertEquals(View.GONE, activity.findViewById(R.id.bookingContactFields).getVisibility());
@@ -282,8 +284,39 @@ public class BookingFigmaPreviewTest {
             onView(withId(R.id.inputBookingLinkedName)).perform(scrollTo()).check(matches(withText("합성 보호자")));
             onView(withId(R.id.buttonBackBooking)).perform(click());
             onView(withText(R.string.final_booking_leave_title)).check(matches(isDisplayed()));
+            assertDialogButtonContrast(android.R.id.button1);
+            assertDialogButtonContrast(android.R.id.button2);
+            capture("leave-dialog");
             onView(withId(android.R.id.button2)).perform(click());
             scenario.onActivity(activity -> assertFalse(activity.isFinishing()));
+        }
+    }
+
+    @Test public void cancellationDialogsKeepReadableButtonsAndRespectChoice() {
+        for (AppointmentStatus status : new AppointmentStatus[]{AppointmentStatus.REQUESTED, AppointmentStatus.MATCHED}) {
+            try (ActivityScenario<BookingFigmaPreviewActivity> scenario = launch()) {
+                scenario.onActivity(activity -> {
+                    BookingDashboard dashboard = (BookingDashboard) field(activity, "currentDashboard");
+                    assertNotNull(dashboard.getLatestRequest());
+                    dashboard.getLatestRequest().setStatus(status);
+                });
+                onView(withId(R.id.buttonCloseBooking)).perform(click());
+                onView(withId(R.id.buttonBookingRequestCancel)).perform(scrollTo(), click());
+                int body = status == AppointmentStatus.MATCHED
+                        ? R.string.booking_cancel_dialog_body_matched
+                        : R.string.booking_cancel_dialog_body_requested;
+                onView(withText(body)).check(matches(isDisplayed()));
+                assertDialogButtonContrast(android.R.id.button1);
+                assertDialogButtonContrast(android.R.id.button2);
+                capture("cancel-dialog-" + status.name().toLowerCase(java.util.Locale.ROOT));
+                onView(withId(android.R.id.button2)).perform(click());
+                scenario.onActivity(activity -> assertEquals(status,
+                        ((BookingDashboard) field(activity, "currentDashboard")).getLatestRequest().getStatus()));
+                onView(withId(R.id.buttonBookingRequestCancel)).perform(scrollTo(), click());
+                onView(withId(android.R.id.button1)).perform(click());
+                scenario.onActivity(activity -> assertEquals(AppointmentStatus.CANCELED,
+                        ((BookingDashboard) field(activity, "currentDashboard")).getLatestRequest().getStatus()));
+            }
         }
     }
 
@@ -400,6 +433,23 @@ public class BookingFigmaPreviewTest {
     }
     private static void set(BookingActivity activity, int id, String value) { ((TextView) activity.findViewById(id)).setText(value); }
     private static String text(BookingActivity activity, int id) { return ((TextView) activity.findViewById(id)).getText().toString(); }
+    private static void assertDialogButtonContrast(int buttonId) {
+        onView(withId(buttonId)).inRoot(androidx.test.espresso.matcher.RootMatchers.isDialog())
+                .check(matches(isCompletelyDisplayed()))
+                .check((view, missing) -> {
+                    if (missing != null) throw missing;
+                    TextView button = (TextView) view;
+                    assertTrue("대화상자 버튼 활성 상태", button.isEnabled());
+                    android.util.TypedValue surface = new android.util.TypedValue();
+                    assertTrue(button.getContext().getTheme().resolveAttribute(
+                            com.google.android.material.R.attr.colorSurface, surface, true));
+                    int background = surface.data;
+                    int foreground = ColorUtils.compositeColors(button.getCurrentTextColor(), background);
+                    double ratio = ColorUtils.calculateContrast(foreground, background);
+                    assertTrue("대화상자 " + button.getText() + " 대비 부족: " + ratio, ratio >= 4.5);
+                    assertTextFits(button);
+                });
+    }
     private static void assertTextFits(View view) {
         if (view.getVisibility() != View.VISIBLE) return;
         if (view instanceof TextView) {
