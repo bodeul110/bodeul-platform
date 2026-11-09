@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/final_booking_hospital" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonBookingSelectHospital"
+        style="@style/FinalBookingSelector"
+        android:text="@string/booking_main_hospital_search"
+        android:layout_marginTop="10dp" />
+    <TextView
+        android:id="@+id/textBookingHospitalSelectionError"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/final_text_error"
+        android:text="@string/error_required_field"
+        android:accessibilityLiveRegion="polite"
+        android:visibility="gone" />
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/final_booking_appointment" />
+    <LinearLayout
+        android:id="@+id/buttonBookingAppointmentSummary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="56dp"
+        android:layout_marginTop="10dp"
+        android:padding="15dp"
+        android:background="@drawable/bg_final_booking_choice"
+        android:foreground="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/textBookingVisitDateSummary"
+                style="@style/FinalBookingBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="0dp"
+                android:text="@string/booking_main_visit_date_empty" />
+            <TextView
+                android:id="@+id/textBookingVisitTimeSummary"
+                style="@style/FinalBookingBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/booking_main_visit_time_empty" />
+        </LinearLayout>
+        <ImageView
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/bodeul_final_booking_dropdown_down"
+            android:contentDescription="@null" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/textBookingAppointmentError"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/final_text_error"
+        android:text="@string/error_required_field"
+        android:accessibilityLiveRegion="polite"
+        android:visibility="gone" />
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/final_booking_meeting" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonBookingSelectMeetingPlace"
+        style="@style/FinalBookingSelector"
+        android:text="@string/booking_location_selector_button"
+        android:layout_marginTop="10dp" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBookingMeetingPlace"
+        style="@style/BodeulFinalInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBookingMeetingPlace"
+            style="@style/FinalBookingInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/booking_meeting_place_hint"
+            android:inputType="none"
+            android:focusable="false"
+            android:cursorVisible="false"
+            android:longClickable="false"
+            android:singleLine="false" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingHospitalName"
+            style="@style/BodeulFinalInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingHospitalName"
+                style="@style/FinalBookingInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/booking_main_hospital_search"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingDepartmentName"
+            style="@style/BodeulFinalInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingDepartmentName"
+                style="@style/FinalBookingInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/final_booking_hospital"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingAppointmentAt"
+            style="@style/BodeulFinalInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingAppointmentAt"
+                style="@style/FinalBookingInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/final_booking_appointment"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingQuickToday"
+            style="@style/FinalBookingChoice"
+            android:text="@string/final_booking_appointment" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingQuickTomorrow"
+            style="@style/FinalBookingChoice"
+            android:text="@string/final_booking_appointment" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingQuickDayAfterTomorrow"
+            style="@style/FinalBookingChoice"
+            android:text="@string/final_booking_appointment" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingQuickMorning"
+            style="@style/FinalBookingChoice"
+            android:text="@string/final_booking_appointment" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingQuickAfternoon"
+            style="@style/FinalBookingChoice"
+            android:text="@string/final_booking_appointment" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingQuickLateAfternoon"
+            style="@style/FinalBookingChoice"
+            android:text="@string/final_booking_appointment" />
+    </LinearLayout>
+</merge>

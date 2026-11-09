@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout
+        android:id="@+id/buttonBookingSelf"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/bg_final_booking_choice"
+        android:foreground="?attr/selectableItemBackground"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/textBookingSelf"
+                style="@style/FinalBookingBody"
+                android:fontFamily="@font/pretendard_bold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/final_booking_self" />
+            <TextView
+                style="@style/FinalBookingCaption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/final_booking_self_body" />
+        </LinearLayout>
+        <ImageView
+            android:id="@+id/checkBookingSelf"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/bodeul_final_booking_check"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/buttonBookingGuardian"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_final_booking_choice"
+        android:foreground="?attr/selectableItemBackground"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                style="@style/FinalBookingBody"
+                android:fontFamily="@font/pretendard_bold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/final_booking_guardian" />
+            <TextView
+                style="@style/FinalBookingCaption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/final_booking_guardian_body" />
+        </LinearLayout>
+        <ImageView
+            android:id="@+id/checkBookingGuardian"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/bodeul_final_booking_check"
+            android:contentDescription="@null"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/bookingContactFields"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/textBookingLinkedSection"
+            style="@style/FinalBookingTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:text="@string/booking_linked_section_default" />
+        <TextView
+            android:id="@+id/textBookingLinkedHelper"
+            style="@style/FinalBookingCaption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/booking_linked_helper_default" />
+        <TextView
+            style="@style/FinalBookingLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:text="@string/final_booking_contact_name" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingLinkedName"
+            style="@style/BodeulFinalInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingLinkedName"
+                style="@style/FinalBookingInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/booking_linked_name_hint_default"
+                android:inputType="textPersonName" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <TextView
+            style="@style/FinalBookingLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:text="@string/final_booking_contact_phone" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingLinkedPhone"
+            style="@style/BodeulFinalInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingLinkedPhone"
+                style="@style/FinalBookingInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/booking_linked_phone_hint_default"
+                android:inputType="phone" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <TextView
+            style="@style/FinalBookingLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="30dp"
+            android:text="@string/final_booking_contact_email" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBookingLinkedEmail"
+            style="@style/BodeulFinalInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/inputBookingLinkedEmail"
+                style="@style/FinalBookingInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/booking_linked_email_hint_default"
+                android:inputType="textEmailAddress" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+</merge>

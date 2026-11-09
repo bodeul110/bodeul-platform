@@ -42,7 +42,6 @@ public final class BookingAppointmentSelector {
     private final MaterialButton buttonQuickAfternoon;
     private final MaterialButton buttonQuickLateAfternoon;
     private final ActivityResultLauncher<Intent> appointmentSelectorLauncher;
-    private final Runnable beforeOpenListener;
     @Nullable
     private OnAppointmentChangedListener appointmentChangedListener;
 
@@ -58,8 +57,7 @@ public final class BookingAppointmentSelector {
             MaterialButton buttonQuickMorning,
             MaterialButton buttonQuickAfternoon,
             MaterialButton buttonQuickLateAfternoon,
-            ActivityResultLauncher<Intent> appointmentSelectorLauncher,
-            Runnable beforeOpenListener
+            ActivityResultLauncher<Intent> appointmentSelectorLauncher
     ) {
         this.activity = activity;
         this.layoutAppointmentAt = layoutAppointmentAt;
@@ -73,7 +71,7 @@ public final class BookingAppointmentSelector {
         this.buttonQuickAfternoon = buttonQuickAfternoon;
         this.buttonQuickLateAfternoon = buttonQuickLateAfternoon;
         this.appointmentSelectorLauncher = appointmentSelectorLauncher;
-        this.beforeOpenListener = beforeOpenListener;
+        inputAppointmentAt.setSaveEnabled(false);
 
         configureAppointmentPicker();
         configureQuickAppointmentButtons();
@@ -156,7 +154,6 @@ public final class BookingAppointmentSelector {
     }
 
     private void openAppointmentSelector() {
-        beforeOpenListener.run();
         appointmentSelectorLauncher.launch(BookingAppointmentSelectorActivity.createIntent(
                 activity,
                 getAppointmentAt()

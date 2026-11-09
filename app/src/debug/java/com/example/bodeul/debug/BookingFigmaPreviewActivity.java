@@ -16,6 +16,7 @@ import com.example.bodeul.R;
 import com.example.bodeul.data.AuthRepository;
 import com.example.bodeul.data.BookingRepository;
 import com.example.bodeul.domain.model.AppointmentRequest;
+import com.example.bodeul.domain.model.BookingRequestDraft;
 import com.example.bodeul.ui.booking.BookingActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
@@ -23,6 +24,10 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 public final class BookingFigmaPreviewActivity extends BookingActivity {
     @Nullable
     private FigmaPreviewDependencies dependencies;
+    int paymentLaunchCount;
+    int completionCount;
+    boolean holdPaymentForTest;
+    @Nullable AppointmentRequest completedRequest;
 
     static Intent createIntent(Context context) {
         return new Intent(context, BookingFigmaPreviewActivity.class);
@@ -46,16 +51,6 @@ public final class BookingFigmaPreviewActivity extends BookingActivity {
     }
 
     @Override
-    protected int bookingTopBarExtraHeightPx() {
-        return dp(36);
-    }
-
-    @Override
-    protected boolean shouldStartHospitalMapPreview() {
-        return false;
-    }
-
-    @Override
     protected void openRequestDetail(AppointmentRequest request) {
         showLocalOnlyMessage();
     }
@@ -73,6 +68,22 @@ public final class BookingFigmaPreviewActivity extends BookingActivity {
     @Override
     protected void openLocationSelector() {
         showLocalOnlyMessage();
+    }
+
+    @Override
+    protected void openPaymentApproval(BookingRequestDraft draft) {
+        paymentLaunchCount++;
+        if (!holdPaymentForTest) {
+            handlePaymentApprovalResult(RESULT_CANCELED, null);
+            showLocalOnlyMessage();
+        }
+    }
+
+    @Override
+    protected void openBookingCompletion(AppointmentRequest request, boolean isUpdated) {
+        completionCount++;
+        completedRequest = request;
+        if (!holdPaymentForTest) showLocalOnlyMessage();
     }
 
     private FigmaPreviewDependencies dependencies() {
@@ -99,8 +110,6 @@ public final class BookingFigmaPreviewActivity extends BookingActivity {
         appointment.setOnClickListener(view -> showLocalOnlyMessage());
         View appointmentSummary = findViewById(R.id.buttonBookingAppointmentSummary);
         appointmentSummary.setOnClickListener(view -> showLocalOnlyMessage());
-        View submit = findViewById(R.id.buttonSubmitBooking);
-        submit.setOnClickListener(view -> showLocalOnlyMessage());
         BottomNavigationView bottomNavigation = findViewById(R.id.clientBottomNavigation);
         bottomNavigation.setOnItemSelectedListener(item -> {
             showLocalOnlyMessage();

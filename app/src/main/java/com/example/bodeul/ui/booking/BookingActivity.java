@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -62,8 +63,14 @@ public class BookingActivity extends AppCompatActivity {
     private BookingCoordinator bookingCoordinator;
     private BookingDashboardBinder dashboardBinder;
     private BookingFormBinder formBinder;
-    private BookingHospitalMapPreviewController hospitalMapPreviewController;
     private BookingMainScreenBinder mainScreenBinder;
+    private BookingWizardBinder wizard;
+    private Bundle restoredState;
+    private boolean formInitialized;
+    private boolean contentReady;
+    private boolean loading;
+    private boolean submitting;
+    private int loadGeneration;
 
     private View bookingStatePanel;
     private View bookingContentContainer;
@@ -75,7 +82,6 @@ public class BookingActivity extends AppCompatActivity {
     private BookingDashboard currentDashboard;
     private AppointmentRequest editingRequest;
     private String pendingEditRequestId;
-    private boolean preserveFormOnNextDashboardBind;
     private ActivityResultLauncher<Intent> healthProfileLauncher;
     private ActivityResultLauncher<Intent> appointmentSelectorLauncher;
     private ActivityResultLauncher<Intent> hospitalSelectorLauncher;
@@ -92,10 +98,12 @@ public class BookingActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        setTheme(R.style.Theme_Bodeul_FinalBooking);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booking);
         pendingEditRequestId = getIntent().getStringExtra(EXTRA_EDIT_REQUEST_ID);
         homeEntryConsumed = savedInstanceState != null && savedInstanceState.getBoolean(EXTRA_HOME_ENTRY);
+        restoredState = savedInstanceState == null ? null : savedInstanceState.getBundle("bookingState");
 
         authRepository = provideAuthRepository();
         bookingRepository = provideBookingRepository();
@@ -160,21 +168,7 @@ public class BookingActivity extends AppCompatActivity {
         );
         paymentApprovalLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() != RESULT_OK || result.getData() == null || pendingSubmissionDraft == null) {
-                        pendingSubmissionDraft = null;
-                        return;
-                    }
-                    BookingPaymentApproval paymentApproval = BookingPaymentApprovalActivity.parseResult(
-                            result.getData()
-                    );
-                    if (paymentApproval == null || !paymentApproval.isCompleted()) {
-                        pendingSubmissionDraft = null;
-                        return;
-                    }
-                    performRequestSubmission(pendingSubmissionDraft.withPaymentApproval(paymentApproval));
-                    pendingSubmissionDraft = null;
-                }
+                result -> handlePaymentApprovalResult(result.getResultCode(), result.getData())
         );
 
         bookingStatePanel = findViewById(R.id.bookingStatePanel);
@@ -182,18 +176,13 @@ public class BookingActivity extends AppCompatActivity {
         progressBooking = findViewById(R.id.progressBooking);
         textBookingMode = findViewById(R.id.textBookingMode);
         bottomNavigation = findViewById(R.id.clientBottomNavigation);
+        wizard = new BookingWizardBinder(findViewById(R.id.bookingRoot));
 
         mainScreenBinder = new BookingMainScreenBinder(
                 this,
                 findViewById(R.id.buttonBookingSelectHospital),
                 findViewById(R.id.textBookingVisitDateSummary),
                 findViewById(R.id.textBookingVisitTimeSummary)
-        );
-        hospitalMapPreviewController = new BookingHospitalMapPreviewController(
-                findViewById(R.id.mapViewBookingHospitalPreview),
-                findViewById(R.id.layoutBookingHospitalMapPlaceholder),
-                findViewById(R.id.textBookingHospitalMapPlaceholderTitle),
-                findViewById(R.id.textBookingHospitalMapPlaceholderBody)
         );
 
         BookingPresentationFormatter formatter = new BookingPresentationFormatter(this);
@@ -209,8 +198,7 @@ public class BookingActivity extends AppCompatActivity {
                 findViewById(R.id.buttonBookingQuickMorning),
                 findViewById(R.id.buttonBookingQuickAfternoon),
                 findViewById(R.id.buttonBookingQuickLateAfternoon),
-                appointmentSelectorLauncher,
-                () -> preserveFormOnNextDashboardBind = true
+                appointmentSelectorLauncher
         );
         appointmentSelector.setOnAppointmentChangedListener(mainScreenBinder::bindAppointment);
 
@@ -286,17 +274,28 @@ public class BookingActivity extends AppCompatActivity {
                 findViewById(R.id.buttonBookingCouponFamily)
         );
 
-        findViewById(R.id.buttonBackBooking).setOnClickListener(view -> finish());
+        findViewById(R.id.buttonBackBooking).setOnClickListener(view -> goBack());
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { goBack(); }
+        });
+        findViewById(R.id.buttonBookingSelf).setOnClickListener(view -> {
+            if (currentUser != null && currentUser.getRole() == UserRole.PATIENT) wizard.selectPatient();
+            else showGuardianMutationBlockedDialog();
+        });
+        findViewById(R.id.buttonBookingGuardian).setOnClickListener(view -> showGuardianMutationBlockedDialog());
+        findViewById(R.id.buttonBookingNext).setOnClickListener(view -> {
+            if (!contentReady || loading || !wizard.hasParticipant()) return;
+            if (formBinder.validateStep(wizard.step())) wizard.showStep(wizard.step().next());
+        });
         formBinder.setOnHealthProfileSelectorClickListener(view -> openHealthProfile());
         formBinder.setOnHospitalSelectorClickListener(view -> openHospitalSelector());
         formBinder.setOnMeetingPlaceSelectorClickListener(view -> openLocationSelector());
         formBinder.setOnHospitalSelectionChangedListener(selection -> {
             mainScreenBinder.bindHospitalSelection(selection);
-            hospitalMapPreviewController.bindSelection(selection);
         });
         ((MaterialButton) findViewById(R.id.buttonSubmitBooking)).setOnClickListener(view -> submitAppointmentRequest());
         ((MaterialButton) findViewById(R.id.buttonCancelBookingEdit)).setOnClickListener(view -> exitEditMode());
-        findViewById(R.id.buttonCloseBooking).setOnClickListener(view -> finish());
+        findViewById(R.id.buttonCloseBooking).setOnClickListener(view -> wizard.showHistory(!wizard.isHistory()));
 
         bottomNavigation.setVisibility(View.GONE);
         ClientBottomNavigationBinder.bind(
@@ -327,91 +326,60 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (hospitalMapPreviewController != null) {
-            hospitalMapPreviewController.onResume();
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (hospitalMapPreviewController != null) {
-            hospitalMapPreviewController.onPause();
-        }
-    }
-
-    @Override
     protected void onDestroy() {
-        if (hospitalMapPreviewController != null) {
-            hospitalMapPreviewController.onDestroy();
-        }
+        loadGeneration++;
         super.onDestroy();
     }
 
     private void reloadDashboard() {
+        final int generation = ++loadGeneration;
+        contentReady = false;
         setLoading(true);
         hideBlockingState();
-        if (currentDashboard == null) {
-            bookingContentContainer.setVisibility(View.GONE);
-        }
-
+        bookingContentContainer.setVisibility(View.GONE);
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
-            @Override
-            public void onSuccess(User result) {
+            @Override public void onSuccess(User result) {
+                if (generation != loadGeneration || isDestroyed()) return;
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
+                    clearAccountState();
                     openProfileCompletion();
                     return;
                 }
                 if (!supportsBookingRole(result.getRole())) {
+                    clearAccountState();
                     setLoading(false);
                     showPermissionState();
                     return;
                 }
-
+                if (currentUser != null && (!TextUtils.equals(currentUser.getId(), result.getId())
+                        || currentUser.getRole() != result.getRole())) clearAccountState();
                 currentUser = result;
-                bottomNavigation.setVisibility(View.VISIBLE);
                 bookingCoordinator.loadDashboard(result, new RepositoryCallback<BookingDashboard>() {
-                    @Override
-                    public void onSuccess(BookingDashboard dashboard) {
+                    @Override public void onSuccess(BookingDashboard dashboard) {
+                        if (generation != loadGeneration || isDestroyed()) return;
                         currentDashboard = dashboard;
-                        setLoading(false);
                         hideBlockingState();
                         dashboardBinder.bindDashboard(dashboard, new BookingRequestCardBinder.ActionListener() {
-                            @Override
-                            public void onOpenRequest(AppointmentRequest request) {
-                                openRequestDetail(request);
-                            }
-
-                            @Override
-                            public void onEditRequest(AppointmentRequest request) {
-                                startEditingRequest(request);
-                            }
-
-                            @Override
-                            public void onCancelRequest(AppointmentRequest request) {
-                                cancelRequest(request);
-                            }
+                            @Override public void onOpenRequest(AppointmentRequest request) { openRequestDetail(request); }
+                            @Override public void onEditRequest(AppointmentRequest request) { startEditingRequest(request); }
+                            @Override public void onCancelRequest(AppointmentRequest request) { cancelRequest(request); }
                         });
                         bindFormState(dashboard);
+                        contentReady = true;
+                        setLoading(false);
                         bookingContentContainer.setVisibility(View.VISIBLE);
                         openHomeEntryOnce();
-                        if (shouldStartHospitalMapPreview()) {
-                            hospitalMapPreviewController.onHostContentVisible();
-                        }
                     }
-
-                    @Override
-                    public void onError(String message) {
+                    @Override public void onError(String message) {
+                        if (generation != loadGeneration || isDestroyed()) return;
                         setLoading(false);
                         showLoadErrorState(message);
                     }
                 });
             }
-
-            @Override
-            public void onError(String message) {
+            @Override public void onError(String message) {
+                if (generation != loadGeneration || isDestroyed()) return;
+                clearAccountState();
                 setLoading(false);
                 showAuthState();
             }
@@ -419,38 +387,63 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     private void bindFormState(BookingDashboard dashboard) {
-        if (currentUser == null) {
-            return;
+        if (currentUser == null) return;
+        Bundle form = formInitialized ? formBinder.saveInputState() : null;
+        Bundle flow = null;
+        boolean restore = restoredState != null
+                && TextUtils.equals(currentUser.getId(), restoredState.getString("owner"))
+                && currentUser.getRole().name().equals(restoredState.getString("role"));
+        if (restore) {
+            form = restoredState.getBundle("form");
+            flow = restoredState.getBundle("wizard");
+            pendingEditRequestId = restoredState.getString("edit");
         }
-        if (editingRequest == null && !TextUtils.isEmpty(pendingEditRequestId)) {
-            editingRequest = findRequestById(dashboard, pendingEditRequestId);
-            pendingEditRequestId = null;
+        String editingId = editingRequest == null ? pendingEditRequestId : editingRequest.getId();
+        pendingEditRequestId = null;
+        if (!TextUtils.isEmpty(editingId)) {
+            AppointmentRequest refreshed = findRequestById(dashboard, editingId);
+            if (refreshed == null || refreshed.getStatus() != AppointmentStatus.REQUESTED
+                    || !BookingMutationPolicy.isAllowed(currentUser.getRole(), BookingMutationPolicy.Operation.UPDATE)) {
+                editingRequest = null;
+                form = null;
+                flow = null;
+                pendingSubmissionDraft = null;
+                wizard.reset();
+                wizard.showHistory(true);
+                Toast.makeText(this, R.string.final_booking_edit_unavailable, Toast.LENGTH_LONG).show();
+            } else {
+                editingRequest = refreshed;
+                wizard.selectPatient();
+            }
         }
-        if (preserveFormOnNextDashboardBind) {
-            // 선택 화면에서 돌아올 때 onStart 재조회가 사용자가 고른 값을 지우지 않게 한다.
-            preserveFormOnNextDashboardBind = false;
-            return;
-        }
-        if (editingRequest == null) {
-            formBinder.bindCreateMode(currentUser);
-            return;
-        }
+        if (editingRequest == null) formBinder.bindCreateMode(currentUser);
+        else formBinder.bindEditMode(currentUser, editingRequest);
+        if (form != null) formBinder.restoreInputState(form);
+        if (flow != null) wizard.restoreState(flow);
+        restoredState = null;
+        formInitialized = true;
+    }
 
-        AppointmentRequest refreshedEditingRequest = findRequestById(dashboard, editingRequest.getId());
-        if (refreshedEditingRequest == null) {
-            editingRequest = null;
-            formBinder.bindCreateMode(currentUser);
-            return;
-        }
-
-        editingRequest = refreshedEditingRequest;
-        formBinder.bindEditMode(currentUser, refreshedEditingRequest);
+    private void clearAccountState() {
+        currentUser = null;
+        currentDashboard = null;
+        editingRequest = null;
+        pendingEditRequestId = null;
+        pendingSubmissionDraft = null;
+        restoredState = null;
+        formInitialized = false;
+        contentReady = false;
+        wizard.reset();
     }
 
     private void openHomeEntryOnce() {
         if (homeEntryConsumed || editingRequest != null || currentUser == null) return;
         homeEntryConsumed = true;
         String entry = getIntent().getStringExtra(EXTRA_HOME_ENTRY);
+        if (entry != null && currentUser.getRole() == UserRole.PATIENT) {
+            wizard.selectPatient();
+            wizard.showStep(BookingStep.VISIT);
+        }
         if (HomeEntry.APPOINTMENT.name().equals(entry)) {
             findViewById(R.id.buttonBookingAppointmentSummary).performClick();
         } else if (HomeEntry.LOCATION.name().equals(entry)) {
@@ -462,6 +455,17 @@ public class BookingActivity extends AppCompatActivity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putBoolean(EXTRA_HOME_ENTRY, homeEntryConsumed);
+        if (currentUser != null && formInitialized) {
+            Bundle state = new Bundle();
+            state.putString("owner", currentUser.getId());
+            state.putString("role", currentUser.getRole().name());
+            state.putString("edit", editingRequest == null ? null : editingRequest.getId());
+            state.putBundle("form", formBinder.saveInputState());
+            state.putBundle("wizard", wizard.saveState());
+            outState.putBundle("bookingState", state);
+        } else if (restoredState != null) {
+            outState.putBundle("bookingState", restoredState);
+        }
         super.onSaveInstanceState(outState);
     }
 
@@ -476,6 +480,7 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     private void submitAppointmentRequest() {
+        if (!contentReady || loading || submitting || pendingSubmissionDraft != null) return;
         if (currentUser == null) {
             showAuthState();
             return;
@@ -486,6 +491,13 @@ public class BookingActivity extends AppCompatActivity {
         if (!BookingMutationPolicy.isAllowed(currentUser.getRole(), operation)) {
             showGuardianMutationBlockedDialog();
             return;
+        }
+
+        for (BookingStep step : BookingStep.values()) {
+            if (!formBinder.validateStep(step)) {
+                wizard.showStep(step);
+                return;
+            }
         }
 
         BookingRequestDraft bookingRequestDraft = formBinder.buildDraft();
@@ -494,13 +506,38 @@ public class BookingActivity extends AppCompatActivity {
         }
 
         pendingSubmissionDraft = bookingRequestDraft;
+        setLoading(true);
+        openPaymentApproval(bookingRequestDraft);
+    }
+
+    protected void openPaymentApproval(BookingRequestDraft bookingRequestDraft) {
         paymentApprovalLauncher.launch(BookingPaymentApprovalActivity.createIntent(
                 this,
                 BookingPaymentCheckoutSnapshot.fromDraft(bookingRequestDraft)
         ));
     }
 
+    protected void handlePaymentApprovalResult(int resultCode, @Nullable Intent data) {
+        if (resultCode != RESULT_OK || data == null || pendingSubmissionDraft == null) {
+            // 프로세스 재생성 뒤에는 작성 내용만 복원하고 이전 결제 결과로 자동 제출하지 않는다.
+            if (resultCode == RESULT_OK && pendingSubmissionDraft == null) {
+                Toast.makeText(this, R.string.final_booking_payment_retry, Toast.LENGTH_LONG).show();
+            }
+            pendingSubmissionDraft = null;
+            setLoading(false);
+            return;
+        }
+        BookingPaymentApproval paymentApproval = BookingPaymentApprovalActivity.parseResult(data);
+        if (paymentApproval == null || !paymentApproval.isCompleted()) {
+            pendingSubmissionDraft = null;
+            setLoading(false);
+            return;
+        }
+        confirmSubmissionOwner(pendingSubmissionDraft.withPaymentApproval(paymentApproval));
+    }
+
     private void performRequestSubmission(BookingRequestDraft bookingRequestDraft) {
+        if (submitting) return;
         if (currentUser == null) {
             showAuthState();
             return;
@@ -512,6 +549,7 @@ public class BookingActivity extends AppCompatActivity {
             showGuardianMutationBlockedDialog();
             return;
         }
+        submitting = true;
         setLoading(true);
         if (editingRequest == null) {
             BookingMutationPolicy.runIfAllowed(
@@ -523,6 +561,7 @@ public class BookingActivity extends AppCompatActivity {
                             new RepositoryCallback<AppointmentRequest>() {
                         @Override
                         public void onSuccess(AppointmentRequest result) {
+                            submitting = false;
                             editingRequest = null;
                             setLoading(false);
                             restoreAfterSubmission();
@@ -531,6 +570,7 @@ public class BookingActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(String message) {
+                            submitting = false;
                             setLoading(false);
                             Toast.makeText(BookingActivity.this, message, Toast.LENGTH_LONG).show();
                         }
@@ -549,6 +589,7 @@ public class BookingActivity extends AppCompatActivity {
                         new RepositoryCallback<AppointmentRequest>() {
                     @Override
                     public void onSuccess(AppointmentRequest result) {
+                        submitting = false;
                         editingRequest = null;
                         setLoading(false);
                         restoreAfterSubmission();
@@ -557,11 +598,39 @@ public class BookingActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(String message) {
+                        submitting = false;
                         setLoading(false);
                         Toast.makeText(BookingActivity.this, message, Toast.LENGTH_LONG).show();
                     }
                         }
                 ));
+    }
+
+    private void confirmSubmissionOwner(BookingRequestDraft draft) {
+        User owner = currentUser;
+        String editId = editingRequest == null ? null : editingRequest.getId();
+        authRepository.getCurrentUser(new RepositoryCallback<User>() {
+            @Override public void onSuccess(User user) {
+                if (isDestroyed()) return;
+                if (owner == null || !TextUtils.equals(owner.getId(), user.getId())
+                        || owner.getRole() != user.getRole() || currentUser == null
+                        || !TextUtils.equals(owner.getId(), currentUser.getId())
+                        || !TextUtils.equals(editId, editingRequest == null ? null : editingRequest.getId())) {
+                    clearAccountState();
+                    setLoading(false);
+                    showAuthState();
+                    return;
+                }
+                pendingSubmissionDraft = null;
+                performRequestSubmission(draft);
+            }
+            @Override public void onError(String message) {
+                if (isDestroyed()) return;
+                clearAccountState();
+                setLoading(false);
+                showAuthState();
+            }
+        });
     }
 
     private void startEditingRequest(AppointmentRequest request) {
@@ -575,6 +644,8 @@ public class BookingActivity extends AppCompatActivity {
         }
         editingRequest = request;
         formBinder.bindEditMode(currentUser, request);
+        wizard.selectPatient();
+        wizard.showStep(BookingStep.PARTICIPANT);
     }
 
     protected void openRequestDetail(AppointmentRequest request) {
@@ -586,6 +657,7 @@ public class BookingActivity extends AppCompatActivity {
         if (currentUser != null) {
             formBinder.bindCreateMode(currentUser);
         }
+        wizard.reset();
     }
 
     private void cancelRequest(AppointmentRequest request) {
@@ -657,8 +729,10 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     private void setLoading(boolean loading) {
+        this.loading = loading;
         progressBooking.setVisibility(loading ? View.VISIBLE : View.GONE);
-        formBinder.setLoading(loading);
+        formBinder.setLoading(loading || submitting || pendingSubmissionDraft != null);
+        wizard.setAvailable(contentReady, loading || submitting || pendingSubmissionDraft != null);
     }
 
     private void showPermissionState() {
@@ -726,6 +800,8 @@ public class BookingActivity extends AppCompatActivity {
                 secondaryListener
         );
         bookingContentContainer.setVisibility(View.GONE);
+        contentReady = false;
+        wizard.setAvailable(false, false);
         bottomNavigation.setVisibility(View.GONE);
     }
 
@@ -734,7 +810,6 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     protected void openHospitalSelector() {
-        preserveFormOnNextDashboardBind = true;
         hospitalSelectorLauncher.launch(BookingHospitalSelectorActivity.createIntent(
                 this,
                 formBinder.getHospitalSelection()
@@ -742,7 +817,6 @@ public class BookingActivity extends AppCompatActivity {
     }
 
     protected void openHealthProfile() {
-        preserveFormOnNextDashboardBind = true;
         healthProfileLauncher.launch(BookingHealthProfileActivity.createIntent(
                 this,
                 formBinder.getHealthProfileSelection()
@@ -755,7 +829,6 @@ public class BookingActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.booking_location_selector_hospital_required, Toast.LENGTH_SHORT).show();
             return;
         }
-        preserveFormOnNextDashboardBind = true;
         locationSelectorLauncher.launch(BookingLocationSelectorActivity.createIntent(
                 this,
                 hospitalSelection,
@@ -767,10 +840,11 @@ public class BookingActivity extends AppCompatActivity {
         if (currentUser != null) {
             formBinder.bindCreateMode(currentUser);
         }
+        wizard.reset();
         reloadDashboard();
     }
 
-    private void openBookingCompletion(AppointmentRequest request, boolean isUpdated) {
+    protected void openBookingCompletion(AppointmentRequest request, boolean isUpdated) {
         startActivity(BookingCompletionActivity.createIntent(this, request, isUpdated));
     }
 
@@ -801,27 +875,30 @@ public class BookingActivity extends AppCompatActivity {
         return ServiceLocator.provideBookingRepository(this);
     }
 
-    protected int bookingTopBarExtraHeightPx() {
-        return 0;
-    }
-
-    /** Debug 전용 정적 미리보기는 외부 지도 SDK를 시작하지 않는다. */
-    protected boolean shouldStartHospitalMapPreview() {
-        return true;
-    }
-
     private void configureSystemBars() {
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.figma_mvp_background));
-        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.figma_mvp_background));
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.final_surface));
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .setAppearanceLightStatusBars(true);
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .setAppearanceLightNavigationBars(true);
         BookingMainScreenInsets.apply(
-                findViewById(R.id.scrollBooking),
-                findViewById(R.id.layoutBookingTopBar),
-                bottomNavigation,
-                bookingTopBarExtraHeightPx()
+                findViewById(R.id.bookingRoot)
         );
+    }
+
+    private void goBack() {
+        if (submitting || pendingSubmissionDraft != null) return;
+        if (wizard.isHistory()) {
+            wizard.showHistory(false);
+        } else if (wizard.step() != BookingStep.PARTICIPANT) {
+            wizard.showStep(wizard.step().previous());
+        } else if (wizard.hasParticipant()) {
+            new AlertDialog.Builder(this).setTitle(R.string.final_booking_leave_title)
+                    .setMessage(R.string.final_booking_leave_body)
+                    .setPositiveButton(R.string.final_booking_leave, (dialog, which) -> finish())
+                    .setNegativeButton(R.string.final_booking_stay, null).show();
+        } else finish();
     }
 }
