@@ -7,11 +7,11 @@ import org.junit.Test;
 
 public class BookingMainScreenFormatterTest {
     @Test
-    public void formatAppointment_splitsApiValueIntoFigmaDateAndTimeCards() {
+    public void formatAppointment_keepsWeekdayWithDateInFinalBookingSummary() {
         BookingMainScreenFormatter.DisplayValue value =
                 BookingMainScreenFormatter.formatAppointment("2026-08-14 10:00");
 
-        assertEquals("2026. 8. 14\n(금)", value.getDateText());
+        assertEquals("2026. 8. 14 (금)", value.getDateText());
         assertEquals("오전 10:00", value.getTimeText());
     }
 

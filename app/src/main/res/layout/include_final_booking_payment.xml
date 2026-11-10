@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/booking_trip_section" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingTripOneWay"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_trip_one_way"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingTripRoundTrip"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_trip_round_trip"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/booking_manager_gender_section" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingManagerGenderAny"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_manager_gender_any"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingManagerGenderFemale"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_manager_gender_female"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingManagerGenderMale"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_manager_gender_male"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/booking_payment_method_section" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingPaymentBankTransfer"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_payment_bank_transfer"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingPaymentOnSite"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_payment_on_site"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingPaymentCard"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_payment_card"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingPaymentEasyPay"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_payment_easy_pay"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:visibility="gone">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingCouponNone"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_coupon_none"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingCouponFirstVisit"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_coupon_first_visit"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingCouponFamily"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_coupon_family"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+    <TextView
+        style="@style/FinalBookingTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/booking_price_section" />
+    <TextView
+        android:id="@+id/textBookingPricePolicy"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/booking_price_mvp_policy" />
+    <TextView
+        android:id="@+id/textBookingEstimateBase"
+        style="@style/FinalBookingBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp" />
+    <TextView
+        android:id="@+id/textBookingEstimateOption"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+    <TextView
+        android:id="@+id/textBookingEstimateDiscount"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="20dp"
+        android:background="@color/final_line" />
+    <TextView
+        android:id="@+id/textBookingEstimateFinal"
+        style="@style/FinalBookingTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp" />
+    <TextView
+        android:id="@+id/textBookingPaymentHelper"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonCancelBookingEdit"
+        style="@style/FinalBookingChoice"
+        android:text="@string/booking_cancel_edit_button"
+        android:layout_marginTop="30dp"
+        android:visibility="gone" />
+</merge>

@@ -20,6 +20,7 @@ public final class BookingOptionGroupBinder<T> {
     private final LinkedHashMap<T, MaterialButton> optionButtons;
     private T selectedOption;
     private Runnable selectionChangedListener;
+    private boolean finalBookingStyle;
 
     public BookingOptionGroupBinder(
             Context context,
@@ -48,6 +49,11 @@ public final class BookingOptionGroupBinder<T> {
         return selectedOption;
     }
 
+    public void useFinalBookingStyle() {
+        finalBookingStyle = true;
+        refreshStyles();
+    }
+
     public void setEnabled(boolean enabled) {
         for (MaterialButton button : optionButtons.values()) {
             button.setEnabled(enabled);
@@ -64,6 +70,17 @@ public final class BookingOptionGroupBinder<T> {
         for (Map.Entry<T, MaterialButton> entry : optionButtons.entrySet()) {
             boolean selected = entry.getKey().equals(selectedOption);
             MaterialButton button = entry.getValue();
+            if (finalBookingStyle) {
+                button.setSelected(selected);
+                button.setCheckable(true);
+                button.setChecked(selected);
+                button.setStrokeWidth(0);
+                button.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(context,
+                        selected ? R.color.final_booking_selected : R.color.final_input_surface)));
+                button.setTextColor(ContextCompat.getColor(context,
+                        selected ? R.color.final_text_accent_accessible : R.color.final_text_primary));
+                continue;
+            }
             if (selected) {
                 button.setBackgroundTintList(ColorStateList.valueOf(
                         ContextCompat.getColor(context, R.color.bodeul_primary)

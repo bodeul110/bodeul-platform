@@ -55,6 +55,10 @@
             android:exported="false"
             android:theme="@style/Theme.Bodeul" />
         <activity
+            android:name="com.example.bodeul.debug.BookingLifecyclePreviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Bodeul.FinalBooking" />
+        <activity
             android:name="com.example.bodeul.debug.GuardianReportFigmaPreviewActivity"
             android:exported="false"
             android:theme="@style/Theme.Bodeul" />

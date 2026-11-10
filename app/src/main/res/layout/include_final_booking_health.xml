@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="@string/final_booking_condition" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBookingHealthSummary"
+        style="@style/BodeulFinalInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBookingHealthSummary"
+            style="@style/FinalBookingTextArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/final_booking_condition_hint"
+            android:inputType="textMultiLine|textCapSentences"
+            android:singleLine="false" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <TextView
+        android:id="@+id/textBookingHealthProfileError"
+        style="@style/FinalBookingCaption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/final_text_error"
+        android:text="@string/error_required_field"
+        android:accessibilityLiveRegion="polite"
+        android:visibility="gone" />
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/final_booking_medication" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBookingMedicationSummary"
+        style="@style/BodeulFinalInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBookingMedicationSummary"
+            style="@style/FinalBookingTextArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/final_booking_medication_hint"
+            android:inputType="textMultiLine|textCapSentences"
+            android:singleLine="false" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/final_booking_mobility" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingMobilityIndependent"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_mobility_independent"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingMobilityWalkingAid"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_mobility_walking_aid"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingMobilityWheelchair"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_mobility_wheelchair"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp" />
+    </LinearLayout>
+    <TextView
+        style="@style/FinalBookingLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/final_booking_notes" />
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layoutBookingSpecialNotes"
+        style="@style/BodeulFinalInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputBookingSpecialNotes"
+            style="@style/FinalBookingTextArea"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/final_booking_notes_hint"
+            android:inputType="textMultiLine|textCapSentences"
+            android:singleLine="false" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/textBookingHealthProfileSummary"
+            style="@style/FinalBookingLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:text="@string/booking_health_profile_main_summary_empty" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonBookingHealthProfile"
+            style="@style/FinalBookingChoice"
+            android:text="@string/booking_health_profile_main_action" />
+    </LinearLayout>
+</merge>

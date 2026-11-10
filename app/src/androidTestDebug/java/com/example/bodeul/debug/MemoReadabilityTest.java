@@ -45,7 +45,7 @@ public class MemoReadabilityTest {
             {R.layout.include_manager_guide_consultation_summary, R.id.inputGuideSummaryNote},
             {R.layout.include_manager_guide_medication, R.id.inputGuideMedicationPharmacyNote},
             {R.layout.include_manager_guide_medication, R.id.inputGuideMedicationGuidanceNote},
-            {R.layout.include_booking_form_visit, R.id.inputBookingSpecialNotes},
+            {R.layout.include_final_booking_health, R.id.inputBookingSpecialNotes},
             {R.layout.include_manager_guide_report_card, R.id.inputReportSummary},
             {R.layout.include_manager_guide_report_card, R.id.inputReportTreatment},
             {R.layout.include_manager_guide_report_card, R.id.inputReportMedicationComparisonNote},
@@ -58,30 +58,39 @@ public class MemoReadabilityTest {
             for (int mode : new int[]{Configuration.UI_MODE_NIGHT_NO, Configuration.UI_MODE_NIGHT_YES}) {
                 Context themed = themed(context, mode, 1f);
                 for (int[] field : INPUTS) {
-                    View screen = inflate(themed, field[0]);
+                    Context screenContext = fieldContext(themed, field[0]);
+                    View screen = inflate(screenContext, field[0]);
                     TextInputEditText input = screen.findViewById(field[1]);
                     TextInputLayout layout = inputLayout(input);
                     layout.setHintAnimationEnabled(false);
                     input.setText("보호자 전달 사항\n확인한 내용을 직접 기록했습니다.");
                     for (boolean enabled : new boolean[]{true, false, true}) {
                         layout.setEnabled(enabled);
-                        measure(screen, themed, 320);
+                        measure(screen, screenContext, 320);
                         int background = ColorUtils.compositeColors(layout.getBoxBackgroundColor(), Color.WHITE);
                         assertContrast("메모 본문 " + field[1] + " 야간=" + mode + " 활성=" + enabled,
                                 input.getCurrentTextColor(), background);
                         input.setText("");
-                        assertNotNull(layout.getDefaultHintTextColor());
-                        assertContrast("빈 입력 안내 " + field[1],
-                                layout.getDefaultHintTextColor().getColorForState(
-                                        layout.getDrawableState(), layout.getDefaultHintTextColor().getDefaultColor()),
-                                background);
+                        if (layout.isHintEnabled()) {
+                            assertNotNull(layout.getDefaultHintTextColor());
+                            assertContrast("빈 입력 안내 " + field[1],
+                                    layout.getDefaultHintTextColor().getColorForState(
+                                            layout.getDrawableState(), layout.getDefaultHintTextColor().getDefaultColor()),
+                                    background);
+                        } else {
+                            assertContrast("입력창 내부 안내 " + field[1], input.getCurrentHintTextColor(), background);
+                        }
                         input.setText("보호자 전달 사항\n확인한 내용을 직접 기록했습니다.");
                         if (enabled) {
                             input.requestFocus();
-                            assertContrast("포커스 안내 " + field[1],
-                                    layout.getHintTextColor().getColorForState(
-                                            input.getDrawableState(), layout.getHintTextColor().getDefaultColor()),
-                                    background);
+                            if (layout.isHintEnabled()) {
+                                assertContrast("포커스 안내 " + field[1],
+                                        layout.getHintTextColor().getColorForState(
+                                                input.getDrawableState(), layout.getHintTextColor().getDefaultColor()),
+                                        background);
+                            } else {
+                                assertContrast("포커스 입력창 안내 " + field[1], input.getCurrentHintTextColor(), background);
+                            }
                             input.clearFocus();
                         }
                     }
@@ -120,9 +129,31 @@ public class MemoReadabilityTest {
             for (float scale : new float[]{1f, 2f}) {
                 Context themed = themed(context, Configuration.UI_MODE_NIGHT_NO, scale);
                 for (int[] field : INPUTS) {
-                    View screen = inflate(themed, field[0]);
+                    Context screenContext = fieldContext(themed, field[0]);
+                    View screen = inflate(screenContext, field[0]);
                     TextInputEditText input = screen.findViewById(field[1]);
                     String text = "합성 검증 메모입니다. 긴 내용도 빠짐없이 표시합니다.\n"
+                            + "다음 줄의 안내 사항을 확인합니다. ".repeat(12);
+                    input.setText(text);
+                    measure(screen, screenContext, 320);
+                    assertEquals(text, input.getText().toString());
+                    assertTextFits(input);
+                }
+            }
+        });
+    }
+
+    @Test
+    public void finalBookingMemos_keepLongContentAtLargeFont() {
+        withContext(context -> {
+            for (float scale : new float[]{1f, 1.3f, 2f}) {
+                Context themed = fieldContext(themed(context, Configuration.UI_MODE_NIGHT_NO, scale),
+                        R.layout.include_final_booking_health);
+                for (int id : new int[]{R.id.inputBookingHealthSummary, R.id.inputBookingMedicationSummary,
+                        R.id.inputBookingSpecialNotes}) {
+                    View screen = inflate(themed, R.layout.include_final_booking_health);
+                    TextInputEditText input = screen.findViewById(id);
+                    String text = "합성 예약 메모입니다. 긴 내용도 빠짐없이 표시합니다.\n"
                             + "다음 줄의 안내 사항을 확인합니다. ".repeat(12);
                     input.setText(text);
                     measure(screen, themed, 320);
@@ -185,13 +216,14 @@ public class MemoReadabilityTest {
     }
 
     private static void assertTextFits(TextView text) {
+        String field = text.getId() == View.NO_ID ? "ID 없음" : text.getResources().getResourceEntryName(text.getId());
         assertNotNull(text.getLayout());
-        assertTrue("세로 잘림: " + text.getText(), text.getLayout().getHeight()
+        assertTrue("세로 잘림: " + field + ": " + text.getText(), text.getLayout().getHeight()
                 <= text.getHeight() - text.getCompoundPaddingTop() - text.getCompoundPaddingBottom());
         for (int line = 0; line < text.getLineCount(); line++) {
             assertEquals("말줄임: " + text.getText(), 0, text.getLayout().getEllipsisCount(line));
             // 줄 바꿈 직전 공백은 보이는 글리프가 아니므로 폭 계산에서 제외한다.
-            assertTrue("가로 잘림: " + text.getText(), text.getLayout().getLineMax(line)
+            assertTrue("가로 잘림: " + field + ": " + text.getText(), text.getLayout().getLineMax(line)
                     <= text.getWidth() - text.getCompoundPaddingLeft() - text.getCompoundPaddingRight() + 1);
         }
     }
@@ -244,6 +276,12 @@ public class MemoReadabilityTest {
         configuration.uiMode = (configuration.uiMode & ~Configuration.UI_MODE_NIGHT_MASK) | night;
         configuration.fontScale = scale;
         return new ContextThemeWrapper(context.createConfigurationContext(configuration), R.style.Theme_Bodeul);
+    }
+
+    private static Context fieldContext(Context context, int layout) {
+        // 예약은 실제 Activity와 동일한 완성본 전용 테마로 검사한다.
+        return layout == R.layout.include_final_booking_health
+                ? new ContextThemeWrapper(context, R.style.Theme_Bodeul_FinalBooking) : context;
     }
 
     private static void measure(View view, Context context, int widthDp) {
