@@ -17,6 +17,8 @@ public final class ClientBookingHistoryEntryModel {
     private final String profile;
     private final String price;
     private final String note;
+    private final boolean completed;
+    private final boolean reviewAllowed;
 
     public ClientBookingHistoryEntryModel(
             String requestId,
@@ -31,7 +33,9 @@ public final class ClientBookingHistoryEntryModel {
             String option,
             String profile,
             String price,
-            String note
+            String note,
+            boolean completed,
+            boolean reviewAllowed
     ) {
         this.requestId = requestId;
         this.statusLabel = statusLabel;
@@ -46,6 +50,8 @@ public final class ClientBookingHistoryEntryModel {
         this.profile = profile;
         this.price = price;
         this.note = note;
+        this.completed = completed;
+        this.reviewAllowed = reviewAllowed;
     }
 
     public String getRequestId() { return requestId; }
@@ -61,4 +67,6 @@ public final class ClientBookingHistoryEntryModel {
     public String getProfile() { return profile; }
     public String getPrice() { return price; }
     public String getNote() { return note; }
+    public boolean isCompleted() { return completed; }
+    public boolean isReviewAllowed() { return reviewAllowed; }
 }

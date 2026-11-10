@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.bodeul.R;
 import com.example.bodeul.data.AuthRepository;
@@ -27,7 +28,6 @@ import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
 import com.example.bodeul.ui.navigation.ClientBottomNavigationVisibility;
 import com.example.bodeul.util.StatePanelHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.button.MaterialButton;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -37,6 +37,12 @@ import java.util.Calendar;
  * 사용자 예약 이력을 읽기 전용으로 보여준다.
  */
 public class ClientBookingHistoryActivity extends AppCompatActivity {
+    private static final String STATE_CALENDAR_YEAR = "calendarYear";
+    private static final String STATE_CALENDAR_MONTH = "calendarMonth";
+    private static final String STATE_CALENDAR_DAY = "calendarDay";
+    private static final String STATE_SELECTED_HISTORY_FILTER = "selectedHistoryFilter";
+    private static final String STATE_HISTORY_FILTER_CHOSEN = "historyFilterChosen";
+
     private AuthRepository authRepository;
     private BookingRepository bookingRepository;
     private ClientBookingHistoryCoordinator coordinator;
@@ -45,8 +51,16 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
     private View contentContainer;
     private ProgressBar progressBar;
     private BottomNavigationView bottomNavigation;
+    private View historyFilterContainer;
+    private TextView historyFilterEmptyView;
+    private TextView filterMatchingView;
+    private TextView filterProgressView;
+    private TextView filterCompletedView;
+    private TextView filterCanceledView;
     private User loadedUser;
     private List<AppointmentRequest> loadedRequests = new ArrayList<>();
+    private ClientBookingHistoryFilter selectedHistoryFilter = ClientBookingHistoryFilter.MATCHING;
+    private boolean historyFilterChosen;
     private int calendarYear, calendarMonth, calendarDay;
     private int loadGeneration;
 
@@ -59,6 +73,7 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        setTheme(R.style.Theme_Bodeul_FinalHome);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_client_booking_history);
 
@@ -68,10 +83,29 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         statePanel = findViewById(R.id.clientBookingHistoryStatePanel);
         contentContainer = findViewById(R.id.clientBookingHistoryContentContainer);
         progressBar = findViewById(R.id.progressClientBookingHistory);
+        historyFilterContainer = findViewById(R.id.layoutClientBookingHistoryFilters);
+        historyFilterEmptyView = findViewById(R.id.textClientBookingHistoryFilterEmpty);
+        filterMatchingView = findViewById(R.id.buttonHistoryFilterMatching);
+        filterProgressView = findViewById(R.id.buttonHistoryFilterProgress);
+        filterCompletedView = findViewById(R.id.buttonHistoryFilterCompleted);
+        filterCanceledView = findViewById(R.id.buttonHistoryFilterCanceled);
+        restoreHistoryFilter(savedInstanceState);
+        bindHistoryFilter(filterMatchingView, ClientBookingHistoryFilter.MATCHING);
+        bindHistoryFilter(filterProgressView, ClientBookingHistoryFilter.PROGRESS);
+        bindHistoryFilter(filterCompletedView, ClientBookingHistoryFilter.COMPLETED);
+        bindHistoryFilter(filterCanceledView, ClientBookingHistoryFilter.CANCELED);
+        historyFilterContainer.setVisibility(isCalendarScreen() ? View.GONE : View.VISIBLE);
+        ((TextView) findViewById(R.id.textClientBookingHistoryTitle)).setText(
+                isCalendarScreen() ? R.string.final_home_calendar : R.string.final_history_title
+        );
+        updateHistoryFilterViews();
         Calendar today = BookingAppointmentDateTime.newCalendar();
-        calendarYear = savedInstanceState == null ? today.get(Calendar.YEAR) : savedInstanceState.getInt("calendarYear");
-        calendarMonth = savedInstanceState == null ? today.get(Calendar.MONTH) : savedInstanceState.getInt("calendarMonth");
-        calendarDay = savedInstanceState == null ? today.get(Calendar.DAY_OF_MONTH) : savedInstanceState.getInt("calendarDay");
+        calendarYear = savedInstanceState == null ? today.get(Calendar.YEAR)
+                : savedInstanceState.getInt(STATE_CALENDAR_YEAR);
+        calendarMonth = savedInstanceState == null ? today.get(Calendar.MONTH)
+                : savedInstanceState.getInt(STATE_CALENDAR_MONTH);
+        calendarDay = savedInstanceState == null ? today.get(Calendar.DAY_OF_MONTH)
+                : savedInstanceState.getInt(STATE_CALENDAR_DAY);
         Calendar displayed = Calendar.getInstance();
         displayed.set(calendarYear, calendarMonth, calendarDay, 12, 0);
         CalendarView calendar = findViewById(R.id.clientCalendar);
@@ -81,28 +115,15 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         binder = new ClientBookingHistoryBinder(
                 this,
                 getLayoutInflater(),
-                findViewById(R.id.textClientBookingHistoryMode),
-                findViewById(R.id.textClientBookingHistoryTitle),
-                findViewById(R.id.textClientBookingHistorySubtitle),
-                findViewById(R.id.textClientBookingHistoryHeroBadge),
-                findViewById(R.id.textClientBookingHistoryHeroTitle),
-                findViewById(R.id.textClientBookingHistoryHeroBody),
-                findViewById(R.id.textClientBookingHistoryListTitle),
-                findViewById(R.id.textClientBookingHistoryListHelper),
-                (LinearLayout) findViewById(R.id.layoutClientBookingHistoryEntries),
-                (MaterialButton) findViewById(R.id.buttonClientBookingHistoryManage)
+                (LinearLayout) findViewById(R.id.layoutClientBookingHistoryEntries)
         );
 
-        findViewById(R.id.buttonBackClientBookingHistory).setOnClickListener(view -> finish());
         findViewById(R.id.buttonOpenGuardianBookingInbox).setOnClickListener(view -> {
             if (authRepository.isFirebaseBacked()
                     && getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled)) {
                 startActivity(new Intent(this, GuardianBookingInboxActivity.class));
             }
         });
-        findViewById(R.id.buttonClientBookingHistoryManage).setOnClickListener(view ->
-                startActivity(new Intent(this, BookingActivity.class))
-        );
         bottomNavigation = findViewById(R.id.clientBottomNavigation);
         ClientBookingHistoryInsets.apply(
                 findViewById(R.id.clientBookingHistoryScrollContent),
@@ -119,6 +140,72 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
                 )
         );
         contentContainer.setVisibility(View.GONE);
+    }
+
+    private void restoreHistoryFilter(@Nullable Bundle savedInstanceState) {
+        if (savedInstanceState == null) {
+            return;
+        }
+        String savedFilter = savedInstanceState.getString(STATE_SELECTED_HISTORY_FILTER);
+        if (savedFilter == null) {
+            return;
+        }
+        try {
+            selectedHistoryFilter = ClientBookingHistoryFilter.valueOf(savedFilter);
+            historyFilterChosen = savedInstanceState.getBoolean(
+                    STATE_HISTORY_FILTER_CHOSEN,
+                    false
+            );
+        } catch (IllegalArgumentException ignored) {
+            selectedHistoryFilter = ClientBookingHistoryFilter.MATCHING;
+            historyFilterChosen = false;
+        }
+    }
+
+    private void bindHistoryFilter(TextView view, ClientBookingHistoryFilter filter) {
+        view.setOnClickListener(clickedView -> {
+            // 기본으로 보이는 탭을 다시 누른 경우도 사용자가 직접 고른 상태로 보존한다.
+            historyFilterChosen = true;
+            if (selectedHistoryFilter == filter) {
+                return;
+            }
+            selectedHistoryFilter = filter;
+            updateHistoryFilterViews();
+            if (loadedUser != null) {
+                renderRequests();
+            }
+        });
+    }
+
+    private void updateHistoryFilterViews() {
+        applyHistoryFilterState(filterMatchingView, ClientBookingHistoryFilter.MATCHING);
+        applyHistoryFilterState(filterProgressView, ClientBookingHistoryFilter.PROGRESS);
+        applyHistoryFilterState(filterCompletedView, ClientBookingHistoryFilter.COMPLETED);
+        applyHistoryFilterState(filterCanceledView, ClientBookingHistoryFilter.CANCELED);
+    }
+
+    private void applyHistoryFilterState(TextView view, ClientBookingHistoryFilter filter) {
+        boolean selected = selectedHistoryFilter == filter;
+        view.setSelected(selected);
+        view.setBackgroundResource(selected ? R.drawable.bg_final_history_filter_selected : 0);
+        view.setTextColor(ContextCompat.getColor(
+                this,
+                selected ? R.color.final_text_on_primary : R.color.final_text_secondary
+        ));
+    }
+
+    private int selectedHistoryEmptyMessage() {
+        switch (selectedHistoryFilter) {
+            case PROGRESS:
+                return R.string.final_history_empty_progress;
+            case COMPLETED:
+                return R.string.final_history_empty_completed;
+            case CANCELED:
+                return R.string.final_history_empty_canceled;
+            case MATCHING:
+            default:
+                return R.string.final_history_empty_matching;
+        }
     }
 
     @Override
@@ -174,6 +261,7 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
                 setLoading(false);
                 loadedUser = currentUser;
                 loadedRequests = result == null ? new ArrayList<>() : new ArrayList<>(result);
+                selectInitialHistoryFilterIfNeeded();
                 renderRequests();
             }
 
@@ -186,6 +274,26 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         });
     }
 
+    private void selectInitialHistoryFilterIfNeeded() {
+        if (isCalendarScreen() || historyFilterChosen || loadedRequests.isEmpty()) {
+            return;
+        }
+        ClientBookingHistoryFilter[] filters = {
+                ClientBookingHistoryFilter.MATCHING,
+                ClientBookingHistoryFilter.PROGRESS,
+                ClientBookingHistoryFilter.COMPLETED,
+                ClientBookingHistoryFilter.CANCELED
+        };
+        for (ClientBookingHistoryFilter filter : filters) {
+            if (!filter.select(loadedRequests).isEmpty()) {
+                selectedHistoryFilter = filter;
+                historyFilterChosen = true;
+                updateHistoryFilterViews();
+                return;
+            }
+        }
+    }
+
     protected void onCalendarDateSelected(int year, int month, int day) {
         calendarYear = year;
         calendarMonth = month;
@@ -194,28 +302,73 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
     }
 
     private void renderRequests() {
-        List<AppointmentRequest> visible = isCalendarScreen()
+        boolean calendarScreen = isCalendarScreen();
+        List<AppointmentRequest> visible = calendarScreen
                 ? ClientCalendarFilter.select(loadedRequests, calendarYear, calendarMonth, calendarDay)
-                : loadedRequests;
+                : selectedHistoryFilter.select(loadedRequests);
         hideBlockingState();
-        findViewById(R.id.clientCalendarContainer).setVisibility(isCalendarScreen() ? View.VISIBLE : View.GONE);
+        findViewById(R.id.clientCalendarContainer).setVisibility(calendarScreen ? View.VISIBLE : View.GONE);
         ((TextView) findViewById(R.id.textClientCalendarDate)).setText(getString(
                 R.string.final_calendar_date, calendarYear, calendarMonth + 1, calendarDay));
-        findViewById(R.id.textClientCalendarEmpty).setVisibility(isCalendarScreen() && visible.isEmpty() ? View.VISIBLE : View.GONE);
-        if (visible.isEmpty()) {
+        findViewById(R.id.textClientCalendarEmpty).setVisibility(
+                calendarScreen && visible.isEmpty() ? View.VISIBLE : View.GONE
+        );
+
+        if (!calendarScreen && loadedRequests.isEmpty()) {
             contentContainer.setVisibility(View.GONE);
-            if (!isCalendarScreen()) showEmptyState();
+            showEmptyState();
             return;
         }
+        if (calendarScreen && visible.isEmpty()) {
+            contentContainer.setVisibility(View.GONE);
+            return;
+        }
+
         contentContainer.setVisibility(View.VISIBLE);
-        binder.bindScreen(coordinator.createScreenModel(loadedUser, visible, bookingRepository.isFirebaseBacked()),
-                requestId -> startActivity(BookingStatusActivity.createIntent(this, requestId)));
+        historyFilterEmptyView.setText(selectedHistoryEmptyMessage());
+        historyFilterEmptyView.setVisibility(
+                !calendarScreen && visible.isEmpty() ? View.VISIBLE : View.GONE
+        );
+        binder.bindScreen(
+                coordinator.createScreenModel(
+                        loadedUser,
+                        visible,
+                        bookingRepository.isFirebaseBacked()
+                ),
+                new ClientBookingHistoryBinder.EntryActionListener() {
+                    @Override
+                    public void onOpenRequest(String requestId) {
+                        startActivity(BookingStatusActivity.createIntent(
+                                ClientBookingHistoryActivity.this,
+                                requestId
+                        ));
+                    }
+
+                    @Override
+                    public void onOpenReview(String requestId) {
+                        startActivity(BookingFollowUpActivity.createIntent(
+                                ClientBookingHistoryActivity.this,
+                                requestId
+                        ));
+                    }
+
+                    @Override
+                    public void onOpenReport(String requestId) {
+                        startActivity(BookingStatusActivity.createIntent(
+                                ClientBookingHistoryActivity.this,
+                                requestId
+                        ));
+                    }
+                }
+        );
     }
 
     @Override protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt("calendarYear", calendarYear);
-        outState.putInt("calendarMonth", calendarMonth);
-        outState.putInt("calendarDay", calendarDay);
+        outState.putInt(STATE_CALENDAR_YEAR, calendarYear);
+        outState.putInt(STATE_CALENDAR_MONTH, calendarMonth);
+        outState.putInt(STATE_CALENDAR_DAY, calendarDay);
+        outState.putString(STATE_SELECTED_HISTORY_FILTER, selectedHistoryFilter.name());
+        outState.putBoolean(STATE_HISTORY_FILTER_CHOSEN, historyFilterChosen);
         super.onSaveInstanceState(outState);
     }
 

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_history_title">이용내역</string>
+    <string name="final_history_filter_matching">매칭</string>
+    <string name="final_history_filter_progress">진행</string>
+    <string name="final_history_filter_completed">완료</string>
+    <string name="final_history_filter_canceled">취소</string>
+    <string name="final_history_empty_matching">매칭을 기다리는 이용 내역이 없습니다.</string>
+    <string name="final_history_empty_progress">현재 진행 중인 이용 내역이 없습니다.</string>
+    <string name="final_history_empty_completed">완료된 이용 내역이 없습니다.</string>
+    <string name="final_history_empty_canceled">취소된 이용 내역이 없습니다.</string>
+    <string name="final_history_hospital_image_description">병원 전경</string>
+    <string name="final_history_patient_department">%1$s 환자 · %2$s</string>
+    <string name="final_history_appointment_label">진료 일정</string>
+    <string name="final_history_meeting_place_label">만남 장소</string>
+    <string name="final_history_appointment_unknown">일정 확인 필요</string>
+    <string name="final_history_meeting_place_unknown">장소 확인 필요</string>
+    <string name="final_history_patient_unknown">이름 미등록</string>
+    <string name="final_history_department_unknown">진료과 확인 필요</string>
+    <string name="final_history_hospital_unknown">병원 확인 필요</string>
+    <string name="final_history_review_action">별점 남기기</string>
+    <string name="final_history_report_action">최종 리포트 보기</string>
+</resources>
