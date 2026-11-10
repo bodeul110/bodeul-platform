@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string
+        name="final_hospital_title">동행 위치 선택</string>
+    <string
+        name="final_hospital_close">선택 취소</string>
+    <string
+        name="final_hospital_options">지역 검색</string>
+    <string
+        name="final_hospital_clear">검색어 지우기</string>
+    <string
+        name="final_hospital_empty">검색 결과가 없습니다.</string>
+    <string
+        name="final_hospital_empty_body">방문하실 병원을 다시 검색해주세요.</string>
+    <string
+        name="final_hospital_map">지도</string>
+    <string
+        name="final_hospital_map_description">%1$s 지도 보기</string>
+    <string
+        name="final_hospital_map_unavailable">지도를 열 수 있는 앱이 없습니다.</string>
+    <string
+        name="final_hospital_no_departments">진료과 직접 선택</string>
+    <string
+        name="final_department_title">진료과 선택</string>
+    <string
+        name="final_department_done">선택완료</string>
+    <string
+        name="final_department_manual">진료과 직접 입력</string>
+    <string-array
+        name="final_department_defaults">
+        <item>내과</item>
+        <item>가정의학과</item>
+        <item>외과</item>
+        <item>신경외과</item>
+        <item>정형외과</item>
+        <item>흉부외과</item>
+        <item>성형외과</item>
+        <item>산부인과</item>
+        <item>비뇨의학과</item>
+    </string-array>
+</resources>

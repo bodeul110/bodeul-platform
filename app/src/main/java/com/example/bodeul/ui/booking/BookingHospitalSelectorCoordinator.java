@@ -10,8 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import android.text.TextUtils;
-
 import com.example.bodeul.data.map.KakaoLocalPlaceSearchClient;
 import com.example.bodeul.data.map.KakaoPlaceCoordinate;
 
@@ -19,6 +17,10 @@ import com.example.bodeul.data.map.KakaoPlaceCoordinate;
  * 병원 선택 화면에 필요한 저장소 조회와 화면용 목록 조합을 맡는다.
  */
 public final class BookingHospitalSelectorCoordinator {
+    public interface PlaceSearch {
+        boolean isConfigured();
+        void search(String query, KakaoLocalPlaceSearchClient.KeywordCallback callback);
+    }
     private final BookingRepository bookingRepository;
 
     public BookingHospitalSelectorCoordinator(BookingRepository bookingRepository) {
@@ -43,10 +45,10 @@ public final class BookingHospitalSelectorCoordinator {
     public void searchOptions(
             String query,
             BookingHospitalCatalog catalog,
-            KakaoLocalPlaceSearchClient kakaoClient,
+            PlaceSearch kakaoClient,
             RepositoryCallback<List<BookingHospitalOption>> callback
     ) {
-        if (TextUtils.isEmpty(query)) {
+        if (query == null || query.trim().isEmpty()) {
             callback.onSuccess(catalog.filter(query));
             return;
         }
@@ -58,10 +60,10 @@ public final class BookingHospitalSelectorCoordinator {
             return;
         }
 
-        kakaoClient.searchKeyword(query, new KakaoLocalPlaceSearchClient.KeywordCallback() {
+        kakaoClient.search(query, new KakaoLocalPlaceSearchClient.KeywordCallback() {
             @Override
             public void onSuccess(List<KakaoPlaceCoordinate> results) {
-                if (results.isEmpty()) {
+                if (results == null || results.isEmpty()) {
                     callback.onSuccess(localResults);
                     return;
                 }
@@ -76,7 +78,7 @@ public final class BookingHospitalSelectorCoordinator {
                     List<BookingHospitalOption> matchingLocal = catalog.filter(name);
                     List<String> departments = Collections.emptyList();
                     for (BookingHospitalOption local : matchingLocal) {
-                        if (TextUtils.equals(local.getHospitalName(), name)) {
+                        if (local.getHospitalName().equals(name)) {
                             departments = local.getDepartmentNames();
                             break;
                         }

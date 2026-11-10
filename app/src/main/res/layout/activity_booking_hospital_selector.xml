@@ -1,377 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/bookingHospitalSelectorRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/figma_mvp_background">
-
+    android:orientation="vertical"
+    android:background="@color/final_surface">
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <ImageButton
-                android:id="@+id/buttonBackBookingHospitalSelector"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_gravity="start|center_vertical"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/guide_back"
-                android:padding="12dp"
-                android:src="@drawable/ic_figma_hospital_search_back" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/booking_hospital_selector_app_bar_title"
-                android:textColor="@color/figma_mvp_text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="76dp"
-            android:paddingStart="20dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="12dp">
-
-            <androidx.appcompat.widget.SearchView
-                android:id="@+id/searchBookingHospital"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_figma_hospital_search_input"
-                app:iconifiedByDefault="false"
-                app:queryBackground="@android:color/transparent" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="60dp"
+        android:gravity="center_vertical"
+        android:paddingStart="15dp"
+        android:paddingEnd="6dp">
+        <TextView
+            style="@style/FinalHospitalTitle"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp">
-
+            android:layout_weight="1"
+            android:text="@string/final_hospital_title" />
+        <ImageButton
+            android:id="@+id/buttonBookingHospitalOptions"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="16dp"
+            android:src="@drawable/ic_figma_more_vertical"
+            android:contentDescription="@string/final_hospital_options" />
+        <ImageButton
+            android:id="@+id/buttonBackBookingHospitalSelector"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="9dp"
+            android:src="@drawable/bodeul_final_hospital_close"
+            android:contentDescription="@string/final_hospital_close" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="44dp"
+        android:background="@drawable/bg_final_hospital_search"
+        android:gravity="center_vertical"
+        android:paddingStart="15dp"
+        android:paddingEnd="3dp"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp">
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/bodeul_final_hospital_search"
+            android:importantForAccessibility="no" />
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/searchBookingHospital"
+            style="@style/BodeulFinalInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minHeight="44dp"
+            android:paddingStart="5dp"
+            android:paddingEnd="0dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:hint="@string/booking_hospital_selector_search_hint" />
+        <ImageButton
+            android:id="@+id/buttonClearBookingHospital"
+            android:layout_width="40dp"
+            android:layout_height="44dp"
+            android:padding="12dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="centerInside"
+            android:src="@drawable/bodeul_final_hospital_clear"
+            android:contentDescription="@string/final_hospital_clear" />
+    </LinearLayout>
+    <FrameLayout
+        android:id="@+id/bookingHospitalSelectorContent"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="20dp"
+        android:paddingStart="15dp"
+        android:paddingEnd="15dp">
+        <ListView
+            android:id="@+id/listBookingHospitalOptions"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="20dp"
+            android:listSelector="@android:color/transparent"
+            android:clipToPadding="false"
+            android:paddingBottom="20dp"
+            android:scrollbars="none" />
+        <ScrollView
+            android:id="@+id/bookingHospitalEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:scrollbars="none">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingTop="30dp"
+                android:paddingBottom="20dp">
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/bodeul_final_hospital_empty"
+                    android:importantForAccessibility="no" />
+                <TextView
+                    android:id="@+id/textBookingHospitalEmpty"
+                    style="@style/FinalBookingBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="15dp"
+                    android:gravity="center"
+                    android:fontFamily="@font/pretendard_semibold"
+                    android:text="@string/final_hospital_empty" />
+                <TextView
+                    style="@style/FinalBookingCaption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:gravity="center"
+                    android:text="@string/final_hospital_empty_body"
+                    android:textColor="@color/final_text_secondary" />
+            </LinearLayout>
+        </ScrollView>
+        <ScrollView
+            android:id="@+id/bookingHospitalError"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
             <include
                 android:id="@+id/bookingHospitalSelectorStatePanel"
                 layout="@layout/include_state_panel" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:id="@+id/bookingHospitalSelectorContent"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="16dp">
-
-            <LinearLayout
-                android:id="@+id/layoutBookingHospitalRegionHeader"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="4dp"
-                android:paddingEnd="4dp">
-
-                <TextView
-                    android:id="@+id/textBookingHospitalRegionTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/booking_hospital_selector_region_title"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_figma_hospital_search_region_pin" />
-            </LinearLayout>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBookingHospitalRegionAll"
-                android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:layout_marginTop="12dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/figma_mvp_surface"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="1dp"
-                app:strokeColor="@color/figma_mvp_card_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_manager_home_icon_blue"
-                        android:contentDescription="@null"
-                        android:padding="10dp"
-                        android:src="@drawable/ic_figma_hospital_search_region_all" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/booking_hospital_selector_region_all"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/booking_hospital_selector_region_all_helper"
-                            android:textColor="@color/figma_mvp_text_secondary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="6dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_figma_hospital_search_chevron" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBookingHospitalRegionJongno"
-                android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:layout_marginTop="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/figma_mvp_surface"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="1dp"
-                app:strokeColor="@color/figma_mvp_card_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_figma_neutral_circle"
-                        android:contentDescription="@null"
-                        android:paddingStart="12dp"
-                        android:paddingTop="10dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="10dp"
-                        android:src="@drawable/ic_figma_hospital_search_region_pin" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/booking_hospital_selector_region_jongno"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/booking_hospital_selector_region_jongno_helper"
-                            android:textColor="@color/figma_mvp_text_secondary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="6dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_figma_hospital_search_chevron" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBookingHospitalRegionGangnam"
-                android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:layout_marginTop="8dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground"
-                app:cardBackgroundColor="@color/figma_mvp_surface"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="1dp"
-                app:strokeColor="@color/figma_mvp_card_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="15dp"
-                    android:paddingEnd="15dp">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:background="@drawable/bg_figma_neutral_circle"
-                        android:contentDescription="@null"
-                        android:paddingStart="12dp"
-                        android:paddingTop="10dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="10dp"
-                        android:src="@drawable/ic_figma_hospital_search_region_pin" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/booking_hospital_selector_region_gangnam"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/booking_hospital_selector_region_gangnam_helper"
-                            android:textColor="@color/figma_mvp_text_secondary"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:layout_width="6dp"
-                        android:layout_height="10dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_figma_hospital_search_chevron" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="4dp"
-                android:paddingEnd="4dp">
-
-                <TextView
-                    android:id="@+id/textBookingHospitalResultCount"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_figma_hospital_search_section" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonBookingHospitalManualInput"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="6dp"
-                    android:minWidth="0dp"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:text="@string/booking_hospital_selector_manual_short_button"
-                    android:textColor="@color/figma_mvp_primary"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginTop="8dp"
-                android:layout_weight="1">
-
-                <ListView
-                    android:id="@+id/listBookingHospitalOptions"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clipToPadding="false"
-                    android:divider="@android:color/transparent"
-                    android:dividerHeight="12dp"
-                    android:listSelector="@android:color/transparent"
-                    android:paddingBottom="8dp"
-                    android:scrollbars="none" />
-
-                <TextView
-                    android:id="@+id/textBookingHospitalEmpty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top"
-                    android:layout_marginTop="12dp"
-                    android:background="@drawable/bg_surface_card_soft"
-                    android:gravity="center"
-                    android:lineSpacingExtra="3dp"
-                    android:padding="22dp"
-                    android:text="@string/booking_hospital_selector_empty_filtered"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="14sp"
-                    android:visibility="gone" />
-            </FrameLayout>
-        </LinearLayout>
-    </LinearLayout>
-
-    <ProgressBar
-        android:id="@+id/progressBookingHospitalSelector"
-        android:layout_width="wrap_content"
+        </ScrollView>
+        <ProgressBar
+            android:id="@+id/progressBookingHospitalSelector"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:indeterminateTint="@color/final_text_accent_accessible" />
+    </FrameLayout>
+    <TextView
+        android:id="@+id/buttonBookingHospitalManualInput"
+        style="@style/BodeulFinalLink"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        app:indicatorColor="@color/figma_mvp_primary" />
-</FrameLayout>
+        android:gravity="center"
+        android:padding="12dp"
+        android:text="@string/booking_hospital_selector_manual_short_button"
+        android:textColor="@color/final_text_accent_accessible" />
+</LinearLayout>

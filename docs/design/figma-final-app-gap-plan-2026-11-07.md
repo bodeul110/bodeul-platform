@@ -20,6 +20,8 @@
 
 ## 비교 기준과 확인 범위
 
+**11월 10일 선택기 후속:** 병원 검색·진료과 선택은 `codex/figma-final-hospital-selector`에서 로컬 구현·검증했다. [구현 기록](figma-final-hospital-selector-2026-11-10.md)에 원본 node, 기존 기능 보존, 데이터 계약 한계와 검증 범위를 구분했다. 날짜·시간·만남 장소와 결제 완료 화면은 후속 범위이며, 선택기 로컬 완료를 전체 예약 화면의 병합·실기기 검증 완료로 보지 않는다.
+
 | 대상 | 이번 확인 |
 | --- | --- |
 | Figma | [보들 어플 완성본 / Page 1](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=0-1), file key `fqwi44prjEgVFZhaM6LuzS`, node `0:1` |
