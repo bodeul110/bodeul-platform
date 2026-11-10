@@ -6,6 +6,8 @@ Android 앱, 관리자 웹, Core API, PostgreSQL, Firebase와 운영 도구의 �
 
 - [설계 판단 기록 규칙](decision-log.md)
   - 작업 목적, 선택 방식, 대안, 선택 이유, 리스크를 남기는 팀 운영 기준
+- [이용내역 최종 UI 적용 판단](client-history-final-ui-2026-11-10.md)
+  - 실제 예약 상태를 최종 Figma 탭과 카드에 연결하고 공용 예약 카드를 분리한 이유
 - [MVP SOS·사고 대응 비활성 경계](mvp-accident-response-boundary.md)
   - 신규 SOS·자동 연락·사고 기록을 닫고 기존 필드를 읽기 호환으로 유지하는 기준
 - [현재 인프라 구성도](infra-overview.md)
