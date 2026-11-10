@@ -1,425 +1,268 @@
 package com.example.bodeul.ui.booking;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.text.InputType;
-import android.text.TextUtils;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
-import android.widget.AutoCompleteTextView;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.ProgressBar;
-import android.widget.TextView;
-
+import android.widget.Toast;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SearchView;
-import androidx.core.content.ContextCompat;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
-
 import com.example.bodeul.R;
+import com.example.bodeul.data.BookingRepository;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.data.ServiceLocator;
+import com.example.bodeul.data.map.KakaoLocalPlaceSearchClient;
 import com.example.bodeul.domain.model.BookingHospitalOption;
 import com.example.bodeul.domain.model.BookingHospitalSelection;
 import com.example.bodeul.util.StatePanelHelper;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
-
 import java.util.List;
 
-/**
- * 예약 폼에서 병원과 진료과를 검색해 선택하는 전용 화면이다.
- */
+/** 예약 저장 계약은 유지하고 검색·선택 화면의 수명주기만 연결한다. */
 public class BookingHospitalSelectorActivity extends AppCompatActivity {
     private static final String EXTRA_INITIAL_HOSPITAL = "initialHospital";
     private static final String EXTRA_INITIAL_DEPARTMENT = "initialDepartment";
     private static final String EXTRA_HOSPITAL_LATITUDE = "hospitalLatitude";
     private static final String EXTRA_HOSPITAL_LONGITUDE = "hospitalLongitude";
-
+    private static final String STATE_QUERY = "hospitalQuery";
     private BookingHospitalSelectorCoordinator coordinator;
-    private BookingHospitalOptionAdapter optionAdapter;
-
-    private SearchView searchView;
-    private TextView textResultCount;
-    private TextView textEmpty;
-    private ProgressBar progressHospitalSelector;
-    private View statePanel;
-    private View contentContainer;
-    private View[] regionShortcutViews;
-    private int contentHeightPx;
-    private boolean keyboardVisible;
-    private ListView listHospitalOptions;
-    private MaterialButton buttonManualInput;
+    private BookingHospitalSelectorCoordinator.PlaceSearch placeSearch;
+    private BookingHospitalOptionAdapter adapter;
     private BookingHospitalCatalog catalog = BookingHospitalCatalog.empty();
-    private com.example.bodeul.data.map.KakaoLocalPlaceSearchClient kakaoClient;
-    private int searchRequestVersion;
+    private EditText searchInput;
+    private View progress;
+    private View empty;
+    private View statePanel;
+    private View error;
+    private ListView list;
+    private boolean loadingCatalog;
+    private boolean catalogFailed;
+    private int requestVersion;
+    private int catalogVersion;
 
     public static Intent createIntent(Context context, BookingHospitalSelection selection) {
         Intent intent = new Intent(context, BookingHospitalSelectorActivity.class);
-        intent.putExtra(EXTRA_INITIAL_HOSPITAL, selection.getHospitalName());
-        intent.putExtra(EXTRA_INITIAL_DEPARTMENT, selection.getDepartmentName());
-        intent.putExtra(EXTRA_HOSPITAL_LATITUDE, selection.getHospitalLatitude());
-        intent.putExtra(EXTRA_HOSPITAL_LONGITUDE, selection.getHospitalLongitude());
+        putSelection(intent, selection);
         return intent;
     }
 
     public static BookingHospitalSelection parseResult(@Nullable Intent data) {
-        if (data == null) {
-            return new BookingHospitalSelection("", "");
-        }
-        return new BookingHospitalSelection(
-                data.getStringExtra(EXTRA_INITIAL_HOSPITAL),
+        if (data == null) return new BookingHospitalSelection("", "");
+        return new BookingHospitalSelection(data.getStringExtra(EXTRA_INITIAL_HOSPITAL),
                 data.getStringExtra(EXTRA_INITIAL_DEPARTMENT),
-                data.getDoubleExtra(EXTRA_HOSPITAL_LATITUDE, 0.0),
-                data.getDoubleExtra(EXTRA_HOSPITAL_LONGITUDE, 0.0)
-        );
+                data.getDoubleExtra(EXTRA_HOSPITAL_LATITUDE, 0),
+                data.getDoubleExtra(EXTRA_HOSPITAL_LONGITUDE, 0));
     }
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    private static void putSelection(Intent intent, BookingHospitalSelection selection) {
+        intent.putExtra(EXTRA_INITIAL_HOSPITAL, selection.getHospitalName());
+        intent.putExtra(EXTRA_INITIAL_DEPARTMENT, selection.getDepartmentName());
+        intent.putExtra(EXTRA_HOSPITAL_LATITUDE, selection.getHospitalLatitude());
+        intent.putExtra(EXTRA_HOSPITAL_LONGITUDE, selection.getHospitalLongitude());
+    }
+
+    @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
+        setTheme(R.style.Theme_Bodeul_FinalBooking);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_booking_hospital_selector);
         configureSystemBars();
-
-        coordinator = new BookingHospitalSelectorCoordinator(ServiceLocator.provideBookingRepository(this));
-        optionAdapter = new BookingHospitalOptionAdapter(this);
-        kakaoClient = new com.example.bodeul.data.map.KakaoLocalPlaceSearchClient(this);
-
-        searchView = findViewById(R.id.searchBookingHospital);
-        textResultCount = findViewById(R.id.textBookingHospitalResultCount);
-        textEmpty = findViewById(R.id.textBookingHospitalEmpty);
-        progressHospitalSelector = findViewById(R.id.progressBookingHospitalSelector);
+        coordinator = new BookingHospitalSelectorCoordinator(provideBookingRepository());
+        placeSearch = providePlaceSearch();
+        searchInput = findViewById(R.id.searchBookingHospital);
+        progress = findViewById(R.id.progressBookingHospitalSelector);
+        empty = findViewById(R.id.bookingHospitalEmpty);
         statePanel = findViewById(R.id.bookingHospitalSelectorStatePanel);
-        contentContainer = findViewById(R.id.bookingHospitalSelectorContent);
-        listHospitalOptions = findViewById(R.id.listBookingHospitalOptions);
-        buttonManualInput = findViewById(R.id.buttonBookingHospitalManualInput);
-
-        styleSearchView();
-        bindRegionShortcuts();
-        bindAdaptiveRegionShortcuts();
-        listHospitalOptions.setAdapter(optionAdapter);
-        listHospitalOptions.setEmptyView(textEmpty);
-        listHospitalOptions.setOnItemClickListener((parent, view, position, id) ->
-                openDepartmentSelector(optionAdapter.getItem(position)));
-        findViewById(R.id.buttonBackBookingHospitalSelector).setOnClickListener(view -> finish());
-        buttonManualInput.setOnClickListener(view -> showManualInputDialog(
-                searchView.getQuery() == null ? "" : searchView.getQuery().toString(),
-                "",
-                0.0,
-                0.0
-        ));
-
-        searchView.setQueryHint(getString(R.string.booking_hospital_selector_search_hint));
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                updateOptionList(query);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                updateOptionList(newText);
-                return true;
+        error = findViewById(R.id.bookingHospitalError);
+        list = findViewById(R.id.listBookingHospitalOptions);
+        adapter = new BookingHospitalOptionAdapter(this, this::openDepartmentSelector, this::openMap);
+        list.setAdapter(adapter);
+        list.setOnItemClickListener((parent, view, position, id) -> openDepartmentSelector(adapter.getItem(position)));
+        findViewById(R.id.buttonBackBookingHospitalSelector).setOnClickListener(v -> finish());
+        findViewById(R.id.buttonClearBookingHospital).setOnClickListener(v -> searchInput.setText(""));
+        findViewById(R.id.buttonBookingHospitalOptions).setOnClickListener(this::showRegionMenu);
+        findViewById(R.id.buttonBookingHospitalManualInput).setOnClickListener(v -> {
+            hideKeyboard();
+            if (getSupportFragmentManager().findFragmentByTag(BookingHospitalManualDialog.TAG) == null) {
+                BookingHospitalSelection initial = parseResult(getIntent());
+                BookingHospitalManualDialog.create(query().trim().equals(initial.getHospitalName())
+                                ? initial : new BookingHospitalSelection(query(), ""), true)
+                        .show(getSupportFragmentManager(), BookingHospitalManualDialog.TAG);
             }
         });
+        getSupportFragmentManager().setFragmentResultListener(BookingDepartmentSheet.RESULT, this,
+                (key, result) -> finishWithSelection(BookingDepartmentSheet.readSelection(result)));
 
-        String initialHospital = getIntent().getStringExtra(EXTRA_INITIAL_HOSPITAL);
-        if (!TextUtils.isEmpty(initialHospital)) {
-            searchView.setQuery(initialHospital, false);
-        }
-
+        searchInput.setText(savedInstanceState == null
+                ? getIntent().getStringExtra(EXTRA_INITIAL_HOSPITAL) : savedInstanceState.getString(STATE_QUERY, ""));
+        searchInput.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (!loadingCatalog) search();
+            }
+            @Override public void afterTextChanged(Editable s) { }
+        });
+        searchInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId != EditorInfo.IME_ACTION_SEARCH) return false;
+            hideKeyboard();
+            if (!loadingCatalog) search();
+            return true;
+        });
         loadCatalog();
+    }
+
+    protected BookingRepository provideBookingRepository() {
+        return ServiceLocator.provideBookingRepository(this);
+    }
+
+    protected BookingHospitalSelectorCoordinator.PlaceSearch providePlaceSearch() {
+        KakaoLocalPlaceSearchClient client = new KakaoLocalPlaceSearchClient(this);
+        return new BookingHospitalSelectorCoordinator.PlaceSearch() {
+            @Override public boolean isConfigured() { return client.isConfigured(); }
+            @Override public void search(String query, KakaoLocalPlaceSearchClient.KeywordCallback callback) {
+                client.searchKeyword(query, callback);
+            }
+        };
+    }
+
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        outState.putString(STATE_QUERY, query());
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override protected void onDestroy() {
+        requestVersion++;
+        catalogVersion++;
+        super.onDestroy();
     }
 
     private void configureSystemBars() {
         View root = findViewById(R.id.bookingHospitalSelectorRoot);
-        int rootLeft = root.getPaddingLeft();
-        int rootTop = root.getPaddingTop();
-        int rootRight = root.getPaddingRight();
-        int rootBottom = root.getPaddingBottom();
-
-        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
-            Insets systemInsets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars()
-                            | WindowInsetsCompat.Type.displayCutout()
-            );
-            Insets imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
-            keyboardVisible = windowInsets.isVisible(WindowInsetsCompat.Type.ime());
-            view.setPadding(
-                    rootLeft + systemInsets.left,
-                    rootTop + systemInsets.top,
-                    rootRight + systemInsets.right,
-                    rootBottom + Math.max(systemInsets.bottom, imeInsets.bottom)
-            );
-            applyAdaptiveRegionShortcuts();
-            return windowInsets;
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            view.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+            return insets;
         });
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
-                .setAppearanceLightStatusBars(true);
-        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
-                .setAppearanceLightNavigationBars(true);
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightNavigationBars(true);
         ViewCompat.requestApplyInsets(root);
     }
 
-    private void styleSearchView() {
-        AutoCompleteTextView queryInput = searchView.findViewById(
-                androidx.appcompat.R.id.search_src_text
-        );
-        queryInput.setTextColor(ContextCompat.getColor(this, R.color.figma_mvp_text_primary));
-        queryInput.setHintTextColor(ContextCompat.getColor(this, R.color.figma_mvp_text_secondary));
-        queryInput.setTextSize(16);
-
-        ImageView searchIcon = searchView.findViewById(androidx.appcompat.R.id.search_mag_icon);
-        searchIcon.setImageResource(R.drawable.ic_figma_hospital_search_search);
-        ImageView closeIcon = searchView.findViewById(androidx.appcompat.R.id.search_close_btn);
-        closeIcon.setImageResource(R.drawable.ic_figma_hospital_search_clear);
-
-        View searchPlate = searchView.findViewById(androidx.appcompat.R.id.search_plate);
-        searchPlate.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+    private void hideKeyboard() {
+        searchInput.clearFocus();
+        WindowCompat.getInsetsController(getWindow(), searchInput).hide(WindowInsetsCompat.Type.ime());
     }
 
-    private void bindRegionShortcuts() {
-        bindRegionShortcut(
-                R.id.cardBookingHospitalRegionAll,
-                R.string.booking_hospital_selector_region_all_query
-        );
-        bindRegionShortcut(
-                R.id.cardBookingHospitalRegionJongno,
-                R.string.booking_hospital_selector_region_jongno_query
-        );
-        bindRegionShortcut(
-                R.id.cardBookingHospitalRegionGangnam,
-                R.string.booking_hospital_selector_region_gangnam_query
-        );
-    }
+    private String query() { return searchInput.getText().toString(); }
 
-    private void bindAdaptiveRegionShortcuts() {
-        regionShortcutViews = new View[]{
-                findViewById(R.id.layoutBookingHospitalRegionHeader),
-                findViewById(R.id.cardBookingHospitalRegionAll),
-                findViewById(R.id.cardBookingHospitalRegionJongno),
-                findViewById(R.id.cardBookingHospitalRegionGangnam)
-        };
-        contentContainer.addOnLayoutChangeListener((view, left, top, right, bottom,
-                oldLeft, oldTop, oldRight, oldBottom) -> {
-            contentHeightPx = bottom - top;
-            applyAdaptiveRegionShortcuts();
+    private void showRegionMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        int[] labels = {R.string.booking_hospital_selector_region_all,
+                R.string.booking_hospital_selector_region_jongno, R.string.booking_hospital_selector_region_gangnam};
+        int[] queries = {R.string.booking_hospital_selector_region_all_query,
+                R.string.booking_hospital_selector_region_jongno_query, R.string.booking_hospital_selector_region_gangnam_query};
+        for (int i = 0; i < labels.length; i++) menu.getMenu().add(0, i, i, labels[i]);
+        if (catalogFailed) menu.getMenu().add(0, labels.length, labels.length, R.string.state_action_retry);
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == labels.length) loadCatalog();
+            else searchInput.setText(queries[item.getItemId()]);
+            hideKeyboard();
+            return true;
         });
+        menu.show();
     }
 
-    private void applyAdaptiveRegionShortcuts() {
-        if (regionShortcutViews == null) {
-            return;
-        }
-        boolean showRegions = BookingHospitalSelectorLayoutPolicy.showRegionShortcuts(
-                contentHeightPx,
-                getResources().getDisplayMetrics().density,
-                getResources().getConfiguration().fontScale,
-                keyboardVisible);
-        int visibility = showRegions ? View.VISIBLE : View.GONE;
-        for (View shortcut : regionShortcutViews) {
-            shortcut.setVisibility(visibility);
-        }
-    }
-
-    private void bindRegionShortcut(int viewId, int queryResId) {
-        findViewById(viewId).setOnClickListener(view -> {
-            searchView.setQuery(getString(queryResId), true);
-            searchView.clearFocus();
-        });
-    }
+    private boolean alive() { return !isFinishing() && !isDestroyed(); }
 
     private void loadCatalog() {
-        setLoading(true);
-        hideStatePanel();
+        int version = ++catalogVersion;
+        requestVersion++;
+        loadingCatalog = true;
+        catalogFailed = false;
+        renderLoading();
+        StatePanelHelper.hide(statePanel);
         coordinator.loadCatalog(new RepositoryCallback<BookingHospitalCatalog>() {
-            @Override
-            public void onSuccess(BookingHospitalCatalog result) {
-                catalog = result == null ? BookingHospitalCatalog.empty() : result;
-                setLoading(false);
-                updateOptionList(searchView.getQuery() == null ? "" : searchView.getQuery().toString());
+            @Override public void onSuccess(BookingHospitalCatalog result) {
+                if (!alive() || version != catalogVersion) return;
+                catalog = result;
+                loadingCatalog = false;
+                search();
             }
-
-            @Override
-            public void onError(String message) {
-                setLoading(false);
-                showErrorState(message);
+            @Override public void onError(String message) {
+                if (!alive() || version != catalogVersion) return;
+                loadingCatalog = false;
+                catalogFailed = true;
+                StatePanelHelper.show(statePanel, StatePanelHelper.Tone.ERROR,
+                        getString(R.string.state_badge_error), getString(R.string.booking_hospital_selector_error_title),
+                        getString(R.string.state_load_error_body), getString(R.string.state_action_retry),
+                        v -> loadCatalog(), null, null);
+                // 가이드 목록 오류가 있어도 외부 병원 검색과 직접 입력은 계속 사용할 수 있다.
+                search();
             }
         });
     }
 
-    private void updateOptionList(String query) {
-        String requestedQuery = query == null ? "" : query;
-        int requestVersion = ++searchRequestVersion;
-        if (catalog.isEmpty()) {
-            textEmpty.setText(R.string.booking_hospital_selector_empty_all);
-            optionAdapter.submitList(java.util.Collections.emptyList());
-            textResultCount.setText(getString(R.string.booking_hospital_selector_result_count, 0));
-            return;
-        }
+    private void renderLoading() {
+        list.setVisibility(View.GONE);
+        empty.setVisibility(View.GONE);
+        error.setVisibility(View.GONE);
+        progress.setVisibility(View.VISIBLE);
+    }
 
-        coordinator.searchOptions(requestedQuery, catalog, kakaoClient, new RepositoryCallback<List<BookingHospitalOption>>() {
-            @Override
-            public void onSuccess(List<BookingHospitalOption> filteredOptions) {
-                if (requestVersion != searchRequestVersion) {
-                    return;
-                }
-                optionAdapter.submitList(filteredOptions);
-                textResultCount.setText(getString(
-                        R.string.booking_hospital_selector_result_count,
-                        filteredOptions.size()
-                ));
-                if (filteredOptions.isEmpty()) {
-                    textEmpty.setText(R.string.booking_hospital_selector_empty_filtered);
-                }
+    private void search() {
+        int version = ++requestVersion;
+        renderLoading();
+        coordinator.searchOptions(query().trim(), catalog, placeSearch, new RepositoryCallback<List<BookingHospitalOption>>() {
+            @Override public void onSuccess(List<BookingHospitalOption> result) {
+                if (!alive() || version != requestVersion) return;
+                progress.setVisibility(View.GONE);
+                adapter.submitList(result);
+                list.setContentDescription(getString(R.string.booking_hospital_selector_result_count, result.size()));
+                list.setVisibility(result.isEmpty() ? View.GONE : View.VISIBLE);
+                boolean showCatalogError = result.isEmpty() && catalogFailed && query().trim().isEmpty();
+                error.setVisibility(showCatalogError ? View.VISIBLE : View.GONE);
+                empty.setVisibility(result.isEmpty() && !showCatalogError ? View.VISIBLE : View.GONE);
             }
-
-            @Override
-            public void onError(String message) {
-                // 검색 오류는 내부 fallback 결과로 흡수한다.
-            }
+            @Override public void onError(String message) { /* 검색은 가이드 목록으로 대체한다. */ }
         });
     }
 
     private void openDepartmentSelector(BookingHospitalOption option) {
-        List<String> departmentNames = option.getDepartmentNames();
-        if (departmentNames.isEmpty()) {
-            showManualInputDialog(option.getHospitalName(), "", option.getLatitude(), option.getLongitude());
-            return;
-        }
-        if (departmentNames.size() == 1) {
-            finishWithSelection(option.getHospitalName(), option.getLatitude(), option.getLongitude(), departmentNames.get(0));
-            return;
-        }
-
-        CharSequence[] items = departmentNames.toArray(new CharSequence[0]);
-        new AlertDialog.Builder(this)
-                .setTitle(getString(
-                        R.string.booking_hospital_selector_department_title,
-                        option.getHospitalName()
-                ))
-                .setItems(items, (dialogInterface, which) ->
-                        finishWithSelection(option.getHospitalName(), option.getLatitude(), option.getLongitude(), departmentNames.get(which)))
-                .setNegativeButton(R.string.booking_hospital_selector_department_cancel, null)
-                .show();
+        hideKeyboard();
+        if (getSupportFragmentManager().findFragmentByTag(BookingDepartmentSheet.TAG) != null) return;
+        BookingHospitalSelection initial = parseResult(getIntent());
+        String department = option.getHospitalName().equals(initial.getHospitalName()) ? initial.getDepartmentName() : "";
+        BookingDepartmentSheet.create(option, department).show(getSupportFragmentManager(), BookingDepartmentSheet.TAG);
     }
 
-    private void finishWithSelection(String hospitalName, double latitude, double longitude, String departmentName) {
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra(EXTRA_INITIAL_HOSPITAL, hospitalName);
-        resultIntent.putExtra(EXTRA_INITIAL_DEPARTMENT, departmentName);
-        resultIntent.putExtra(EXTRA_HOSPITAL_LATITUDE, latitude);
-        resultIntent.putExtra(EXTRA_HOSPITAL_LONGITUDE, longitude);
-        setResult(RESULT_OK, resultIntent);
+    protected void finishWithSelection(BookingHospitalSelection selection) {
+        Intent result = new Intent();
+        putSelection(result, selection);
+        setResult(RESULT_OK, result);
         finish();
     }
 
-    private void showManualInputDialog(
-            String initialHospitalName,
-            String initialDepartmentName,
-            double latitude,
-            double longitude
-    ) {
-        LinearLayout container = new LinearLayout(this);
-        container.setOrientation(LinearLayout.VERTICAL);
-        int spacing = Math.round(12 * getResources().getDisplayMetrics().density);
-        container.setPadding(spacing, spacing, spacing, 0);
-
-        TextInputLayout hospitalLayout = new TextInputLayout(this);
-        hospitalLayout.setHint(getString(R.string.admin_guide_hospital_hint));
-        TextInputEditText hospitalInput = new TextInputEditText(hospitalLayout.getContext());
-        hospitalInput.setSingleLine(true);
-        hospitalInput.setInputType(InputType.TYPE_CLASS_TEXT);
-        hospitalInput.setText(initialHospitalName);
-        hospitalLayout.addView(hospitalInput);
-        container.addView(hospitalLayout);
-
-        TextInputLayout departmentLayout = new TextInputLayout(this);
-        departmentLayout.setHint(getString(R.string.admin_guide_department_hint));
-        TextInputEditText departmentInput = new TextInputEditText(departmentLayout.getContext());
-        departmentInput.setSingleLine(true);
-        departmentInput.setInputType(InputType.TYPE_CLASS_TEXT);
-        departmentInput.setText(initialDepartmentName);
-        departmentLayout.addView(departmentInput);
-        LinearLayout.LayoutParams departmentParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        departmentParams.topMargin = spacing;
-        container.addView(departmentLayout, departmentParams);
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.booking_hospital_selector_manual_title)
-                .setMessage(R.string.booking_hospital_selector_manual_body)
-                .setView(container)
-                .setPositiveButton(R.string.booking_hospital_selector_manual_confirm, null)
-                .setNegativeButton(R.string.booking_hospital_selector_department_cancel, null)
-                .create();
-        dialog.setOnShowListener(dialogInterface ->
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
-                    String hospitalName = valueOf(hospitalInput);
-                    String departmentName = valueOf(departmentInput);
-                    hospitalLayout.setError(null);
-                    departmentLayout.setError(null);
-                    boolean valid = true;
-                    if (TextUtils.isEmpty(hospitalName)) {
-                        hospitalLayout.setError(getString(R.string.error_required_field));
-                        valid = false;
-                    }
-                    if (TextUtils.isEmpty(departmentName)) {
-                        departmentLayout.setError(getString(R.string.error_required_field));
-                        valid = false;
-                    }
-                    if (!valid) {
-                        return;
-                    }
-                    finishWithSelection(hospitalName, latitude, longitude, departmentName);
-                    dialog.dismiss();
-                }));
-        dialog.show();
-    }
-
-    private String valueOf(TextInputEditText editText) {
-        return editText.getText() == null ? "" : editText.getText().toString().trim();
-    }
-
-    private void setLoading(boolean loading) {
-        progressHospitalSelector.setVisibility(loading ? View.VISIBLE : View.GONE);
-        contentContainer.setVisibility(loading ? View.GONE : View.VISIBLE);
-        searchView.setEnabled(!loading);
-        buttonManualInput.setEnabled(!loading);
-    }
-
-    private void showErrorState(String message) {
-        String body = getString(R.string.state_load_error_body);
-        if (!TextUtils.isEmpty(message)) {
-            body = body + "\n\n" + message;
+    protected void openMap(BookingHospitalOption option) {
+        String query = option.getHospitalName();
+        if (option.getLatitude() != 0 && option.getLongitude() != 0) {
+            query = option.getLatitude() + "," + option.getLongitude() + "(" + query + ")";
         }
-        StatePanelHelper.show(
-                statePanel,
-                StatePanelHelper.Tone.ERROR,
-                getString(R.string.state_badge_error),
-                getString(R.string.booking_hospital_selector_error_title),
-                body,
-                getString(R.string.state_action_retry),
-                view -> loadCatalog(),
-                null,
-                null
-        );
-        contentContainer.setVisibility(View.GONE);
-    }
-
-    private void hideStatePanel() {
-        StatePanelHelper.hide(statePanel);
-        contentContainer.setVisibility(View.VISIBLE);
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(query))));
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, R.string.final_hospital_map_unavailable, Toast.LENGTH_SHORT).show();
+        }
     }
 }
