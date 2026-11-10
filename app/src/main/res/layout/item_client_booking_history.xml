@@ -140,18 +140,20 @@
                 android:id="@+id/buttonBookingRequestReview"
                 style="@style/FinalHistorySecondaryButton"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="match_parent"
                 android:layout_marginEnd="5dp"
                 android:layout_weight="1"
+                android:minHeight="48dp"
                 android:text="@string/final_history_review_action" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonBookingRequestReport"
                 style="@style/FinalHistoryPrimaryButton"
                 android:layout_width="0dp"
-                android:layout_height="48dp"
+                android:layout_height="match_parent"
                 android:layout_marginStart="5dp"
                 android:layout_weight="1"
+                android:minHeight="48dp"
                 android:text="@string/final_history_report_action" />
         </LinearLayout>
     </LinearLayout>

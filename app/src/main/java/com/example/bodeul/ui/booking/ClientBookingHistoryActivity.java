@@ -37,6 +37,12 @@ import java.util.Calendar;
  * 사용자 예약 이력을 읽기 전용으로 보여준다.
  */
 public class ClientBookingHistoryActivity extends AppCompatActivity {
+    private static final String STATE_CALENDAR_YEAR = "calendarYear";
+    private static final String STATE_CALENDAR_MONTH = "calendarMonth";
+    private static final String STATE_CALENDAR_DAY = "calendarDay";
+    private static final String STATE_SELECTED_HISTORY_FILTER = "selectedHistoryFilter";
+    private static final String STATE_HISTORY_FILTER_CHOSEN = "historyFilterChosen";
+
     private AuthRepository authRepository;
     private BookingRepository bookingRepository;
     private ClientBookingHistoryCoordinator coordinator;
@@ -94,9 +100,12 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         );
         updateHistoryFilterViews();
         Calendar today = BookingAppointmentDateTime.newCalendar();
-        calendarYear = savedInstanceState == null ? today.get(Calendar.YEAR) : savedInstanceState.getInt("calendarYear");
-        calendarMonth = savedInstanceState == null ? today.get(Calendar.MONTH) : savedInstanceState.getInt("calendarMonth");
-        calendarDay = savedInstanceState == null ? today.get(Calendar.DAY_OF_MONTH) : savedInstanceState.getInt("calendarDay");
+        calendarYear = savedInstanceState == null ? today.get(Calendar.YEAR)
+                : savedInstanceState.getInt(STATE_CALENDAR_YEAR);
+        calendarMonth = savedInstanceState == null ? today.get(Calendar.MONTH)
+                : savedInstanceState.getInt(STATE_CALENDAR_MONTH);
+        calendarDay = savedInstanceState == null ? today.get(Calendar.DAY_OF_MONTH)
+                : savedInstanceState.getInt(STATE_CALENDAR_DAY);
         Calendar displayed = Calendar.getInstance();
         displayed.set(calendarYear, calendarMonth, calendarDay, 12, 0);
         CalendarView calendar = findViewById(R.id.clientCalendar);
@@ -137,25 +146,30 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             return;
         }
-        String savedFilter = savedInstanceState.getString("selectedHistoryFilter");
+        String savedFilter = savedInstanceState.getString(STATE_SELECTED_HISTORY_FILTER);
         if (savedFilter == null) {
             return;
         }
         try {
             selectedHistoryFilter = ClientBookingHistoryFilter.valueOf(savedFilter);
-            historyFilterChosen = true;
+            historyFilterChosen = savedInstanceState.getBoolean(
+                    STATE_HISTORY_FILTER_CHOSEN,
+                    false
+            );
         } catch (IllegalArgumentException ignored) {
             selectedHistoryFilter = ClientBookingHistoryFilter.MATCHING;
+            historyFilterChosen = false;
         }
     }
 
     private void bindHistoryFilter(TextView view, ClientBookingHistoryFilter filter) {
         view.setOnClickListener(clickedView -> {
+            // 기본으로 보이는 탭을 다시 누른 경우도 사용자가 직접 고른 상태로 보존한다.
+            historyFilterChosen = true;
             if (selectedHistoryFilter == filter) {
                 return;
             }
             selectedHistoryFilter = filter;
-            historyFilterChosen = true;
             updateHistoryFilterViews();
             if (loadedUser != null) {
                 renderRequests();
@@ -350,10 +364,11 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
     }
 
     @Override protected void onSaveInstanceState(Bundle outState) {
-        outState.putInt("calendarYear", calendarYear);
-        outState.putInt("calendarMonth", calendarMonth);
-        outState.putInt("calendarDay", calendarDay);
-        outState.putString("selectedHistoryFilter", selectedHistoryFilter.name());
+        outState.putInt(STATE_CALENDAR_YEAR, calendarYear);
+        outState.putInt(STATE_CALENDAR_MONTH, calendarMonth);
+        outState.putInt(STATE_CALENDAR_DAY, calendarDay);
+        outState.putString(STATE_SELECTED_HISTORY_FILTER, selectedHistoryFilter.name());
+        outState.putBoolean(STATE_HISTORY_FILTER_CHOSEN, historyFilterChosen);
         super.onSaveInstanceState(outState);
     }
 
