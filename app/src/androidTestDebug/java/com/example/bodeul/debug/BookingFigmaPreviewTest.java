@@ -221,7 +221,7 @@ public class BookingFigmaPreviewTest {
                 assertNotNull(activity.completedRequest);
                 assertEquals("검증 병원", activity.completedRequest.getHospitalName());
                 assertNull(field(activity, "pendingSubmissionDraft"));
-                assertEquals(false, field(activity, "submitting"));
+                assertFalse(((BookingSubmissionViewModel) field(activity, "submission")).isBusy());
                 assertFalse(activity.findViewById(R.id.bookingFooter).isShown());
                 paymentResult(activity, android.app.Activity.RESULT_OK, simulatedApproval());
                 assertEquals(1, activity.completionCount);
