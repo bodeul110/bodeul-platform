@@ -3,100 +3,75 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_screen_glow">
+    android:background="@color/final_surface">
 
     <ScrollView
         android:id="@+id/clientBookingHistoryScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/clientBottomNavigation"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:id="@+id/clientBookingHistoryScrollContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingTop="24dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="24dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="94dp"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/bodeul_logo_full" />
-
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonBackClientBookingHistory"
-                    style="@style/BodeulOutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="0dp"
-                    android:text="@string/guide_back" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/textClientBookingHistoryMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/bg_surface_pill"
-                android:paddingStart="14dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="8dp"
-                android:textColor="@color/bodeul_primary"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <LinearLayout android:id="@+id/clientCalendarContainer"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="vertical" android:visibility="gone">
-                <CalendarView android:id="@+id/clientCalendar"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView android:id="@+id/textClientCalendarDate" style="@style/FinalHomeTitle"
-                    android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <TextView style="@style/FinalHomeCaption" android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:text="@string/final_calendar_undated" />
-                <TextView android:id="@+id/textClientCalendarEmpty" style="@style/FinalHomeValue"
-                    android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:paddingVertical="16dp" android:text="@string/final_calendar_empty" android:visibility="gone" />
-            </LinearLayout>
+            android:paddingStart="@dimen/final_screen_gutter"
+            android:paddingTop="28dp"
+            android:paddingEnd="@dimen/final_screen_gutter"
+            android:paddingBottom="28dp">
 
             <TextView
                 android:id="@+id/textClientBookingHistoryTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:textColor="@color/bodeul_text_primary"
-                android:textSize="30sp"
-                android:textStyle="bold" />
+                android:fontFamily="@font/pretendard_bold"
+                android:includeFontPadding="false"
+                android:text="@string/final_history_title"
+                android:textColor="@color/final_text_primary"
+                android:textSize="22sp"
+                app:lineHeight="29sp" />
 
-            <TextView
-                android:id="@+id/textClientBookingHistorySubtitle"
+            <LinearLayout
+                android:id="@+id/clientCalendarContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="3dp"
-                android:textColor="@color/bodeul_text_secondary"
-                android:textSize="14sp" />
+                android:layout_marginTop="18dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <CalendarView
+                    android:id="@+id/clientCalendar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/textClientCalendarDate"
+                    style="@style/FinalHomeTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp" />
+
+                <TextView
+                    style="@style/FinalHomeCaption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/final_calendar_undated" />
+
+                <TextView
+                    android:id="@+id/textClientCalendarEmpty"
+                    style="@style/FinalHomeValue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingVertical="16dp"
+                    android:text="@string/final_calendar_empty"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <include
                 android:id="@+id/clientBookingHistoryStatePanel"
@@ -107,6 +82,7 @@
                 style="@style/BodeulOutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
                 android:minHeight="48dp"
                 android:text="@string/guardian_booking_inbox_title"
                 android:visibility="gone" />
@@ -117,82 +93,67 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <com.google.android.material.card.MaterialCardView
+                <LinearLayout
+                    android:id="@+id/layoutClientBookingHistoryFilters"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    app:cardBackgroundColor="@color/bodeul_surface"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="6dp"
-                    app:strokeColor="@color/bodeul_outline"
-                    app:strokeWidth="1dp">
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/bg_final_history_filter_bar"
+                    android:orientation="horizontal"
+                    android:padding="4dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="22dp">
+                    <TextView
+                        android:id="@+id/buttonHistoryFilterMatching"
+                        style="@style/FinalHistoryFilterTab"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="@string/final_history_filter_matching" />
 
-                        <TextView
-                            android:id="@+id/textClientBookingHistoryHeroBadge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_badge_blue"
-                            android:paddingStart="10dp"
-                            android:paddingTop="5dp"
-                            android:paddingEnd="10dp"
-                            android:paddingBottom="5dp"
-                            android:textColor="@color/bodeul_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/buttonHistoryFilterProgress"
+                        style="@style/FinalHistoryFilterTab"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="@string/final_history_filter_progress" />
 
-                        <TextView
-                            android:id="@+id/textClientBookingHistoryHeroTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:textColor="@color/bodeul_text_primary"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/buttonHistoryFilterCompleted"
+                        style="@style/FinalHistoryFilterTab"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="@string/final_history_filter_completed" />
 
-                        <TextView
-                            android:id="@+id/textClientBookingHistoryHeroBody"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:lineSpacingExtra="4dp"
-                            android:textColor="@color/bodeul_text_secondary"
-                            android:textSize="14sp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonClientBookingHistoryManage"
-                            style="@style/BodeulHomeButton"
-                            android:layout_marginTop="18dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    <TextView
+                        android:id="@+id/buttonHistoryFilterCanceled"
+                        style="@style/FinalHistoryFilterTab"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="@string/final_history_filter_canceled" />
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/textClientBookingHistoryListTitle"
+                    android:id="@+id/textClientBookingHistoryFilterEmpty"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="26dp"
-                    android:textColor="@color/bodeul_text_primary"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/textClientBookingHistoryListHelper"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textColor="@color/bodeul_text_secondary"
-                    android:textSize="13sp" />
+                    android:layout_marginTop="28dp"
+                    android:fontFamily="@font/pretendard_medium"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingVertical="32dp"
+                    android:textColor="@color/final_text_secondary"
+                    android:textSize="14sp"
+                    android:visibility="gone"
+                    app:lineHeight="20sp" />
 
                 <LinearLayout
                     android:id="@+id/layoutClientBookingHistoryEntries"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
+                    android:layout_marginTop="20dp"
                     android:orientation="vertical" />
             </LinearLayout>
         </LinearLayout>
@@ -202,14 +163,17 @@
         android:id="@+id/progressClientBookingHistory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/clientBottomNavigation"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <include android:id="@+id/clientBottomNavigation" layout="@layout/include_client_bottom_navigation"
-        android:layout_width="0dp" android:layout_height="64dp"
+    <include
+        android:id="@+id/clientBottomNavigation"
+        layout="@layout/include_client_bottom_navigation"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -12,6 +12,7 @@ import com.example.bodeul.util.EnvironmentModeBadgeHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 사용자 예약 이력 화면에 필요한 표시 모델을 만든다.
@@ -72,29 +73,56 @@ public final class ClientBookingHistoryCoordinator {
     private List<ClientBookingHistoryEntryModel> createEntryModels(User currentUser, List<AppointmentRequest> requests) {
         List<ClientBookingHistoryEntryModel> items = new ArrayList<>();
         for (AppointmentRequest request : requests) {
+            boolean completed = request.getStatus() == AppointmentStatus.COMPLETED;
             items.add(new ClientBookingHistoryEntryModel(
                     request.getId(),
                     formatter.toStatusLabel(request.getStatus()),
                     resolveStatusBackgroundColor(request.getStatus()),
                     resolveStatusTextColor(request.getStatus()),
                     resolveStatusStrokeColor(request.getStatus()),
-                    context.getString(R.string.booking_request_title, request.getHospitalName(), request.getDepartmentName()),
-                    context.getString(R.string.booking_request_detail, request.getAppointmentAt()),
-                    context.getString(R.string.booking_request_place, request.getMeetingPlace()),
+                    valueOrFallback(request.getHospitalName(), R.string.final_history_hospital_unknown),
+                    formatAppointmentAt(request.getAppointmentAt()),
+                    valueOrFallback(request.getMeetingPlace(), R.string.final_history_meeting_place_unknown),
                     context.getString(
-                            R.string.booking_request_linked,
-                            formatter.toCounterpartRoleLabel(currentUser.getRole()),
-                            formatter.buildLinkedParticipantLine(request, currentUser.getRole())
+                            R.string.final_history_patient_department,
+                            resolvePatientName(currentUser, request),
+                            valueOrFallback(request.getDepartmentName(), R.string.final_history_department_unknown)
                     ),
-                    buildOptionLine(request),
-                    buildProfileLine(request),
-                    buildPriceLine(request),
-                    TextUtils.isEmpty(request.getSpecialNotes())
-                            ? ""
-                            : context.getString(R.string.booking_request_note, request.getSpecialNotes())
+                    "",
+                    "",
+                    "",
+                    "",
+                    completed,
+                    completed && currentUser.getRole() == UserRole.PATIENT
             ));
         }
         return items;
+    }
+
+    private String resolvePatientName(User currentUser, AppointmentRequest request) {
+        if (!TextUtils.isEmpty(request.getPatientName())) {
+            return request.getPatientName().trim();
+        }
+        if (currentUser.getRole() == UserRole.PATIENT && !TextUtils.isEmpty(currentUser.getName())) {
+            return currentUser.getName().trim();
+        }
+        return context.getString(R.string.final_history_patient_unknown);
+    }
+
+    private String formatAppointmentAt(String appointmentAt) {
+        BookingCompletionDateTime.DisplayValue displayValue =
+                BookingCompletionDateTime.format(appointmentAt, Locale.KOREA);
+        if (TextUtils.isEmpty(displayValue.getDate())) {
+            return context.getString(R.string.final_history_appointment_unknown);
+        }
+        if (TextUtils.isEmpty(displayValue.getTime())) {
+            return displayValue.getDate();
+        }
+        return displayValue.getDate() + " · " + displayValue.getTime();
+    }
+
+    private String valueOrFallback(String value, int fallbackStringResId) {
+        return TextUtils.isEmpty(value) ? context.getString(fallbackStringResId) : value.trim();
     }
 
     private String buildOptionLine(AppointmentRequest request) {
@@ -170,16 +198,9 @@ public final class ClientBookingHistoryCoordinator {
     }
 
     private int resolveStatusTextColor(AppointmentStatus status) {
-        switch (status) {
-            case REQUESTED:
-            case CANCELED:
-                return R.color.bodeul_text_primary;
-            case MATCHED:
-            case IN_PROGRESS:
-            case COMPLETED:
-            default:
-                return R.color.white;
-        }
+        return status == AppointmentStatus.CANCELED
+                ? R.color.final_text_secondary
+                : R.color.final_text_accent_accessible;
     }
 
     private int resolveStatusStrokeColor(AppointmentStatus status) {
