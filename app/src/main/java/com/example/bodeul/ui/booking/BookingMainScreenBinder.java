@@ -37,7 +37,7 @@ final class BookingMainScreenBinder {
     void bindHospitalSelection(@NonNull BookingHospitalSelection selection) {
         if (!selection.isComplete()) {
             buttonHospitalSearch.setText(R.string.booking_main_hospital_search);
-            bindHospitalSearchColor(R.color.figma_mvp_text_hint);
+            bindHospitalSearchColor(R.color.final_text_hint);
             return;
         }
         buttonHospitalSearch.setText(context.getString(
@@ -45,7 +45,7 @@ final class BookingMainScreenBinder {
                 selection.getHospitalName(),
                 selection.getDepartmentName()
         ));
-        bindHospitalSearchColor(R.color.figma_mvp_primary);
+        bindHospitalSearchColor(R.color.final_text_primary);
     }
 
     void bindAppointment(String appointmentAt) {
@@ -62,8 +62,8 @@ final class BookingMainScreenBinder {
         int textColor = ContextCompat.getColor(
                 context,
                 displayValue.isEmpty()
-                        ? R.color.figma_mvp_text_tertiary
-                        : R.color.figma_mvp_text_primary
+                        ? R.color.final_text_hint
+                        : R.color.final_text_primary
         );
         textVisitDate.setTextColor(textColor);
         textVisitTime.setTextColor(textColor);

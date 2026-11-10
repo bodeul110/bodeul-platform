@@ -1,6 +1,7 @@
 package com.example.bodeul.ui.booking;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
 import android.view.View;
@@ -224,6 +225,13 @@ public final class BookingFormBinder {
                 BookingCouponType.NONE
         );
 
+        mobilityGroupBinder.useFinalBookingStyle();
+        tripTypeGroupBinder.useFinalBookingStyle();
+        managerGenderGroupBinder.useFinalBookingStyle();
+        paymentMethodGroupBinder.useFinalBookingStyle();
+        // 계정 확인 전 Android의 자동 뷰 복원으로 건강·연락처가 나타나지 않게 한다.
+        for (TextInputEditText input : editableFields()) input.setSaveEnabled(false);
+
         Runnable refreshEstimateAction = this::refreshEstimate;
         mobilityGroupBinder.setSelectionChangedListener(refreshEstimateAction);
         tripTypeGroupBinder.setSelectionChangedListener(refreshEstimateAction);
@@ -243,7 +251,7 @@ public final class BookingFormBinder {
         textFormTitle.setText(R.string.booking_form_section);
         textFormBadge.setText(R.string.booking_form_badge);
         textFormHelper.setText(R.string.booking_form_helper);
-        buttonSubmitBooking.setText(R.string.booking_submit_button);
+        buttonSubmitBooking.setText(R.string.final_booking_submit);
         buttonCancelBookingEdit.setVisibility(View.GONE);
         clearFormFields();
     }
@@ -271,7 +279,7 @@ public final class BookingFormBinder {
                 request.getHospitalName(),
                 request.getDepartmentName()
         ));
-        buttonSubmitBooking.setText(R.string.booking_submit_update_button);
+        buttonSubmitBooking.setText(R.string.final_booking_update);
         buttonCancelBookingEdit.setVisibility(View.VISIBLE);
 
         inputHealthSummary.setText(request.getPatientConditionSummary());
@@ -358,6 +366,73 @@ public final class BookingFormBinder {
                 .couponType(couponTypeGroupBinder.getSelection())
                 .priceSummary(priceSummary)
                 .build();
+    }
+
+    public boolean validateStep(BookingStep step) {
+        clearErrors();
+        switch (step) {
+            case PARTICIPANT:
+                boolean name = validateRequired(layoutLinkedName, valueOf(inputLinkedName));
+                boolean phone = validateLinkedPhone(valueOf(inputLinkedPhone));
+                boolean email = validateLinkedEmail(valueOf(inputLinkedEmail));
+                return name && phone && email;
+            case VISIT:
+                boolean hospital = getHospitalSelection().isComplete();
+                textHospitalSelectionError.setVisibility(hospital ? View.GONE : View.VISIBLE);
+                boolean appointment = appointmentSelector.validateRequiredAndFormat();
+                boolean meeting = validateRequired(layoutMeetingPlace, valueOf(inputMeetingPlace));
+                return hospital && appointment && meeting;
+            case HEALTH:
+                return validateHealthProfile(valueOf(inputHealthSummary));
+            case PAYMENT:
+                return validatePaymentMethod();
+            default:
+                return false;
+        }
+    }
+
+    /** 미완성 입력도 검증 없이 보관하되 계정 확인 후에만 호출자가 복원한다. */
+    public Bundle saveInputState() {
+        Bundle state = new Bundle();
+        for (TextInputEditText input : editableFields()) {
+            state.putString(Integer.toString(input.getId()), input.getText() == null ? "" : input.getText().toString());
+        }
+        state.putString("appointment", appointmentSelector.getAppointmentAt());
+        state.putDouble("latitude", selectedHospitalLatitude);
+        state.putDouble("longitude", selectedHospitalLongitude);
+        state.putString("point", selectedMeetingPointId);
+        state.putString("mobility", mobilityGroupBinder.getSelection().name());
+        state.putString("trip", tripTypeGroupBinder.getSelection().name());
+        state.putString("gender", managerGenderGroupBinder.getSelection().name());
+        state.putString("payment", paymentMethodGroupBinder.getSelection().name());
+        return state;
+    }
+
+    public void restoreInputState(Bundle state) {
+        for (TextInputEditText input : editableFields()) {
+            input.setText(state.getString(Integer.toString(input.getId()), ""));
+        }
+        selectedHospitalLatitude = state.getDouble("latitude");
+        selectedHospitalLongitude = state.getDouble("longitude");
+        selectedMeetingPointId = state.getString("point", "");
+        appointmentSelector.setAppointmentAt(state.getString("appointment", ""));
+        managerGenderGroupBinder.setSelection(BookingManagerGenderPreference.fromValue(state.getString("gender")));
+        // 갱신된 서버 예약의 잠금 조건·금액·쿠폰은 화면 스냅샷으로 덮어쓰지 않는다.
+        if (!bankTransferTermsLocked) {
+            mobilityGroupBinder.setSelection(BookingMobilitySupport.fromValue(state.getString("mobility")));
+            tripTypeGroupBinder.setSelection(BookingTripType.fromValue(state.getString("trip")));
+            paymentMethodGroupBinder.setSelection(BookingPaymentMethod.fromValue(state.getString("payment")));
+        }
+        dispatchHospitalSelectionChanged();
+        refreshHealthProfileSummary();
+        refreshEstimate();
+        clearErrors();
+    }
+
+    private TextInputEditText[] editableFields() {
+        return new TextInputEditText[]{inputHealthSummary, inputMedicationSummary, inputLinkedName,
+                inputLinkedPhone, inputLinkedEmail, inputHospitalName, inputDepartmentName,
+                inputMeetingPlace, inputSpecialNotes};
     }
 
     public void setOnHospitalSelectorClickListener(View.OnClickListener listener) {
@@ -458,6 +533,9 @@ public final class BookingFormBinder {
         layoutLinkedName.setHint(context.getString(R.string.booking_linked_name_hint_format, counterpartRole));
         layoutLinkedPhone.setHint(context.getString(R.string.booking_linked_phone_hint_format, counterpartRole));
         layoutLinkedEmail.setHint(context.getString(R.string.booking_linked_email_hint_format, counterpartRole));
+        inputLinkedName.setHint(context.getString(R.string.booking_linked_name_hint_format, counterpartRole));
+        inputLinkedPhone.setHint(context.getString(R.string.booking_linked_phone_hint_format, counterpartRole));
+        inputLinkedEmail.setHint(context.getString(R.string.booking_linked_email_hint_format, counterpartRole));
     }
 
     private void refreshEstimate() {
@@ -546,7 +624,7 @@ public final class BookingFormBinder {
 
     private boolean validateHealthProfile(String healthSummary) {
         boolean valid = validateRequired(layoutHealthSummary, healthSummary);
-        textHealthProfileError.setVisibility(valid ? View.GONE : View.VISIBLE);
+        textHealthProfileError.setVisibility(View.GONE);
         return valid;
     }
 

@@ -1,12 +1,10 @@
 package com.example.bodeul.ui.booking;
 
-import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -41,8 +39,7 @@ public final class BookingAppointmentSelector {
     private final MaterialButton buttonQuickMorning;
     private final MaterialButton buttonQuickAfternoon;
     private final MaterialButton buttonQuickLateAfternoon;
-    private final ActivityResultLauncher<Intent> appointmentSelectorLauncher;
-    private final Runnable beforeOpenListener;
+    private final Runnable appointmentSelectorAction;
     @Nullable
     private OnAppointmentChangedListener appointmentChangedListener;
 
@@ -58,8 +55,7 @@ public final class BookingAppointmentSelector {
             MaterialButton buttonQuickMorning,
             MaterialButton buttonQuickAfternoon,
             MaterialButton buttonQuickLateAfternoon,
-            ActivityResultLauncher<Intent> appointmentSelectorLauncher,
-            Runnable beforeOpenListener
+            Runnable appointmentSelectorAction
     ) {
         this.activity = activity;
         this.layoutAppointmentAt = layoutAppointmentAt;
@@ -72,8 +68,8 @@ public final class BookingAppointmentSelector {
         this.buttonQuickMorning = buttonQuickMorning;
         this.buttonQuickAfternoon = buttonQuickAfternoon;
         this.buttonQuickLateAfternoon = buttonQuickLateAfternoon;
-        this.appointmentSelectorLauncher = appointmentSelectorLauncher;
-        this.beforeOpenListener = beforeOpenListener;
+        this.appointmentSelectorAction = appointmentSelectorAction;
+        inputAppointmentAt.setSaveEnabled(false);
 
         configureAppointmentPicker();
         configureQuickAppointmentButtons();
@@ -156,11 +152,7 @@ public final class BookingAppointmentSelector {
     }
 
     private void openAppointmentSelector() {
-        beforeOpenListener.run();
-        appointmentSelectorLauncher.launch(BookingAppointmentSelectorActivity.createIntent(
-                activity,
-                getAppointmentAt()
-        ));
+        appointmentSelectorAction.run();
     }
 
     private void applyQuickAppointmentDate(int dayOffset) {
