@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bookingMeetingManualRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@drawable/bg_final_department_sheet">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="60dp" android:gravity="center_vertical" android:paddingStart="15dp" android:paddingEnd="6dp">
+        <TextView style="@style/FinalHospitalTitle" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/final_location_manual_title" />
+        <ImageButton android:id="@+id/buttonCloseBookingMeetingManual"
+            android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/bodeul_final_hospital_close"
+            android:contentDescription="@string/final_hospital_close" />
+    </LinearLayout>
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:fillViewport="false" android:scrollbars="none">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingBottom="20dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:minHeight="44dp" android:background="@drawable/bg_final_hospital_search"
+                android:gravity="center_vertical" android:paddingStart="15dp" android:paddingEnd="3dp">
+                <androidx.appcompat.widget.AppCompatEditText android:id="@+id/inputBookingMeetingManual"
+                    style="@style/BodeulFinalInput" android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:minHeight="44dp" android:paddingStart="0dp" android:paddingEnd="0dp"
+                    android:textSize="14sp" android:inputType="textPostalAddress" android:imeOptions="actionDone"
+                    android:hint="@string/final_location_manual_hint" />
+                <ImageButton android:id="@+id/buttonClearBookingMeetingManual"
+                    android:layout_width="40dp" android:layout_height="44dp" android:padding="12dp"
+                    android:scaleType="centerInside" android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/bodeul_final_hospital_clear" android:contentDescription="@string/final_location_manual_clear" />
+            </LinearLayout>
+            <TextView android:id="@+id/textBookingMeetingManualPreview" style="@style/FinalBookingLabel"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" />
+            <TextView android:id="@+id/textBookingMeetingManualDescription" style="@style/FinalBookingCaption"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:text="@string/final_location_manual_description" android:textColor="@color/final_text_secondary" />
+        </LinearLayout>
+    </ScrollView>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="15dp">
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonConfirmBookingMeetingManual"
+            style="@style/BodeulFinalPrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/final_location_manual_confirm" />
+    </FrameLayout>
+</LinearLayout>

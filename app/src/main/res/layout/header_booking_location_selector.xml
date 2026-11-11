@@ -1,115 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <ImageView
-            android:layout_width="94dp"
-            android:layout_height="wrap_content"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/bodeul_logo_full" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/buttonBackBookingLocation"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_surface_pill"
-            android:paddingStart="14dp"
-            android:paddingTop="9dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="9dp"
-            android:text="@string/guide_back"
-            android:textColor="@color/bodeul_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/textBookingLocationBadge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:background="@drawable/bg_surface_pill"
-        android:paddingStart="14dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="8dp"
-        android:textColor="@color/bodeul_primary"
-        android:textSize="12sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/textBookingLocationTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        android:textColor="@color/bodeul_text_primary"
-        android:textSize="30sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/textBookingLocationBody"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:lineSpacingExtra="4dp"
-        android:textColor="@color/bodeul_text_secondary"
-        android:textSize="14sp" />
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        app:cardBackgroundColor="@color/bodeul_surface"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="6dp"
-        app:strokeColor="@color/bodeul_outline"
-        app:strokeWidth="1dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                android:id="@+id/textBookingLocationHelper"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:lineSpacingExtra="4dp"
-                android:textColor="@color/bodeul_text_secondary"
-                android:textSize="13sp" />
-
-            <com.example.bodeul.ui.booking.BookingLocationMapView
-                android:id="@+id/viewBookingLocationMap"
-                android:layout_width="match_parent"
-                android:layout_height="260dp"
-                android:layout_marginTop="16dp" />
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="90dp" android:background="@drawable/bg_final_location_summary"
+        android:gravity="center_vertical" android:padding="15dp">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/textBookingLocationTitle" style="@style/FinalBookingLabel"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:fontFamily="@font/pretendard_bold" />
+            <TextView android:id="@+id/textBookingLocationBody" style="@style/FinalBookingCaption"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="2dp" android:textColor="@color/final_text_secondary" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:paddingBottom="12dp"
-        android:text="@string/booking_location_selector_list_title"
-        android:textColor="@color/bodeul_text_primary"
-        android:textSize="18sp"
-        android:textStyle="bold" />
-
+        <TextView android:id="@+id/buttonBookingLocationDiagram" style="@style/BodeulFinalLink"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginStart="10dp" android:paddingStart="10dp" android:paddingEnd="10dp"
+            android:background="@drawable/bg_final_hospital_map"
+            android:text="@string/final_location_diagram" android:contentDescription="@string/final_location_diagram_open"
+            android:textColor="@color/final_text_secondary" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/bookingLocationHeadingRow"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="20dp" android:gravity="center_vertical">
+        <TextView style="@style/FinalHospitalTitle" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/final_location_heading" />
+        <TextView android:id="@+id/buttonBookingLocationManual" style="@style/BodeulFinalLink"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:paddingStart="10dp" android:paddingEnd="0dp" android:text="@string/final_location_manual"
+            android:textColor="@color/final_text_secondary" />
+    </LinearLayout>
 </LinearLayout>

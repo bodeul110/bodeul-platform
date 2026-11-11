@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="FinalCalendarArrow" parent="Widget.AppCompat.ImageButton">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:src">@drawable/bodeul_final_calendar_chevron</item>
+        <item name="android:padding">17dp</item>
+    </style>
+    <style name="FinalTimePickerTheme" parent="Theme.Bodeul.FinalAuth">
+        <item name="colorControlNormal">@android:color/transparent</item>
+        <item name="android:colorControlNormal">@android:color/transparent</item>
+        <item name="android:textColorPrimary">@color/final_text_primary</item>
+        <item name="android:textColorSecondary">@color/final_text_secondary</item>
+        <item name="android:fontFamily">@font/pretendard_medium</item>
+    </style>
+</resources>

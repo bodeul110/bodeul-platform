@@ -1,67 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cardBookingLocationOption"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:checkable="true"
-    app:cardBackgroundColor="@color/bodeul_surface"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="4dp"
-    app:checkedIcon="@null"
-    app:strokeColor="@color/bodeul_primary"
-    app:strokeWidth="1dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
-
-        <TextView
-            android:id="@+id/textBookingLocationOptionBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/bg_badge_blue"
-            android:paddingStart="10dp"
-            android:paddingTop="5dp"
-            android:paddingEnd="10dp"
-            android:paddingBottom="5dp"
-            android:textColor="@color/bodeul_primary"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textBookingLocationOptionTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textBookingLocationOptionBody"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:lineSpacingExtra="4dp"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="14sp" />
-
-        <TextView
-            android:id="@+id/textBookingLocationOptionPlace"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_surface_pill"
-            android:paddingStart="14dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="10dp"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rowBookingLocationOption"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:minHeight="88dp" android:paddingTop="20dp" android:paddingBottom="20dp"
+    android:gravity="center_vertical" android:descendantFocusability="blocksDescendants">
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+        android:layout_weight="1" android:orientation="vertical">
+        <TextView android:id="@+id/textBookingLocationOptionTitle" style="@style/FinalBookingLabel"
+            android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <TextView android:id="@+id/textBookingLocationOptionBody" style="@style/FinalBookingCaption"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="2dp" android:textColor="@color/final_text_secondary" />
     </LinearLayout>
-
-</com.google.android.material.card.MaterialCardView>
+    <ImageView android:id="@+id/checkBookingLocationOption"
+        android:layout_width="20dp" android:layout_height="20dp"
+        android:layout_marginStart="10dp" android:importantForAccessibility="no"
+        android:src="@drawable/bodeul_final_booking_check" />
+</LinearLayout>

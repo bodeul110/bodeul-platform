@@ -1,41 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_screen_glow"
+    android:id="@+id/bookingLocationSelectorRoot"
+    android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical">
-
-    <ListView
-        android:id="@+id/listBookingLocationOptions"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:divider="@android:color/transparent"
-        android:dividerHeight="12dp"
-        android:listSelector="@android:color/transparent"
-        android:paddingStart="24dp"
-        android:paddingTop="24dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="24dp"
-        android:scrollbars="none" />
-
-    <FrameLayout
-        android:id="@+id/bookingLocationBottomAction"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/bodeul_surface"
-        android:elevation="12dp"
-        android:paddingStart="24dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="18dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonBookingLocationConfirm"
-            style="@style/BodeulHomeButton"
-            android:layout_marginTop="0dp"
-            android:text="@string/booking_location_selector_confirm" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="60dp" android:gravity="center_vertical" android:paddingStart="15dp" android:paddingEnd="6dp">
+        <TextView style="@style/FinalHospitalTitle" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/final_location_title" />
+        <ImageButton android:id="@+id/buttonBackBookingLocation"
+            android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/bodeul_final_hospital_close" android:contentDescription="@string/final_hospital_close" />
+    </LinearLayout>
+    <ListView android:id="@+id/listBookingLocationOptions"
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:divider="@color/final_line" android:dividerHeight="1dp"
+        android:headerDividersEnabled="false" android:footerDividersEnabled="false"
+        android:listSelector="?attr/selectableItemBackground" android:clipToPadding="false"
+        android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingBottom="15dp" android:scrollbars="none" />
+    <FrameLayout android:id="@+id/bookingLocationBottomAction"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingTop="10dp" android:paddingBottom="15dp">
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonBookingLocationConfirm"
+            style="@style/BodeulFinalPrimaryButton" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/booking_location_selector_confirm" />
     </FrameLayout>
-
 </LinearLayout>
