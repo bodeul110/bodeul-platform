@@ -45,6 +45,31 @@ import java.util.TimeZone;
 /** 서버·DB·실기기 상태를 건드리지 않고 실제 선택기와 결과 계약을 검증한다. */
 @RunWith(AndroidJUnit4.class)
 public class BookingScheduleLocationFigmaTest {
+    @Test public void monthLabelKeepsFourDigitYearAfterRecreationAndYearChange() {
+        int year = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"), Locale.KOREA).get(Calendar.YEAR);
+        String value = String.format(Locale.KOREA, "%04d-12-31 10:17", year);
+        try (ActivityScenario<BookingAppointmentSelectorActivity> scenario = schedule(value)) {
+            onView(withId(R.id.textBookingAppointmentDisplayedMonth)).check(matches(withText(year + "년 12월")));
+            scenario.recreate();
+            onView(withId(R.id.textBookingAppointmentDisplayedMonth)).check(matches(withText(year + "년 12월")));
+            onView(withId(R.id.buttonBookingAppointmentNextMonth)).perform(scrollTo(), click());
+            onView(withId(R.id.textBookingAppointmentDisplayedMonth)).check(matches(withText((year + 1) + "년 1월")));
+        }
+    }
+
+    @Test public void completeActionKeepsFourDigitYearWithoutChangingResult() {
+        int year = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"), Locale.KOREA).get(Calendar.YEAR);
+        String value = String.format(Locale.KOREA, "%04d-12-31 10:17", year);
+        try (ActivityScenario<BookingAppointmentSelectorActivity> scenario = schedule(value)) {
+            onView(withId(R.id.buttonBookingAppointmentComplete)).check(matches(withText(startsWith(year + "년 12월 31일("))));
+            scenario.recreate();
+            onView(withId(R.id.buttonBookingAppointmentComplete)).check(matches(withText(startsWith(year + "년 12월 31일("))));
+            onView(withId(R.id.buttonBookingAppointmentComplete)).perform(click());
+            assertEquals(Activity.RESULT_OK, scenario.getResult().getResultCode());
+            assertEquals(value, BookingAppointmentSelectorActivity.parseResult(scenario.getResult().getResultData()));
+        }
+    }
+
     @Test public void existingArbitraryMinuteAndLeapDaySurviveRecreation() {
         try (ActivityScenario<BookingAppointmentSelectorActivity> scenario = schedule("2028-02-29 10:17")) {
             onView(withTagValue(is((Object) "2028-02-29 00:00"))).check(matches(isSelected()));

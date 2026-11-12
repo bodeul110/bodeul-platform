@@ -6,7 +6,7 @@
     <string name="final_schedule_time_sheet_title">예약 희망 시간 선택</string>
     <string name="final_schedule_time_hint">선택한 시간은 예약 희망 시간입니다. 예약 확정 후 최종 일정을 안내합니다.</string>
     <string name="final_schedule_today">오늘</string>
-    <string name="final_schedule_month">%1$02d년 %2$d월</string>
+    <string name="final_schedule_month">%1$04d년 %2$d월</string>
     <string name="final_schedule_time_value">%1$s %2$02d:%3$02d</string>
     <string name="final_schedule_am">오전</string>
     <string name="final_schedule_pm">오후</string>

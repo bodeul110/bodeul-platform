@@ -93,7 +93,7 @@ public class BookingAppointmentSelectorActivity extends AppCompatActivity {
 
     private void render() {
         ((TextView) findViewById(R.id.textBookingAppointmentDisplayedMonth)).setText(getString(
-                R.string.final_schedule_month, displayedMonth.get(Calendar.YEAR) % 100, displayedMonth.get(Calendar.MONTH) + 1));
+                R.string.final_schedule_month, displayedMonth.get(Calendar.YEAR), displayedMonth.get(Calendar.MONTH) + 1));
         Calendar today = BookingAppointmentDateTime.newCalendar();
         int current = today.get(Calendar.YEAR) * 12 + today.get(Calendar.MONTH);
         int shown = displayedMonth.get(Calendar.YEAR) * 12 + displayedMonth.get(Calendar.MONTH);
@@ -108,7 +108,7 @@ public class BookingAppointmentSelectorActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.buttonBookingAppointmentCustomTime)).setText(
                 timeConfirmed ? time : getString(R.string.final_schedule_time_select));
         findViewById(R.id.layoutBookingAppointmentBottomAction).setVisibility(timeConfirmed ? View.VISIBLE : View.GONE);
-        SimpleDateFormat dateLabel = new SimpleDateFormat("yy년 M월 d일(E)", Locale.KOREA);
+        SimpleDateFormat dateLabel = new SimpleDateFormat("yyyy년 M월 d일(E)", Locale.KOREA);
         dateLabel.setTimeZone(selectedDate.getTimeZone());
         ((TextView) findViewById(R.id.buttonBookingAppointmentComplete)).setText(
                 getString(R.string.final_schedule_done, dateLabel.format(selectedDate.getTime()), time));

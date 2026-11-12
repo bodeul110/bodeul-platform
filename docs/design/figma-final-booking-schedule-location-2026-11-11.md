@@ -34,7 +34,7 @@
 - 기존 `createIntent/parseResult`의 `selectedAppointmentAt`, `pointId`, `meetingPlace` 결과 계약은 유지한다. 예약 작성·수정·결제·인증 코드와 서버·DB는 바꾸지 않았다.
 - 두 Activity는 계속 `exported=false`이며, 장소 화면에 키보드 크기 대응만 추가했다. 새로운 외부 진입점·권한·의존성은 없다.
 
-## 검증
+## 초기 검증 (2026-11-11)
 
 검증 기준은 `dev`의 `ced200abcffdd44bb0c5f32131e6a684b8479926`에서 분기한 `codex/figma-final-booking-schedule-location`의 로컬 변경이다. 개발 Firebase 설정이 없는 Mock/CI 빌드와 읽기 전용 API 34 AVD를 사용했다. 실기기와 실제 API·예약 쓰기는 실행하지 않았다.
 
@@ -53,6 +53,19 @@
 [새 계측 테스트](../../app/src/androidTestDebug/java/com/example/bodeul/debug/BookingScheduleLocationFigmaTest.java)는 실제 선택기 Activity를 사용해 월·연도 경계, 윤년, 과거 날짜 차단, 시간 휠 조작, 기존 임의 분 보존, 장소 행과 안내도 실제 터치, 직접 입력의 공백 차단, 확인/취소, 화면 재생성, 반환 결과를 검사한다. 글자 잘림·말줄임, 주요 버튼 대비 4.5:1 이상, 키보드 표시 중 확인 버튼 노출도 확인한다. [장소 해석 단위 테스트](../../app/src/test/java/com/example/bodeul/ui/booking/BookingMeetingSelectionPolicyTest.java) 7건은 기본 지점·기존 장소·직접 입력·빈 목록을 검사한다.
 
 검증 중 월 이동 버튼을 회전시켰을 때 터치 좌표가 어긋나는 문제를 발견해 이미지 자산만 회전하도록 바꿨다. 작은 화면·2배 글꼴에서 시간 휠의 불필요한 높이가 선택 값을 가리는 문제도 수정했다. 최종 화면 캡처 6종(일정·시간·장소 목록·직접 입력·키보드·안내도)과 계측 로그는 로컬 `.tmp/schedule-validation/`에 보관한다.
+
+## 2026-11-12 리뷰 반영
+
+- 작업 목적: #518에서 지적한 달력 제목·완료 버튼의 두 자리 연도 표시를 네 자리로 복구한다.
+- 선택한 방식: 달력에 전체 연도를 전달하고 월 문자열은 `%1$04d`, 완료 버튼 날짜는 `yyyy년 M월 d일(E)` 형식을 사용한다.
+- 대안: 저장 형식을 수정하거나 별도 날짜 표시 계층을 추가하는 대신 기존 두 표시 경로만 수정한다.
+- 선택 이유: 기존 `appointmentAt` 계약과 선택 동작에는 문제가 없으므로 화면 표시 회귀만 좁게 수정한다.
+- 리스크: 글자가 두 자리 늘어나므로 작은 화면·큰 글꼴에서 잘림과 완료 버튼 노출을 다시 검사한다.
+- 수정 전에는 추가한 계측 테스트 두 건에서 실제 `26년 12월`과 `26년 12월 31일(목) 오전 10:17로 진행` 문구를 검출했다. 테스트는 실행 연도를 사용해 화면 재생성·연도 경계 이동·반환 값 보존을 확인한다.
+- 수정 후 `assembleDebug testDebugUnitTest assembleDebugAndroidTest :app:verifyReleaseAppCheckClasspath` 성공, 단위 테스트 464건과 환경 혼합 차단 4건이 통과했다.
+- API 34의 위 세 화면·글꼴·내비게이션 구성에서 선택기 계측 16건씩 통과했고, 기본 구성에서 기존 예약·병원 선택 38건도 다시 통과했다. 총 86회 실행이며 서로 다른 테스트는 54건이다. 세 구성의 일정 화면 캡처에서 네 자리 연도와 완료 버튼 문구의 잘림이 없는 것을 확인했다.
+- `lintDebug`는 기존 미변경 10개 파일의 `NewApi` 오류 35건으로 다시 실패했다. SARIF 기준 이 PR 변경 파일의 오류·경고는 0건이다.
+- 이번 검증도 Mock/CI 빌드와 읽기 전용 에뮬레이터에서만 수행했다. 로그·화면은 `.tmp/schedule-validation/review-year-*`에 보관하며, 실제 계정·API·실기기 검증과 운영 반영은 수행하지 않았다.
 
 ## 남은 범위
 
