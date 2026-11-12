@@ -3,202 +3,129 @@ package com.example.bodeul.ui.booking;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.BookingHospitalSelection;
 import com.example.bodeul.domain.model.BookingMeetingLocationSelection;
 import com.example.bodeul.domain.model.BookingMeetingPointOption;
-import com.google.android.material.button.MaterialButton;
-
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 병원 예약에서 만남 위치를 지도 기반으로 고르는 화면이다.
- */
+/** 만남 장소의 확인·취소와 기존 예약 결과 계약을 연결한다. */
 public class BookingLocationSelectorActivity extends AppCompatActivity {
     private static final String EXTRA_HOSPITAL_NAME = "hospitalName";
     private static final String EXTRA_DEPARTMENT_NAME = "departmentName";
     private static final String EXTRA_POINT_ID = "pointId";
     private static final String EXTRA_MEETING_PLACE = "meetingPlace";
-    private static final String STATE_SELECTED_POINT_ID = "selectedPointId";
+    private BookingLocationOptionAdapter adapter;
+    private List<BookingMeetingPointOption> points;
+    private BookingMeetingLocationSelection selection;
+    private String customPlace = "";
 
-    private BookingLocationOptionAdapter optionAdapter;
-    @Nullable
-    private BookingMeetingPointOption selectedPointOption;
-
-    public static Intent createIntent(
-            Context context,
-            BookingHospitalSelection hospitalSelection,
-            BookingMeetingLocationSelection currentSelection
-    ) {
-        Intent intent = new Intent(context, BookingLocationSelectorActivity.class);
-        intent.putExtra(EXTRA_HOSPITAL_NAME, hospitalSelection.getHospitalName());
-        intent.putExtra(EXTRA_DEPARTMENT_NAME, hospitalSelection.getDepartmentName());
-        intent.putExtra(EXTRA_POINT_ID, currentSelection.getPointId());
-        intent.putExtra(EXTRA_MEETING_PLACE, currentSelection.getMeetingPlace());
-        return intent;
+    public static Intent createIntent(Context context, BookingHospitalSelection hospital, BookingMeetingLocationSelection current) {
+        return new Intent(context, BookingLocationSelectorActivity.class)
+                .putExtra(EXTRA_HOSPITAL_NAME, hospital.getHospitalName())
+                .putExtra(EXTRA_DEPARTMENT_NAME, hospital.getDepartmentName())
+                .putExtra(EXTRA_POINT_ID, current.getPointId())
+                .putExtra(EXTRA_MEETING_PLACE, current.getMeetingPlace());
     }
 
     public static BookingMeetingLocationSelection parseResult(@Nullable Intent data) {
-        if (data == null) {
-            return new BookingMeetingLocationSelection("", "");
-        }
-        return new BookingMeetingLocationSelection(
-                data.getStringExtra(EXTRA_POINT_ID),
-                data.getStringExtra(EXTRA_MEETING_PLACE)
-        );
+        return new BookingMeetingLocationSelection(data == null ? "" : data.getStringExtra(EXTRA_POINT_ID),
+                data == null ? "" : data.getStringExtra(EXTRA_MEETING_PLACE));
     }
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    @Override protected void onCreate(@Nullable Bundle state) {
+        setTheme(R.style.Theme_Bodeul_FinalBooking);
+        super.onCreate(state);
         setContentView(R.layout.activity_booking_location_selector);
-
-        BookingHospitalSelection hospitalSelection = new BookingHospitalSelection(
-                getIntent().getStringExtra(EXTRA_HOSPITAL_NAME),
-                getIntent().getStringExtra(EXTRA_DEPARTMENT_NAME)
-        );
-        BookingMeetingLocationSelection currentSelection = new BookingMeetingLocationSelection(
-                getIntent().getStringExtra(EXTRA_POINT_ID),
-                getIntent().getStringExtra(EXTRA_MEETING_PLACE)
-        );
-        BookingLocationSelectorScreenModel screenModel = new BookingLocationSelectorCoordinator(this)
-                .createScreenModel(hospitalSelection, currentSelection);
-
-        ListView listView = findViewById(R.id.listBookingLocationOptions);
-        View headerView = LayoutInflater.from(this).inflate(
-                R.layout.header_booking_location_selector,
-                listView,
-                false
-        );
-        listView.addHeaderView(headerView, null, false);
-
-        optionAdapter = new BookingLocationOptionAdapter(this);
-        BookingLocationMapView mapView = headerView.findViewById(R.id.viewBookingLocationMap);
-        MaterialButton confirmButton = findViewById(R.id.buttonBookingLocationConfirm);
-
-        ((TextView) headerView.findViewById(R.id.textBookingLocationBadge)).setText(screenModel.getBadge());
-        ((TextView) headerView.findViewById(R.id.textBookingLocationTitle)).setText(screenModel.getTitle());
-        ((TextView) headerView.findViewById(R.id.textBookingLocationBody)).setText(screenModel.getBody());
-        ((TextView) headerView.findViewById(R.id.textBookingLocationHelper)).setText(screenModel.getHelper());
-        headerView.findViewById(R.id.buttonBackBookingLocation).setOnClickListener(view -> finish());
-
-        List<BookingMeetingPointOption> pointOptions = screenModel.getPointOptions();
-        String candidatePointId = savedInstanceState == null
-                ? screenModel.getSelectedPointId()
-                : savedInstanceState.getString(
-                        STATE_SELECTED_POINT_ID,
-                        screenModel.getSelectedPointId()
-                );
-        selectedPointOption = findSelectedPoint(candidatePointId, pointOptions);
-        String selectedPointId = selectedPointOption == null ? "" : selectedPointOption.getId();
-        optionAdapter.submitList(pointOptions);
-        optionAdapter.setSelectedPointId(selectedPointId);
-        listView.setAdapter(optionAdapter);
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            int adapterPosition = position - listView.getHeaderViewsCount();
-            if (adapterPosition >= 0 && adapterPosition < optionAdapter.getCount()) {
-                selectPoint(optionAdapter.getItem(adapterPosition), mapView);
+        BookingSelectorInsets.apply(this, findViewById(R.id.bookingLocationSelectorRoot));
+        BookingHospitalSelection hospital = new BookingHospitalSelection(
+                getIntent().getStringExtra(EXTRA_HOSPITAL_NAME), getIntent().getStringExtra(EXTRA_DEPARTMENT_NAME));
+        points = BookingMeetingPointCatalog.createPointOptions(this, hospital.getHospitalName(), hospital.getDepartmentName());
+        selection = BookingMeetingSelectionPolicy.resolve(points, state == null ? parseResult(getIntent())
+                : new BookingMeetingLocationSelection(state.getString(EXTRA_POINT_ID), state.getString(EXTRA_MEETING_PLACE)));
+        customPlace = state == null ? "" : state.getString("customPlace", "");
+        if (BookingMeetingSelectionPolicy.CUSTOM_POINT_ID.equals(selection.getPointId())) customPlace = selection.getMeetingPlace();
+        ListView list = findViewById(R.id.listBookingLocationOptions);
+        View header = getLayoutInflater().inflate(R.layout.header_booking_location_selector, list, false);
+        list.addHeaderView(header, null, false);
+        ((TextView) header.findViewById(R.id.textBookingLocationTitle)).setText(hospital.getHospitalName());
+        ((TextView) header.findViewById(R.id.textBookingLocationBody)).setText(hospital.getDepartmentName());
+        TextView manual = header.findViewById(R.id.buttonBookingLocationManual);
+        manual.setPaintFlags(manual.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+        if (getResources().getConfiguration().fontScale > 1.3f) {
+            LinearLayout row = header.findViewById(R.id.bookingLocationHeadingRow);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.getChildAt(0).setLayoutParams(new LinearLayout.LayoutParams(-1, -2));
+            manual.setPadding(0, 0, 0, 0);
+        }
+        manual.setOnClickListener(v -> {
+            if (getSupportFragmentManager().findFragmentByTag(BookingMeetingManualSheet.TAG) == null) {
+                BookingMeetingManualSheet.create(customPlace).show(getSupportFragmentManager(), BookingMeetingManualSheet.TAG);
             }
         });
-
-        mapView.setPointOptions(pointOptions);
-        mapView.setSelectedPointId(selectedPointId);
-        mapView.setOnPointSelectedListener(option -> selectPoint(option, mapView));
-
-        confirmButton.setOnClickListener(view -> finishWithSelection());
-        configureSystemBarInsets(
-                listView,
-                findViewById(R.id.bookingLocationBottomAction)
-        );
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putString(
-                STATE_SELECTED_POINT_ID,
-                selectedPointOption == null ? "" : selectedPointOption.getId()
-        );
-    }
-
-    private void selectPoint(BookingMeetingPointOption option, BookingLocationMapView mapView) {
-        selectedPointOption = option;
-        optionAdapter.setSelectedPointId(option.getId());
-        mapView.setSelectedPointId(option.getId());
-    }
-
-    @Nullable
-    private BookingMeetingPointOption findSelectedPoint(
-            String selectedPointId,
-            List<BookingMeetingPointOption> pointOptions
-    ) {
-        for (BookingMeetingPointOption option : pointOptions) {
-            if (option.getId().equals(selectedPointId)) {
-                return option;
+        header.findViewById(R.id.buttonBookingLocationDiagram).setOnClickListener(v -> {
+            if (getSupportFragmentManager().findFragmentByTag(BookingMeetingDiagramSheet.TAG) == null) {
+                BookingMeetingDiagramSheet.create(hospital, selection.getPointId())
+                        .show(getSupportFragmentManager(), BookingMeetingDiagramSheet.TAG);
             }
-        }
-        return pointOptions.isEmpty() ? null : pointOptions.get(0);
+        });
+        adapter = new BookingLocationOptionAdapter(this);
+        list.setAdapter(adapter);
+        list.setOnItemClickListener((parent, view, position, id) -> {
+            int index = position - list.getHeaderViewsCount();
+            if (index >= 0 && index < adapter.getCount()) {
+                selection = BookingMeetingSelectionPolicy.selection(adapter.getItem(index));
+                render();
+            }
+        });
+        getSupportFragmentManager().setFragmentResultListener(BookingMeetingManualSheet.RESULT, this, (key, result) -> {
+            String value = result.getString(EXTRA_MEETING_PLACE, "").trim();
+            if (value.isEmpty()) return;
+            customPlace = value;
+            selection = new BookingMeetingLocationSelection(BookingMeetingSelectionPolicy.CUSTOM_POINT_ID, value);
+            render();
+            list.setSelection(0);
+        });
+        getSupportFragmentManager().setFragmentResultListener(BookingMeetingDiagramSheet.RESULT, this, (key, result) -> {
+            for (BookingMeetingPointOption point : points) {
+                if (point.getId().equals(result.getString(EXTRA_POINT_ID))) {
+                    selection = BookingMeetingSelectionPolicy.selection(point);
+                    render();
+                    break;
+                }
+            }
+        });
+        findViewById(R.id.buttonBackBookingLocation).setOnClickListener(v -> finish());
+        findViewById(R.id.buttonBookingLocationConfirm).setOnClickListener(v -> {
+            if (!selection.isComplete()) return;
+            setResult(RESULT_OK, new Intent().putExtra(EXTRA_POINT_ID, selection.getPointId())
+                    .putExtra(EXTRA_MEETING_PLACE, selection.getMeetingPlace()));
+            finish();
+        });
+        render();
     }
 
-    private void finishWithSelection() {
-        if (selectedPointOption == null) {
-            return;
-        }
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra(EXTRA_POINT_ID, selectedPointOption.getId());
-        resultIntent.putExtra(EXTRA_MEETING_PLACE, selectedPointOption.getMeetingPlace());
-        setResult(RESULT_OK, resultIntent);
-        finish();
+    private void render() {
+        List<BookingMeetingPointOption> visible = new ArrayList<>(points);
+        if (!customPlace.isEmpty()) visible.add(0, new BookingMeetingPointOption(
+                BookingMeetingSelectionPolicy.CUSTOM_POINT_ID, customPlace,
+                getString(R.string.final_location_manual_description), customPlace, 0, 0));
+        adapter.submitList(visible);
+        adapter.setSelectedPointId(selection.getPointId());
+        findViewById(R.id.buttonBookingLocationConfirm).setEnabled(selection.isComplete());
     }
 
-    private void configureSystemBarInsets(ListView listView, View bottomAction) {
-        int listLeft = listView.getPaddingLeft();
-        int listTop = listView.getPaddingTop();
-        int listRight = listView.getPaddingRight();
-        int listBottom = listView.getPaddingBottom();
-        int actionLeft = bottomAction.getPaddingLeft();
-        int actionTop = bottomAction.getPaddingTop();
-        int actionRight = bottomAction.getPaddingRight();
-        int actionBottom = bottomAction.getPaddingBottom();
-
-        ViewCompat.setOnApplyWindowInsetsListener(listView, (view, windowInsets) -> {
-            Insets systemInsets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars()
-                            | WindowInsetsCompat.Type.displayCutout()
-            );
-            view.setPadding(
-                    listLeft + systemInsets.left,
-                    listTop + systemInsets.top,
-                    listRight + systemInsets.right,
-                    listBottom
-            );
-            return windowInsets;
-        });
-        ViewCompat.setOnApplyWindowInsetsListener(bottomAction, (view, windowInsets) -> {
-            Insets systemInsets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.navigationBars()
-                            | WindowInsetsCompat.Type.displayCutout()
-            );
-            view.setPadding(
-                    actionLeft + systemInsets.left,
-                    actionTop,
-                    actionRight + systemInsets.right,
-                    actionBottom + systemInsets.bottom
-            );
-            return windowInsets;
-        });
-        ViewCompat.requestApplyInsets(listView);
-        ViewCompat.requestApplyInsets(bottomAction);
+    @Override protected void onSaveInstanceState(Bundle state) {
+        state.putString(EXTRA_POINT_ID, selection.getPointId());
+        state.putString(EXTRA_MEETING_PLACE, selection.getMeetingPlace());
+        state.putString("customPlace", customPlace);
+        super.onSaveInstanceState(state);
     }
 }

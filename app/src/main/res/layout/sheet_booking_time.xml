@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bookingTimeRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@drawable/bg_final_department_sheet">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="60dp" android:gravity="center_vertical" android:paddingStart="15dp" android:paddingEnd="6dp">
+        <TextView style="@style/FinalHospitalTitle" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:text="@string/final_schedule_time_sheet_title" />
+        <ImageButton android:id="@+id/buttonCloseBookingTime"
+            android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/bodeul_final_hospital_close"
+            android:contentDescription="@string/final_hospital_close" />
+    </LinearLayout>
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:fillViewport="false" android:scrollbars="none">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingStart="15dp" android:paddingEnd="15dp">
+            <TextView style="@style/FinalBookingCaption"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/final_schedule_time_hint" android:textColor="@color/final_text_accent_accessible" />
+            <FrameLayout android:id="@+id/bookingTimeWheels" android:layout_width="match_parent"
+                android:layout_height="220dp" android:layout_marginTop="20dp" android:layout_marginBottom="20dp">
+                <View android:layout_width="match_parent" android:layout_height="50dp"
+                    android:layout_gravity="center" android:background="@drawable/bg_final_schedule_input"
+                    android:importantForAccessibility="no" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent"
+                    android:gravity="center" android:theme="@style/FinalTimePickerTheme"
+                    android:baselineAligned="false">
+                    <NumberPicker android:id="@+id/pickerBookingPeriod"
+                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                        android:contentDescription="@string/final_schedule_period"
+                        android:descendantFocusability="blocksDescendants" />
+                    <NumberPicker android:id="@+id/pickerBookingHour"
+                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                        android:contentDescription="@string/final_schedule_hour"
+                        android:descendantFocusability="blocksDescendants" />
+                    <TextView style="@style/FinalHospitalTitle" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="@string/final_schedule_time_separator" android:importantForAccessibility="no" />
+                    <NumberPicker android:id="@+id/pickerBookingMinute"
+                        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+                        android:contentDescription="@string/final_schedule_minute"
+                        android:descendantFocusability="blocksDescendants" />
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </ScrollView>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="15dp">
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonConfirmBookingTime"
+            style="@style/BodeulFinalPrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content" />
+    </FrameLayout>
+</LinearLayout>

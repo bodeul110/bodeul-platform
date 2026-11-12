@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/bookingMeetingDiagramRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@drawable/bg_final_department_sheet">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="60dp" android:gravity="center_vertical" android:paddingStart="15dp" android:paddingEnd="6dp">
+        <TextView style="@style/FinalHospitalTitle" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/final_location_diagram_title" />
+        <ImageButton android:id="@+id/buttonCloseBookingMeetingDiagram"
+            android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/bodeul_final_hospital_close"
+            android:contentDescription="@string/final_hospital_close" />
+    </LinearLayout>
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="15dp">
+            <TextView style="@style/FinalBookingCaption"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/final_location_diagram_note" android:textColor="@color/final_text_secondary" />
+            <com.example.bodeul.ui.booking.BookingLocationMapView android:id="@+id/viewBookingLocationMap"
+                android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="15dp"
+                android:importantForAccessibility="no" />
+            <RadioGroup android:id="@+id/bookingMeetingDiagramOptions"
+                android:layout_width="match_parent" android:layout_height="wrap_content" />
+        </LinearLayout>
+    </ScrollView>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="15dp">
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonConfirmBookingMeetingDiagram"
+            style="@style/BodeulFinalPrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/final_location_manual_confirm" />
+    </FrameLayout>
+</LinearLayout>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_schedule_title">일정 선택</string>
+    <string name="final_schedule_time_title">예약 희망 시간</string>
+    <string name="final_schedule_time_select">시간 선택</string>
+    <string name="final_schedule_time_sheet_title">예약 희망 시간 선택</string>
+    <string name="final_schedule_time_hint">선택한 시간은 예약 희망 시간입니다. 예약 확정 후 최종 일정을 안내합니다.</string>
+    <string name="final_schedule_today">오늘</string>
+    <string name="final_schedule_month">%1$04d년 %2$d월</string>
+    <string name="final_schedule_time_value">%1$s %2$02d:%3$02d</string>
+    <string name="final_schedule_am">오전</string>
+    <string name="final_schedule_pm">오후</string>
+    <string name="final_schedule_period">오전 또는 오후</string>
+    <string name="final_schedule_hour">시</string>
+    <string name="final_schedule_minute">분</string>
+    <string name="final_schedule_time_separator" translatable="false">:</string>
+    <string name="final_schedule_time_done">%1$s로 선택</string>
+    <string name="final_schedule_done">%1$s %2$s로 진행</string>
+    <string name="final_location_title">만남 장소 선택</string>
+    <string name="final_location_heading">만남 장소를 선택해주세요.</string>
+    <string name="final_location_manual">직접 입력</string>
+    <string name="final_location_manual_title">만남 장소 직접 입력</string>
+    <string name="final_location_manual_hint">주소 또는 만남 장소 입력</string>
+    <string name="final_location_manual_clear">입력한 만남 장소 지우기</string>
+    <string name="final_location_manual_description">직접 입력한 만남 장소</string>
+    <string name="final_location_manual_confirm">이 장소로 선택</string>
+    <string name="final_location_diagram">안내도</string>
+    <string name="final_location_diagram_title">만남 지점 안내도</string>
+    <string name="final_location_diagram_note">실제 지도와 다른 예시 안내도입니다. 병원 현장의 정확한 위치는 매니저와 확인해 주세요.</string>
+    <string name="final_location_diagram_open">병원 내 만남 지점 안내도 보기</string>
+    <string name="final_location_selected">%1$s, 선택됨</string>
+</resources>
