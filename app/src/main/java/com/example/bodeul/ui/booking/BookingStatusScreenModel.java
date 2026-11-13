@@ -22,6 +22,12 @@ public final class BookingStatusScreenModel {
     private final AppointmentProgressOverviewModel progressOverview;
     private final List<BookingStatusLineItem> participantLines;
     private final List<BookingStatusLineItem> summaryLines;
+    private final List<BookingStatusLineItem> paymentLines;
+    private final String referenceText;
+    private final String managerName;
+    private final String managerContact;
+    private final String managerNote;
+    private final boolean awaitingDeposit;
     private final List<BookingStatusLineItem> liveLines;
     private final List<BookingStatusSectionModel> reportSections;
     @Nullable
@@ -40,6 +46,12 @@ public final class BookingStatusScreenModel {
             AppointmentProgressOverviewModel progressOverview,
             List<BookingStatusLineItem> participantLines,
             List<BookingStatusLineItem> summaryLines,
+            List<BookingStatusLineItem> paymentLines,
+            String referenceText,
+            String managerName,
+            String managerContact,
+            String managerNote,
+            boolean awaitingDeposit,
             List<BookingStatusLineItem> liveLines,
             List<BookingStatusSectionModel> reportSections,
             @Nullable BookingStatusActionModel primaryAction,
@@ -48,13 +60,19 @@ public final class BookingStatusScreenModel {
         this.status = status;
         this.modeText = modeText;
         this.heroBadgeText = heroBadgeText;
-        this.heroTitleText = heroTitleText;
-        this.heroBodyText = heroBodyText;
+        this.heroTitleText = heroTitleText == null ? "" : heroTitleText;
+        this.heroBodyText = heroBodyText == null ? "" : heroBodyText;
         this.progressTitleText = progressTitleText;
         this.progressBodyText = progressBodyText;
         this.progressOverview = progressOverview;
         this.participantLines = Collections.unmodifiableList(participantLines);
         this.summaryLines = Collections.unmodifiableList(summaryLines);
+        this.paymentLines = Collections.unmodifiableList(paymentLines);
+        this.referenceText = referenceText;
+        this.managerName = managerName;
+        this.managerContact = managerContact;
+        this.managerNote = managerNote;
+        this.awaitingDeposit = awaitingDeposit;
         this.liveLines = Collections.unmodifiableList(liveLines);
         this.reportSections = Collections.unmodifiableList(reportSections);
         this.primaryAction = primaryAction;
@@ -100,6 +118,13 @@ public final class BookingStatusScreenModel {
     public List<BookingStatusLineItem> getSummaryLines() {
         return summaryLines;
     }
+
+    public List<BookingStatusLineItem> getPaymentLines() { return paymentLines; }
+    public String getReferenceText() { return referenceText; }
+    public String getManagerName() { return managerName; }
+    public String getManagerContact() { return managerContact; }
+    public String getManagerNote() { return managerNote; }
+    public boolean isAwaitingDeposit() { return awaitingDeposit; }
 
     public List<BookingStatusLineItem> getLiveLines() {
         return liveLines;

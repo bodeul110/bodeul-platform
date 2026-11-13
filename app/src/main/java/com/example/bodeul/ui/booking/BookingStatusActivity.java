@@ -1,7 +1,9 @@
 package com.example.bodeul.ui.booking;
 
 import android.content.Context;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -9,8 +11,10 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
 
 import com.example.bodeul.MainActivity;
 import com.example.bodeul.R;
@@ -61,6 +65,7 @@ public class BookingStatusActivity extends AppCompatActivity {
     private boolean detailObservationActive;
     private boolean hasRenderedDetail;
     private boolean refreshFailureNotified;
+    private boolean loading;
     private int detailLoadGeneration;
 
     public static Intent createIntent(Context context, String requestId) {
@@ -72,7 +77,11 @@ public class BookingStatusActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_booking_status);
+        View root = findViewById(R.id.bookingStatusRoot);
+        BookingCompletionInsets.apply(root);
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightNavigationBars(true);
 
         requestId = getIntent().getStringExtra(EXTRA_REQUEST_ID);
         authRepository = provideAuthRepository();
@@ -94,39 +103,27 @@ public class BookingStatusActivity extends AppCompatActivity {
         buttonGuardianSharingConsent = findViewById(
                 R.id.buttonBookingStatusGuardianSharingConsent);
 
-        bookingStatusBinder = new BookingStatusBinder(
-                this,
-                getLayoutInflater(),
-                findViewById(R.id.textBookingStatusMode),
-                findViewById(R.id.textBookingStatusHeroBadge),
-                findViewById(R.id.textBookingStatusHeroTitle),
-                findViewById(R.id.textBookingStatusHeroBody),
-                findViewById(R.id.textBookingStatusProgressTitle),
-                findViewById(R.id.textBookingStatusProgressBody),
-                findViewById(R.id.bookingStatusStageContainer),
-                findViewById(R.id.cardBookingStatusGuide),
-                findViewById(R.id.textBookingStatusGuideTitle),
-                findViewById(R.id.textBookingStatusGuideBody),
-                findViewById(R.id.bookingStatusParticipantContainer),
-                findViewById(R.id.bookingStatusSummaryContainer),
-                findViewById(R.id.cardBookingStatusLive),
-                findViewById(R.id.bookingStatusLiveContainer),
-                findViewById(R.id.cardBookingStatusReport),
-                findViewById(R.id.bookingStatusReportContainer),
-                buttonPrimary,
-                buttonSecondary
-        );
+        bookingStatusBinder = new BookingStatusBinder(root, savedInstanceState);
 
         findViewById(R.id.buttonBackBookingStatus).setOnClickListener(view -> finish());
         buttonPrimary.setOnClickListener(view -> handleAction(
                 currentScreenModel == null ? null : currentScreenModel.getPrimaryAction()
         ));
+        findViewById(R.id.buttonBookingStatusEdit).setOnClickListener(view -> handleAction(
+                currentScreenModel == null ? null : currentScreenModel.getPrimaryAction()));
+        findViewById(R.id.buttonBookingStatusMap).setOnClickListener(view -> openHospitalMap());
         buttonSecondary.setOnClickListener(view -> handleAction(
                 currentScreenModel == null ? null : currentScreenModel.getSecondaryAction()
         ));
         buttonBankTransferPayment.setOnClickListener(view -> openBankTransferPayment());
         buttonGuardianSharingConsent.setOnClickListener(view -> openGuardianSharingConsent());
         bookingStatusContentContainer.setVisibility(View.GONE);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        bookingStatusBinder.saveState(outState);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -162,6 +159,8 @@ public class BookingStatusActivity extends AppCompatActivity {
 
         setLoading(true);
         hideBlockingState();
+        // 복귀 시 사용자가 다시 확인되기 전에는 이전 예약 내용을 노출하지 않는다.
+        bookingStatusContentContainer.setVisibility(View.GONE);
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
@@ -178,7 +177,15 @@ public class BookingStatusActivity extends AppCompatActivity {
                     return;
                 }
 
+                if (currentUser != null && (!TextUtils.equals(currentUser.getId(), result.getId())
+                        || currentUser.getRole() != result.getRole())) {
+                    hasRenderedDetail = false;
+                    currentDetail = null;
+                    currentScreenModel = null;
+                    bookingStatusBinder.collapseDetails();
+                }
                 currentUser = result;
+                if (hasRenderedDetail) bookingStatusContentContainer.setVisibility(View.VISIBLE);
                 Runnable observerRegistration = bookingRepository.observeAppointmentRequestDetail(
                         result,
                         requestId,
@@ -189,6 +196,7 @@ public class BookingStatusActivity extends AppCompatActivity {
                                     return;
                                 }
                                 currentDetail = result;
+                                setLoading(true);
                                 loadFollowUpIfNeeded(result, loadGeneration);
                             }
 
@@ -313,7 +321,7 @@ public class BookingStatusActivity extends AppCompatActivity {
     }
 
     private void handleAction(@Nullable BookingStatusActionModel actionModel) {
-        if (actionModel == null || currentDetail == null) {
+        if (loading || actionModel == null || currentDetail == null) {
             return;
         }
         if (currentUser == null || !BookingMutationPolicy.isStatusActionAllowed(
@@ -447,7 +455,7 @@ public class BookingStatusActivity extends AppCompatActivity {
     }
 
     private void openGuardianSharingConsent() {
-        if (currentDetail == null || currentUser == null
+        if (loading || currentDetail == null || currentUser == null
                 || currentUser.getRole() != UserRole.PATIENT) {
             return;
         }
@@ -458,7 +466,7 @@ public class BookingStatusActivity extends AppCompatActivity {
     }
 
     private void openBankTransferPayment() {
-        if (currentDetail == null || currentUser == null
+        if (loading || currentDetail == null || currentUser == null
                 || !BankTransferPaymentAccessPolicy.canOpen(
                 currentUser.getRole(),
                 currentDetail.getAppointmentRequest().getPaymentMethodCode())) {
@@ -469,12 +477,28 @@ public class BookingStatusActivity extends AppCompatActivity {
                 currentDetail.getAppointmentRequest().getId()));
     }
 
+    private void openHospitalMap() {
+        if (loading || currentDetail == null) return;
+        BookingCompletionSnapshot snapshot = BookingCompletionSnapshot.fromRequest(
+                currentDetail.getAppointmentRequest());
+        if (snapshot.getHospitalName().isEmpty()) return;
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q="
+                    + Uri.encode(snapshot.getHospitalMapQuery()))));
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, R.string.final_hospital_map_unavailable, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void setLoading(boolean loading) {
+        this.loading = loading;
         progressBookingStatus.setVisibility(loading ? View.VISIBLE : View.GONE);
         buttonPrimary.setEnabled(!loading);
         buttonSecondary.setEnabled(!loading);
         buttonBankTransferPayment.setEnabled(!loading);
         buttonGuardianSharingConsent.setEnabled(!loading);
+        findViewById(R.id.buttonBookingStatusEdit).setEnabled(!loading);
+        findViewById(R.id.buttonBookingStatusMap).setEnabled(!loading);
     }
 
     private void showPermissionState() {
@@ -530,6 +554,9 @@ public class BookingStatusActivity extends AppCompatActivity {
             @Nullable CharSequence secondaryText,
             @Nullable View.OnClickListener secondaryListener
     ) {
+        hasRenderedDetail = false;
+        currentDetail = null;
+        currentScreenModel = null;
         StatePanelHelper.show(
                 bookingStatusStatePanel,
                 tone,
