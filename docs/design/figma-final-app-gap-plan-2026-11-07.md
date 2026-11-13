@@ -24,6 +24,8 @@
 
 **11월 11일 일정·장소 후속:** 날짜·시간과 만남 장소 선택 UI를 `codex/figma-final-booking-schedule-location`에서 로컬 반영·검증했다. [구현 기록](figma-final-booking-schedule-location-2026-11-11.md)에 달력·시간 휠·직접 입력·기존 장소 보존과 확대 화면 검증을 정리했다. 현재 단일 `appointmentAt` 계약은 유지하며, 두 시각 분리 저장·주소 검색·거리 제한·결제 승인·완료 화면은 후속 목표로 남는다. 로컬 UI 검증을 서버 계약 확장이나 병합·배포 완료로 보지 않는다.
 
+**11월 13일 결제 확인·완료 후속:** #518이 병합된 `dev`의 `09029453`을 기준으로 `codex/figma-final-booking-completion`에서 결제 확인·신청 완료 시트를 반영했다. [구현·검증 기록](figma-final-booking-completion-2026-11-13.md)에 동의·취소·재생성, 기존 결제 결과, 상세·지도·예약 내역 이동과 화면 크기별 검증을 구분한다. 원본 확인 아이콘·정보 배치를 적용하되 실제 연동이 없는 자동결제·입금·매칭 기한을 성공 상태로 표시하지 않는다. 두 시각·병원 사진/주소·실제 결제 연동과 실기기 종단 검증은 남아 있다. `dev` 대상 리뷰 변경이며 병합·배포 완료 기록은 아니다.
+
 | 대상 | 이번 확인 |
 | --- | --- |
 | Figma | [보들 어플 완성본 / Page 1](https://www.figma.com/design/fqwi44prjEgVFZhaM6LuzS?node-id=0-1), file key `fqwi44prjEgVFZhaM6LuzS`, node `0:1` |

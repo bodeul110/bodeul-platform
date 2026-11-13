@@ -12,6 +12,8 @@ import com.example.bodeul.domain.model.AppointmentRequest;
 public final class BookingCompletionSnapshot {
     private static final String EXTRA_REQUEST_ID = "requestId";
     private static final String EXTRA_HOSPITAL_NAME = "hospitalName";
+    private static final String EXTRA_HOSPITAL_LATITUDE = "hospitalLatitude";
+    private static final String EXTRA_HOSPITAL_LONGITUDE = "hospitalLongitude";
     private static final String EXTRA_DEPARTMENT_NAME = "departmentName";
     private static final String EXTRA_APPOINTMENT_AT = "appointmentAt";
     private static final String EXTRA_MEETING_PLACE = "meetingPlace";
@@ -28,6 +30,8 @@ public final class BookingCompletionSnapshot {
 
     private final String requestId;
     private final String hospitalName;
+    private final double hospitalLatitude;
+    private final double hospitalLongitude;
     private final String departmentName;
     private final String appointmentAt;
     private final String meetingPlace;
@@ -45,6 +49,8 @@ public final class BookingCompletionSnapshot {
     public BookingCompletionSnapshot(
             String requestId,
             String hospitalName,
+            double hospitalLatitude,
+            double hospitalLongitude,
             String departmentName,
             String appointmentAt,
             String meetingPlace,
@@ -61,6 +67,8 @@ public final class BookingCompletionSnapshot {
     ) {
         this.requestId = normalize(requestId);
         this.hospitalName = normalize(hospitalName);
+        this.hospitalLatitude = hospitalLatitude;
+        this.hospitalLongitude = hospitalLongitude;
         this.departmentName = normalize(departmentName);
         this.appointmentAt = normalize(appointmentAt);
         this.meetingPlace = normalize(meetingPlace);
@@ -80,6 +88,8 @@ public final class BookingCompletionSnapshot {
         return new BookingCompletionSnapshot(
                 request.getId(),
                 request.getHospitalName(),
+                request.getHospitalLatitude(),
+                request.getHospitalLongitude(),
                 request.getDepartmentName(),
                 request.getAppointmentAt(),
                 request.getMeetingPlace(),
@@ -100,6 +110,8 @@ public final class BookingCompletionSnapshot {
         return new BookingCompletionSnapshot(
                 intent.getStringExtra(EXTRA_REQUEST_ID),
                 intent.getStringExtra(EXTRA_HOSPITAL_NAME),
+                intent.getDoubleExtra(EXTRA_HOSPITAL_LATITUDE, 0),
+                intent.getDoubleExtra(EXTRA_HOSPITAL_LONGITUDE, 0),
                 intent.getStringExtra(EXTRA_DEPARTMENT_NAME),
                 intent.getStringExtra(EXTRA_APPOINTMENT_AT),
                 intent.getStringExtra(EXTRA_MEETING_PLACE),
@@ -119,6 +131,8 @@ public final class BookingCompletionSnapshot {
     public void writeToIntent(Intent intent) {
         intent.putExtra(EXTRA_REQUEST_ID, requestId);
         intent.putExtra(EXTRA_HOSPITAL_NAME, hospitalName);
+        intent.putExtra(EXTRA_HOSPITAL_LATITUDE, hospitalLatitude);
+        intent.putExtra(EXTRA_HOSPITAL_LONGITUDE, hospitalLongitude);
         intent.putExtra(EXTRA_DEPARTMENT_NAME, departmentName);
         intent.putExtra(EXTRA_APPOINTMENT_AT, appointmentAt);
         intent.putExtra(EXTRA_MEETING_PLACE, meetingPlace);
@@ -139,6 +153,15 @@ public final class BookingCompletionSnapshot {
     }
 
     public String getHospitalName() {
+        return hospitalName;
+    }
+
+    public String getHospitalMapQuery() {
+        if (Double.isFinite(hospitalLatitude) && Double.isFinite(hospitalLongitude)
+                && Math.abs(hospitalLatitude) <= 90 && Math.abs(hospitalLongitude) <= 180
+                && hospitalLatitude != 0 && hospitalLongitude != 0) {
+            return hospitalLatitude + "," + hospitalLongitude + "(" + hospitalName + ")";
+        }
         return hospitalName;
     }
 

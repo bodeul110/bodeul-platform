@@ -47,6 +47,7 @@
             android:exported="false" />
         <activity
             android:name=".ui.booking.BookingCompletionActivity"
+            android:theme="@style/Theme.Bodeul.FinalBookingCompletion"
             android:exported="false" />
         <activity
             android:name=".ui.booking.BookingHealthProfileActivity"
@@ -63,6 +64,7 @@
             android:exported="false" />
         <activity
             android:name=".ui.booking.BookingPaymentApprovalActivity"
+            android:theme="@style/Theme.Bodeul.FinalBooking"
             android:exported="false" />
         <activity
             android:name=".ui.booking.BookingLocationSelectorActivity"
