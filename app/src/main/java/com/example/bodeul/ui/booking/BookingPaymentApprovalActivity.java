@@ -8,7 +8,9 @@ import android.widget.CheckBox;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
 
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.BookingPaymentApproval;
@@ -59,7 +61,11 @@ public class BookingPaymentApprovalActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_booking_payment_approval);
+        BookingCompletionInsets.apply(findViewById(R.id.bookingPaymentRoot));
+        ViewCompat.setAccessibilityHeading(findViewById(R.id.textBookingPaymentHeader), true);
+        ViewCompat.setAccessibilityHeading(findViewById(R.id.textBookingPaymentSummaryTitle), true);
 
         BookingPaymentCheckoutSnapshot snapshot = BookingPaymentCheckoutSnapshot.fromIntent(getIntent());
         BookingPaymentApprovalScreenModel screenModel = new BookingPaymentApprovalCoordinator(

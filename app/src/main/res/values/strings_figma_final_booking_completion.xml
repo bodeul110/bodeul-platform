@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_booking_completion_close">완료 화면 닫기</string>
+    <string name="final_booking_completion_map">위치보기</string>
+    <string name="final_booking_completion_department">진료과</string>
+    <string name="final_booking_payment_header">결제 확인</string>
+    <string name="final_booking_completion_title">동행 신청 완료!</string>
+    <string name="final_booking_completion_updated_title">예약 수정 완료!</string>
+    <string name="final_booking_completion_body">예약이 접수되었어요.\n진행 상태는 예약 상세에서 확인해주세요.</string>
+    <string name="final_booking_completion_summary">내 예약 정보</string>
+    <string name="final_booking_completion_detail">예약 상세</string>
+    <string name="final_booking_completion_confirm">확인</string>
+    <string name="final_booking_completion_confirm_description">확인 후 예약 내역 보기</string>
+    <string name="final_booking_completion_meeting_pending">만남 장소 확인 중</string>
+    <string name="final_booking_completion_payment_label">결제 정보</string>
+    <string name="final_booking_completion_price_label">예약 금액</string>
+    <string name="final_booking_completion_payment_summary">%1$s · %2$s</string>
+    <string name="final_booking_completion_payment_notice">접수 당시 결제 상태입니다. 최신 입금·결제 정보는 예약 상세에서 확인해주세요.</string>
+</resources>

@@ -12,6 +12,9 @@ public final class BookingCompletionScreenModel {
     private final String date;
     private final String time;
     private final String note;
+    private final String meetingPlace;
+    private final String payment;
+    private final String amount;
 
     public BookingCompletionScreenModel(
             String screenTitle,
@@ -21,7 +24,10 @@ public final class BookingCompletionScreenModel {
             String department,
             String date,
             String time,
-            String note
+            String note,
+            String meetingPlace,
+            String payment,
+            String amount
     ) {
         this.screenTitle = screenTitle;
         this.title = title;
@@ -31,6 +37,9 @@ public final class BookingCompletionScreenModel {
         this.date = date;
         this.time = time;
         this.note = note;
+        this.meetingPlace = meetingPlace;
+        this.payment = payment;
+        this.amount = amount;
     }
 
     public String getScreenTitle() {
@@ -64,4 +73,8 @@ public final class BookingCompletionScreenModel {
     public String getNote() {
         return note;
     }
+
+    public String getMeetingPlace() { return meetingPlace; }
+    public String getPayment() { return payment; }
+    public String getAmount() { return amount; }
 }

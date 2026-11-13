@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Bodeul.FinalBookingCompletion" parent="Theme.Bodeul.FinalBooking">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.5</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <style name="FinalBookingReviewBody" parent="FinalBookingBody">
+        <item name="android:textSize">14sp</item>
+        <item name="lineHeight">20sp</item>
+        <item name="android:minHeight">20sp</item>
+    </style>
+    <style name="FinalBookingReviewLabel" parent="FinalBookingReviewBody">
+        <item name="android:textColor">@color/final_text_secondary</item>
+    </style>
+    <style name="FinalBookingPaymentConsent" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:fontFamily">@font/pretendard_medium</item>
+        <item name="android:textSize">14sp</item>
+        <item name="lineHeight">20sp</item>
+        <item name="android:textColor">@color/final_text_primary</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+    <style name="FinalBookingCompletionTitle" parent="FinalBookingTitle">
+        <item name="android:textSize">25sp</item>
+        <item name="lineHeight">32sp</item>
+        <item name="android:minHeight">32sp</item>
+        <item name="android:gravity">center</item>
+    </style>
+    <style name="FinalBookingCompletionBody" parent="FinalBookingBody">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/final_text_secondary</item>
+        <item name="android:gravity">center</item>
+    </style>
+</resources>

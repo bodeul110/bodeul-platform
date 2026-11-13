@@ -1,12 +1,17 @@
 package com.example.bodeul.ui.booking;
 
 import android.content.Context;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
 
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.AppointmentRequest;
@@ -29,30 +34,41 @@ public class BookingCompletionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         configureSystemBars();
         setContentView(R.layout.activity_booking_completion);
-        BookingCompletionInsets.apply(findViewById(R.id.bookingCompletionRoot));
+        View root = findViewById(R.id.bookingCompletionRoot);
+        BookingCompletionInsets.applySheet(root, findViewById(R.id.bookingCompletionBottomAction));
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightNavigationBars(true);
 
         BookingCompletionSnapshot snapshot = BookingCompletionSnapshot.fromIntent(getIntent());
         boolean isUpdated = getIntent().getBooleanExtra(EXTRA_IS_UPDATED, false);
 
         BookingCompletionCoordinator coordinator = new BookingCompletionCoordinator(this);
-        BookingCompletionBinder binder = new BookingCompletionBinder(
-                findViewById(R.id.textBookingCompletionScreenTitle),
-                findViewById(R.id.textBookingCompletionTitle),
-                findViewById(R.id.textBookingCompletionBody),
-                findViewById(R.id.textBookingCompletionHospital),
-                findViewById(R.id.textBookingCompletionDepartment),
-                findViewById(R.id.textBookingCompletionDate),
-                findViewById(R.id.textBookingCompletionTime),
-                findViewById(R.id.textBookingCompletionNote)
-        );
-        binder.bind(coordinator.buildScreenModel(snapshot, isUpdated));
+        BookingCompletionScreenModel model = coordinator.buildScreenModel(snapshot, isUpdated);
+        setTitle(model.getScreenTitle());
+        new BookingCompletionBinder(root).bind(model);
 
         findViewById(R.id.buttonBackBookingCompletion).setOnClickListener(view -> finish());
         findViewById(R.id.buttonBookingCompletionList).setOnClickListener(view -> openBookingHistory());
+        View detail = findViewById(R.id.buttonBookingCompletionDetail);
+        detail.setVisibility(snapshot.getRequestId().isEmpty() ? View.GONE : View.VISIBLE);
+        detail.setOnClickListener(view -> startActivity(
+                BookingStatusActivity.createIntent(this, snapshot.getRequestId())));
+        View map = findViewById(R.id.buttonBookingCompletionMap);
+        map.setVisibility(snapshot.getHospitalName().isEmpty() ? View.GONE : View.VISIBLE);
+        map.setContentDescription(getString(R.string.final_hospital_map_description, snapshot.getHospitalName()));
+        map.setOnClickListener(view -> openHospitalMap(snapshot));
     }
 
     private void configureSystemBars() {
         EdgeToEdge.enable(this);
+    }
+
+    private void openHospitalMap(BookingCompletionSnapshot snapshot) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q="
+                    + Uri.encode(snapshot.getHospitalMapQuery()))));
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, R.string.final_hospital_map_unavailable, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void openBookingHistory() {

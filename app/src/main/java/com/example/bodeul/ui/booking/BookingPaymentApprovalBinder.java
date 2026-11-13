@@ -1,9 +1,8 @@
 package com.example.bodeul.ui.booking;
 
 import android.widget.CheckBox;
+import android.widget.Button;
 import android.widget.TextView;
-
-import com.google.android.material.button.MaterialButton;
 
 /**
  * 결제 승인 화면의 정적 요약 정보를 바인딩한다.
@@ -19,7 +18,7 @@ public final class BookingPaymentApprovalBinder {
     private final TextView textHospital;
     private final TextView textMeetingPlace;
     private final CheckBox checkConsent;
-    private final MaterialButton buttonApprove;
+    private final Button buttonApprove;
 
     public BookingPaymentApprovalBinder(
             TextView textBadge,
@@ -32,7 +31,7 @@ public final class BookingPaymentApprovalBinder {
             TextView textHospital,
             TextView textMeetingPlace,
             CheckBox checkConsent,
-            MaterialButton buttonApprove
+            Button buttonApprove
     ) {
         this.textBadge = textBadge;
         this.textTitle = textTitle;
@@ -61,6 +60,9 @@ public final class BookingPaymentApprovalBinder {
         buttonApprove.setText(screenModel.getApprovalButtonText());
         checkConsent.setChecked(false);
         checkConsent.setEnabled(screenModel.isConfirmable());
-        buttonApprove.setEnabled(screenModel.isConfirmable());
+        // 상태 복원으로 동의 값이 돌아오는 경우에도 버튼과 동일하게 반영한다.
+        checkConsent.setOnCheckedChangeListener((button, checked) ->
+                buttonApprove.setEnabled(screenModel.isConfirmable() && checked));
+        buttonApprove.setEnabled(false);
     }
 }

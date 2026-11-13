@@ -42,21 +42,27 @@ public final class BookingCompletionCoordinator {
                 R.string.booking_completion_note_empty
         );
 
+        BookingPresentationFormatter formatter = new BookingPresentationFormatter(context);
         return new BookingCompletionScreenModel(
                 context.getString(isUpdated
                         ? R.string.booking_completion_screen_title_updated
                         : R.string.booking_completion_screen_title_submitted),
                 context.getString(isUpdated
-                        ? R.string.booking_completion_title_updated
-                        : R.string.booking_completion_title_submitted),
+                        ? R.string.final_booking_completion_updated_title
+                        : R.string.final_booking_completion_title),
                 context.getString(isUpdated
                         ? R.string.booking_completion_body_updated
-                        : R.string.booking_completion_body_submitted),
+                        : R.string.final_booking_completion_body),
                 hospital,
                 department,
                 date,
                 dateTime.getTime(),
-                note
+                note,
+                valueOrFallback(snapshot.getMeetingPlace(), R.string.final_booking_completion_meeting_pending),
+                context.getString(R.string.final_booking_completion_payment_summary,
+                        formatter.toPaymentMethodLabel(snapshot.getPaymentMethodCode()),
+                        formatter.toPaymentStatusLabel(snapshot.getPaymentStatusCode())),
+                formatter.formatPrice(snapshot.getFinalPrice())
         );
     }
 
