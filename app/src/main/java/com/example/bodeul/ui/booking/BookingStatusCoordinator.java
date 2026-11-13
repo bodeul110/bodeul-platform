@@ -10,6 +10,7 @@ import com.example.bodeul.domain.model.AppointmentFollowUpRecord;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentRequestDetail;
 import com.example.bodeul.domain.model.AppointmentStatus;
+import com.example.bodeul.domain.model.BookingPaymentStatus;
 import com.example.bodeul.domain.model.CompanionSession;
 import com.example.bodeul.domain.model.GuideStep;
 import com.example.bodeul.domain.model.HospitalGuide;
@@ -27,6 +28,7 @@ import com.example.bodeul.util.PharmacyProgressDisplayHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 예약 상세에 필요한 도메인 정보를 상태 화면 모델로 조합한다.
@@ -66,14 +68,24 @@ public final class BookingStatusCoordinator {
         return new BookingStatusScreenModel(
                 request.getStatus(),
                 EnvironmentModeBadgeHelper.resolveUserFacingLabel(context, isFirebaseBacked),
-                formatter.toStatusLabel(request.getStatus()),
-                buildHeroTitle(detail),
-                buildHeroBody(detail),
+                buildStatusLabel(request),
+                request.getHospitalName(),
+                request.getDepartmentName(),
                 progressOverview.getTitleText(),
                 progressOverview.getBodyText(),
                 progressOverview,
                 createParticipantLines(detail),
                 createSummaryLines(detail),
+                createPaymentLines(request),
+                TextUtils.isEmpty(request.getPublicCode()) ? "" : context.getString(
+                        R.string.final_booking_status_reference, request.getPublicCode()),
+                detail.getManager() == null ? "" : TextUtils.isEmpty(detail.getManager().getName())
+                        ? context.getString(R.string.booking_status_line_manager) : context.getString(
+                                R.string.final_booking_status_manager_name, detail.getManager().getName()),
+                detail.getManager() == null ? "" : buildManagerDisplay(detail.getManager()),
+                TextUtils.isEmpty(request.getSpecialNotes())
+                        ? context.getString(R.string.final_booking_status_note_empty) : request.getSpecialNotes(),
+                isAwaitingDeposit(request),
                 createLiveLines(detail),
                 createReportSections(detail, followUpRecord),
                 buildPrimaryAction(currentUser, request.getStatus()),
@@ -81,81 +93,50 @@ public final class BookingStatusCoordinator {
         );
     }
 
-    private String buildHeroTitle(AppointmentRequestDetail detail) {
-        AppointmentRequest request = detail.getAppointmentRequest();
+    private String buildStatusLabel(AppointmentRequest request) {
+        if (isAwaitingDeposit(request)) {
+            return context.getString(R.string.final_booking_status_awaiting_deposit);
+        }
         switch (request.getStatus()) {
             case MATCHED:
-                return context.getString(
-                        R.string.booking_status_hero_title_matched,
-                        request.getHospitalName(),
-                        request.getDepartmentName()
-                );
+                return context.getString(R.string.final_booking_status_matched);
             case IN_PROGRESS:
-                return context.getString(
-                        R.string.booking_status_hero_title_in_progress,
-                        request.getHospitalName()
-                );
+                return context.getString(R.string.final_booking_status_in_progress);
             case COMPLETED:
-                return context.getString(R.string.booking_status_hero_title_completed);
+                return context.getString(R.string.final_booking_status_completed);
             case CANCELED:
-                return context.getString(R.string.booking_status_hero_title_canceled);
+                return context.getString(R.string.final_booking_status_canceled);
             case REQUESTED:
             default:
-                return context.getString(
-                        R.string.booking_status_hero_title_requested,
-                        request.getHospitalName(),
-                        request.getDepartmentName()
-                );
+                return context.getString(R.string.final_booking_status_requested);
         }
     }
 
-    private String buildHeroBody(AppointmentRequestDetail detail) {
-        AppointmentRequest request = detail.getAppointmentRequest();
-        String meetingPlace = TextUtils.isEmpty(request.getMeetingPlace())
-                ? context.getString(R.string.booking_status_place_missing)
-                : request.getMeetingPlace();
-        return context.getString(
-                R.string.booking_status_hero_body_format,
-                request.getAppointmentAt(),
-                meetingPlace,
-                buildHeroStatusNote(detail)
-        );
-    }
-
-    private String buildHeroStatusNote(AppointmentRequestDetail detail) {
-        AppointmentRequest request = detail.getAppointmentRequest();
-        switch (request.getStatus()) {
-            case MATCHED:
-                return context.getString(
-                        R.string.booking_status_hero_note_matched,
-                        buildManagerDisplay(detail.getManager())
-                );
-            case IN_PROGRESS:
-                return context.getString(R.string.booking_status_hero_note_in_progress);
-            case COMPLETED:
-                return context.getString(R.string.booking_status_hero_note_completed);
-            case CANCELED:
-                return context.getString(R.string.booking_status_hero_note_canceled);
-            case REQUESTED:
-            default:
-                return context.getString(R.string.booking_status_hero_note_requested);
-        }
+    static boolean isAwaitingDeposit(AppointmentRequest request) {
+        // 완료·취소 등 예약 상태를 오래된 결제 상태로 덮어쓰지 않는다.
+        return (request.getStatus() == AppointmentStatus.REQUESTED
+                || request.getStatus() == AppointmentStatus.MATCHED)
+                && BookingPaymentStatus.fromValue(request.getPaymentStatusCode())
+                == BookingPaymentStatus.AWAITING_DEPOSIT;
     }
 
     private List<BookingStatusLineItem> createParticipantLines(AppointmentRequestDetail detail) {
         AppointmentRequest request = detail.getAppointmentRequest();
         List<BookingStatusLineItem> items = new ArrayList<>();
-        items.add(new BookingStatusLineItem(
-                context.getString(R.string.booking_status_line_patient),
-                buildParticipantDisplay(
-                        detail.getPatient(),
-                        request.getPatientName(),
-                        request.getPatientPhone(),
-                        request.getPatientEmail(),
-                        request.getPatientUserId()
-                ),
-                true
-        ));
+        User patient = detail.getPatient();
+        String patientName = patient == null ? request.getPatientName() : patient.getName();
+        if (patient == null && TextUtils.isEmpty(request.getPatientUserId()) && !TextUtils.isEmpty(patientName)) {
+            patientName = context.getString(R.string.booking_status_contact_pending_format, patientName);
+        }
+        String patientContact = patient == null
+                ? buildContactValue("", request.getPatientPhone(), request.getPatientEmail())
+                : buildContactValue("", patient.getPhone(), patient.getEmail());
+        items.add(new BookingStatusLineItem(context.getString(R.string.final_booking_status_patient_name),
+                TextUtils.isEmpty(patientName) ? context.getString(R.string.booking_status_contact_missing)
+                        : patientName, false));
+        items.add(new BookingStatusLineItem(context.getString(R.string.final_booking_status_contact),
+                TextUtils.isEmpty(patientContact) ? context.getString(R.string.booking_status_contact_missing)
+                        : patientContact, false));
         items.add(new BookingStatusLineItem(
                 context.getString(R.string.booking_status_line_guardian),
                 buildParticipantDisplay(
@@ -167,36 +148,20 @@ public final class BookingStatusCoordinator {
                 ),
                 false
         ));
-        items.add(new BookingStatusLineItem(
-                context.getString(R.string.booking_status_line_manager),
-                buildManagerDisplay(detail.getManager()),
-                false
-        ));
+        addOptionalLine(items, R.string.booking_status_line_health_note, request.getPatientConditionSummary(), false);
+        addOptionalLine(items, R.string.booking_status_line_medication_note, request.getMedicationSummary(), false);
         return items;
     }
 
     private List<BookingStatusLineItem> createSummaryLines(AppointmentRequestDetail detail) {
         AppointmentRequest request = detail.getAppointmentRequest();
         List<BookingStatusLineItem> items = new ArrayList<>();
-        addOptionalLine(
-                items,
-                R.string.booking_status_line_public_code,
-                request.getPublicCode(),
-                true
-        );
+        items.add(new BookingStatusLineItem(context.getString(R.string.final_booking_completion_department),
+                request.getDepartmentName(), false));
         items.add(new BookingStatusLineItem(
                 context.getString(R.string.booking_status_line_schedule),
-                request.getAppointmentAt(),
+                formatAppointmentAt(request.getAppointmentAt()),
                 true
-        ));
-        items.add(new BookingStatusLineItem(
-                context.getString(R.string.booking_status_line_hospital),
-                context.getString(
-                        R.string.booking_status_hospital_value,
-                        request.getHospitalName(),
-                        request.getDepartmentName()
-                ),
-                false
         ));
         items.add(new BookingStatusLineItem(
                 context.getString(R.string.booking_status_line_place),
@@ -220,6 +185,23 @@ public final class BookingStatusCoordinator {
                 formatter.toManagerGenderPreferenceLabel(request.getManagerGenderPreferenceCode()),
                 false
         ));
+        return items;
+    }
+
+    private String formatAppointmentAt(String value) {
+        BookingCompletionDateTime.DisplayValue dateTime = BookingCompletionDateTime.format(value, Locale.KOREA);
+        if (dateTime.getDate().isEmpty()) return context.getString(R.string.booking_completion_schedule_pending);
+        return dateTime.getTime().isEmpty() ? dateTime.getDate()
+                : context.getString(R.string.final_booking_status_schedule, dateTime.getDate(), dateTime.getTime());
+    }
+
+    private List<BookingStatusLineItem> createPaymentLines(AppointmentRequest request) {
+        List<BookingStatusLineItem> items = new ArrayList<>();
+        if (request.getFinalPrice() > 0) {
+            items.add(new BookingStatusLineItem(
+                    context.getString(R.string.booking_status_line_final_price),
+                    formatter.formatPrice(request.getFinalPrice()), true));
+        }
         items.add(new BookingStatusLineItem(
                 context.getString(R.string.booking_status_line_payment),
                 formatter.toPaymentMethodLabel(request.getPaymentMethodCode()),
@@ -239,16 +221,6 @@ public final class BookingStatusCoordinator {
                 formatter.toCouponLabel(request.getCouponCode()),
                 false
         ));
-        if (request.getFinalPrice() > 0) {
-            items.add(new BookingStatusLineItem(
-                    context.getString(R.string.booking_status_line_final_price),
-                    formatter.formatPrice(request.getFinalPrice()),
-                    true
-            ));
-        }
-        addOptionalLine(items, R.string.booking_status_line_request_note, request.getSpecialNotes(), false);
-        addOptionalLine(items, R.string.booking_status_line_health_note, request.getPatientConditionSummary(), false);
-        addOptionalLine(items, R.string.booking_status_line_medication_note, request.getMedicationSummary(), false);
         return items;
     }
 

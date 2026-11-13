@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_booking_status_requested">매칭중</string>
+    <string name="final_booking_status_awaiting_deposit">입금대기</string>
+    <string name="final_booking_status_matched">진행전</string>
+    <string name="final_booking_status_in_progress">진행중</string>
+    <string name="final_booking_status_completed">완료</string>
+    <string name="final_booking_status_canceled">취소</string>
+    <string name="final_booking_status_reference">예약번호 %1$s</string>
+    <string name="final_booking_status_schedule">%1$s\n%2$s</string>
+    <string name="final_booking_status_manager_name">%1$s 매니저</string>
+    <string name="final_booking_status_patient">환자 정보</string>
+    <string name="final_booking_status_patient_name">환자 성함</string>
+    <string name="final_booking_status_contact">연락처</string>
+    <string name="final_booking_status_meeting">만남 정보</string>
+    <string name="final_booking_status_payment">결제 정보</string>
+    <string name="final_booking_status_note">매니저 전달사항</string>
+    <string name="final_booking_status_note_empty">등록된 전달사항이 없습니다.</string>
+    <string name="final_booking_status_progress">진행 현황</string>
+    <string name="final_booking_status_report">리포트·평가·정산 내역</string>
+    <string name="final_booking_status_edit">수정하기</string>
+    <string name="final_booking_status_expand">접힘, 펼치기</string>
+    <string name="final_booking_status_collapse">펼쳐짐, 접기</string>
+</resources>

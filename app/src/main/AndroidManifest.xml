@@ -137,6 +137,7 @@
         </activity>
         <activity
             android:name=".ui.booking.BookingStatusActivity"
+            android:theme="@style/Theme.Bodeul.FinalBooking"
             android:exported="false" />
         <activity
             android:name=".ui.booking.BankTransferPaymentActivity"

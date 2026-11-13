@@ -19,6 +19,8 @@
 
 ## 최근 화면 구현 근거
 
+- [완성본 환자·보호자 예약 상세](figma-final-booking-status-2026-11-13.md)
+  - 상태별 정보 순서, 수정·취소·입금 안내·리포트 경로 유지, 큰 글자·계정 전환·재생성 검증과 미연동 범위
 - [완성본 예약 결제 확인·신청 완료](figma-final-booking-completion-2026-11-13.md)
   - 결제 동의와 기존 결과 보존, 완료 시트·상세·지도 이동, 확대 화면 검증과 실제 결제 미연동 경계
 - [완성본 매니저 홈](figma-final-manager-home-implementation-2026-11-09.md)
