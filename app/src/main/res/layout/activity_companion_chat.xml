@@ -1,268 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_screen_glow">
-
-    <ScrollView
-        android:id="@+id/scrollCompanionChat"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="24dp"
-            android:paddingTop="24dp"
-            android:paddingEnd="24dp"
-            android:paddingBottom="112dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="94dp"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/bodeul_logo_full" />
-
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/buttonBackCompanionChat"
-                    style="@style/BodeulOutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="0dp"
-                    android:text="@string/guide_back" />
+    android:id="@+id/companionChatRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/final_input_surface">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:background="@color/final_surface" android:orientation="vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp"
+                android:paddingStart="6dp" android:paddingEnd="15dp" android:gravity="center_vertical" android:orientation="horizontal">
+                <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/buttonBackCompanionChat" style="@style/BodeulFinalChatIcon"
+                    android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/bodeul_final_back"
+                    android:contentDescription="@string/guide_back"/>
+                <TextView android:id="@+id/textCompanionChatTitle" style="@style/BodeulFinalChatText" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:maxWidth="188dp" android:paddingTop="10dp" android:paddingBottom="10dp"
+                    android:fontFamily="@font/pretendard_bold" android:textSize="22sp" android:text="@string/companion_chat_title"/>
+                <TextView android:id="@+id/textCompanionChatHeroBadge" style="@style/BodeulFinalChatText" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:maxWidth="68dp" android:layout_marginStart="6dp" android:layout_marginEnd="10dp"
+                    android:padding="4dp" android:textSize="10sp" android:background="@drawable/bg_final_chat_status" android:visibility="gone"/>
+                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+                <TextView android:id="@+id/textCompanionChatAvatar" style="@style/BodeulFinalChatText" android:layout_width="34dp"
+                    android:layout_height="34dp" android:gravity="center" android:background="@drawable/bg_final_chat_avatar"
+                    android:textSize="12sp" android:importantForAccessibility="no" android:visibility="gone"/>
             </LinearLayout>
-
-            <TextView
-                android:id="@+id/textCompanionChatMode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:background="@drawable/bg_surface_pill"
-                android:paddingStart="14dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="8dp"
-                android:textColor="@color/bodeul_primary"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/textCompanionChatTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:textColor="@color/bodeul_text_primary"
-                android:textSize="30sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/textCompanionChatSubtitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="3dp"
-                android:textColor="@color/bodeul_text_secondary"
-                android:textSize="14sp" />
-
-            <include
-                android:id="@+id/companionChatStatePanel"
-                layout="@layout/include_state_panel" />
-
-            <LinearLayout
-                android:id="@+id/companionChatContentContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    app:cardBackgroundColor="@color/bodeul_surface"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="6dp"
-                    app:strokeColor="@color/bodeul_outline"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="22dp">
-
-                        <TextView
-                            android:id="@+id/textCompanionChatHeroBadge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/bg_badge_blue"
-                            android:paddingStart="10dp"
-                            android:paddingTop="5dp"
-                            android:paddingEnd="10dp"
-                            android:paddingBottom="5dp"
-                            android:textColor="@color/bodeul_primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/textCompanionChatHeroTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:textColor="@color/bodeul_text_primary"
-                            android:textSize="24sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/textCompanionChatHeroBody"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:lineSpacingExtra="4dp"
-                            android:textColor="@color/bodeul_text_secondary"
-                            android:textSize="14sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardBackgroundColor="@color/bodeul_surface"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="6dp"
-                    app:strokeColor="@color/bodeul_outline"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="22dp">
-
-                        <TextView
-                            android:id="@+id/textCompanionChatSectionTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/bodeul_text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/textCompanionChatEmptyBody"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:lineSpacingExtra="3dp"
-                            android:textColor="@color/bodeul_text_secondary"
-                            android:textSize="13sp" />
-
-                        <LinearLayout
-                            android:id="@+id/layoutCompanionChatMessages"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:orientation="vertical" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardBackgroundColor="@color/bodeul_surface"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="6dp"
-                    app:strokeColor="@color/bodeul_outline"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="22dp">
-
-                        <LinearLayout
-                            android:id="@+id/layoutCompanionChatPendingAttachment"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="14dp"
-                            android:background="@drawable/bg_surface_card_soft"
-                            android:orientation="vertical"
-                            android:padding="14dp"
-                            android:visibility="gone">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/companion_chat_pending_attachment_title"
-                                android:textColor="@color/bodeul_text_primary"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                            <LinearLayout
-                                android:id="@+id/layoutCompanionChatPendingAttachmentItems"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:orientation="vertical" />
-                        </LinearLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/layoutCompanionChatInput"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content">
-
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/inputCompanionChatMessage"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="top|start"
-                                android:inputType="textMultiLine|textCapSentences"
-                                android:maxLines="4"
-                                android:minLines="3" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonCompanionChatAttach"
-                            style="@style/BodeulOutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
-                            android:text="@string/companion_chat_attach" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonCompanionChatSend"
-                            style="@style/BodeulHomeButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+            <LinearLayout android:id="@+id/companionChatActions" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"
+                android:paddingStart="15dp" android:paddingEnd="6dp" android:paddingBottom="8dp" android:gravity="center_vertical">
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonCompanionChatProgress" style="@style/BodeulFinalChatAction"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/final_chat_progress"/>
+                <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonCompanionChatDetails" style="@style/BodeulFinalChatAction"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="5dp" android:text="@string/final_chat_details"/>
+                <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/buttonCompanionChatMore" style="@style/BodeulFinalChatIcon"
+                    android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp" android:background="@drawable/bg_final_chat_action" android:src="@drawable/bodeul_final_chat_more"
+                    android:contentDescription="@string/final_chat_more"/>
             </LinearLayout>
         </LinearLayout>
-    </ScrollView>
-
-    <ProgressBar
-        android:id="@+id/progressCompanionChat"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center" />
-
-    <include layout="@layout/include_client_bottom_navigation" />
+        <ScrollView android:id="@+id/scrollCompanionChatState" android:layout_width="match_parent" android:layout_height="0dp"
+            android:layout_weight="1" android:fillViewport="true" android:padding="15dp">
+            <include android:id="@+id/companionChatStatePanel" layout="@layout/include_state_panel"/>
+        </ScrollView>
+        <LinearLayout android:id="@+id/companionChatContentContainer" android:layout_width="match_parent" android:layout_height="0dp"
+            android:layout_weight="1" android:orientation="vertical" android:visibility="gone">
+            <ScrollView android:id="@+id/scrollCompanionChat" android:layout_width="match_parent" android:layout_height="0dp"
+                android:layout_weight="1" android:fillViewport="true" android:clipToPadding="false">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+                    android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingTop="20dp" android:paddingBottom="20dp">
+                    <TextView android:id="@+id/textCompanionChatEmptyBody" style="@style/BodeulFinalChatText" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:gravity="center" android:textColor="@color/final_text_secondary"/>
+                    <LinearLayout android:id="@+id/layoutCompanionChatMessages" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </LinearLayout>
+            </ScrollView>
+            <LinearLayout android:id="@+id/companionChatComposer" android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingTop="10dp" android:paddingBottom="14dp" android:orientation="vertical">
+                <ScrollView android:id="@+id/layoutCompanionChatPendingAttachment" android:layout_width="match_parent" android:layout_height="96dp" android:visibility="gone">
+                    <LinearLayout android:id="@+id/layoutCompanionChatPendingAttachmentItems" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                </ScrollView>
+                <TextView android:id="@+id/textCompanionChatClosed" style="@style/BodeulFinalChatText" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/final_chat_closed" android:textColor="@color/final_text_secondary" android:visibility="gone"/>
+                <LinearLayout android:id="@+id/layoutCompanionChatInput" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:background="@drawable/bg_final_chat_pill" android:gravity="center_vertical" android:orientation="horizontal">
+                    <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/buttonCompanionChatAttach" style="@style/BodeulFinalChatIcon"
+                        android:layout_width="48dp" android:layout_height="48dp" android:padding="13dp" android:src="@drawable/bodeul_final_chat_camera"
+                        android:contentDescription="@string/companion_chat_attach"/>
+                    <androidx.appcompat.widget.AppCompatEditText android:id="@+id/inputCompanionChatMessage" android:layout_width="0dp" android:layout_height="wrap_content"
+                        android:layout_weight="1" android:minHeight="48dp" android:minLines="1" android:maxLines="3" android:paddingTop="12dp" android:paddingBottom="12dp"
+                        android:paddingStart="0dp" android:paddingEnd="0dp" android:background="@null" android:fontFamily="@font/pretendard_medium" android:textSize="13sp"
+                        android:textColor="@color/final_text_primary" android:textColorHint="@color/final_text_hint" android:hint="@string/final_chat_hint"
+                        android:inputType="textMultiLine|textCapSentences" android:importantForAutofill="no" android:gravity="center_vertical"/>
+                    <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/buttonCompanionChatSend" style="@style/BodeulFinalChatIcon"
+                        android:layout_width="48dp" android:layout_height="48dp" android:src="@drawable/bodeul_final_chat_send" android:contentDescription="@string/companion_chat_send"/>
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    <ProgressBar android:id="@+id/progressCompanionChat" android:layout_width="40dp" android:layout_height="40dp" android:layout_gravity="center"/>
 </FrameLayout>

@@ -44,7 +44,6 @@ public class ClientBottomNavigationInsetsTest {
             R.layout.activity_client_home_figma,
             R.layout.activity_booking,
             R.layout.activity_client_booking_history,
-            R.layout.activity_companion_chat,
             R.layout.activity_client_profile,
             R.layout.activity_guardian_report
     };
@@ -74,7 +73,7 @@ public class ClientBottomNavigationInsetsTest {
     public void rebindAndKeyboardInsets_doNotAccumulateOrExpandNavigation() {
         withActivity(context -> {
             BottomNavigationView navigation = inflateNavigation(
-                    context, R.layout.activity_companion_chat, 1f);
+                    context, R.layout.activity_client_profile, 1f);
             int height = navigation.getLayoutParams().height;
             int bottom = dp(context, 48);
             int left = dp(context, 30);
@@ -159,10 +158,9 @@ public class ClientBottomNavigationInsetsTest {
     @Test
     public void scrollContent_preservesExistingSpacingAndFollowsKeyboardWithoutAccumulation() {
         withActivity(context -> {
-            for (int layout : new int[]{R.layout.activity_companion_chat, R.layout.activity_client_profile}) {
+            for (int layout : new int[]{R.layout.activity_client_profile}) {
                 View screen = LayoutInflater.from(context).inflate(layout, null, false);
-                View content = screen.findViewById(layout == R.layout.activity_companion_chat
-                        ? R.id.scrollCompanionChat : R.id.scrollClientProfile);
+                View content = screen.findViewById(R.id.scrollClientProfile);
                 content.setPadding(4, 8, 12, 16);
                 ClientBottomNavigationInsets.applyScrollableContent(content);
                 WindowInsetsCompat bars = new WindowInsetsCompat.Builder()

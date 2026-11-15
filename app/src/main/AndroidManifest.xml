@@ -58,6 +58,8 @@
             android:exported="false" />
         <activity
             android:name=".ui.chat.CompanionChatActivity"
+            android:theme="@style/Theme.Bodeul.FinalChat"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity
             android:name=".ui.booking.BookingLiveLocationActivity"

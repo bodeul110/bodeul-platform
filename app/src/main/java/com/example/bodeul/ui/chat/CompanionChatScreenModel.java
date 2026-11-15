@@ -3,6 +3,10 @@ package com.example.bodeul.ui.chat;
 import java.util.List;
 
 public final class CompanionChatScreenModel {
+    private final String requestId;
+    private final String ownerKey;
+    private final boolean manager;
+    private final boolean writable;
     private final String modeLabel;
     private final String title;
     private final String subtitle;
@@ -16,6 +20,10 @@ public final class CompanionChatScreenModel {
     private final List<CompanionChatMessageItemModel> messages;
 
     public CompanionChatScreenModel(
+            String requestId,
+            String ownerKey,
+            boolean manager,
+            boolean writable,
             String modeLabel,
             String title,
             String subtitle,
@@ -28,6 +36,10 @@ public final class CompanionChatScreenModel {
             String sendButtonLabel,
             List<CompanionChatMessageItemModel> messages
     ) {
+        this.requestId = requestId;
+        this.ownerKey = ownerKey;
+        this.manager = manager;
+        this.writable = writable;
         this.modeLabel = modeLabel;
         this.title = title;
         this.subtitle = subtitle;
@@ -44,6 +56,11 @@ public final class CompanionChatScreenModel {
     public String getModeLabel() {
         return modeLabel;
     }
+
+    public String getRequestId() { return requestId; }
+    public String getOwnerKey() { return ownerKey; }
+    public boolean isManager() { return manager; }
+    public boolean isWritable() { return writable; }
 
     public String getTitle() {
         return title;
