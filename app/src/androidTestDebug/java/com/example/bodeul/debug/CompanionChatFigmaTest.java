@@ -47,7 +47,7 @@ public class CompanionChatFigmaTest {
     private CompanionSession session;
     private boolean failLoad, delayLoad, failSend, delaySend;
     private int reads, marked, sends, uploads, subscribed, stops;
-    private String sentBody, sentRequest;
+    private String sentBody, sentRequest, sentSession, markedRequest, markedSession;
     private List<CompanionChatAttachment> sentAttachments;
     private final List<RepositoryCallback<AppointmentRequestDetail>> pendingLoads = new ArrayList<>();
     private Runnable completeSend;
@@ -106,9 +106,16 @@ public class CompanionChatFigmaTest {
                 reads++;
                 CompanionChatFigmaTest.<ManagerDashboard>callback(a).onSuccess(dashboard()); return null;
             }
-            if (m.equals("markCompanionChatRead")) { marked++; return null; }
+            if (m.equals("markCompanionChatRead")) {
+                marked++; markedRequest = (String) a[1]; markedSession = (String) a[2]; return null;
+            }
             if (m.equals("sendCompanionChatMessage")) {
-                sends++; sentBody = (String) a[1]; sentAttachments = (List<CompanionChatAttachment>) a[2];
+                sentRequest = (String) a[1]; sentSession = (String) a[2];
+                RepositoryCallback<ManagerDashboard> callback = callback(a);
+                if (!ManagerRepository.matchesChatExpectation(session, sentRequest, sentSession)) {
+                    callback.onError(ManagerRepository.MESSAGE_STALE_CHAT_SESSION); return null;
+                }
+                sends++; sentBody = (String) a[3]; sentAttachments = (List<CompanionChatAttachment>) a[4];
                 session.addChatMessage(new CompanionChatMessage(UserRole.MANAGER, sentBody, TIME + 120000, sentAttachments));
                 CompanionChatFigmaTest.<ManagerDashboard>callback(a).onSuccess(dashboard()); return null;
             }
@@ -288,7 +295,10 @@ public class CompanionChatFigmaTest {
             scenario.onActivity(a -> ((EditText) a.findViewById(R.id.inputCompanionChatMessage)).setText("담당 안내"));
             onView(withId(R.id.buttonCompanionChatSend)).perform(click());
             assertEquals(1, sends);
-            assertNull(sentRequest);
+            assertEquals("request", sentRequest);
+            assertEquals("session", sentSession);
+            assertEquals("request", markedRequest);
+            assertEquals("session", markedSession);
             onView(withId(R.id.buttonCompanionChatProgress)).perform(click());
             assertTrue(CompanionChatPreviewActivity.lastNavigation.getComponent().getClassName().endsWith("ManagerGuideActivity"));
             scenario.moveToState(Lifecycle.State.CREATED);
@@ -296,6 +306,158 @@ public class CompanionChatFigmaTest {
             scenario.moveToState(Lifecycle.State.RESUMED);
             scenario.onActivity(a -> assertEquals(View.GONE, a.findViewById(R.id.companionChatContentContainer).getVisibility()));
         }
+    }
+
+    @Test public void uploadAndManualRefreshSendOnceAfterRecreation() {
+        List<RepositoryCallback<CompanionChatAttachment>> completions = delayUploads();
+        try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
+            scenario.onActivity(a -> {
+                addPending(a, 1);
+                ((EditText) a.findViewById(R.id.inputCompanionChatMessage)).setText("첨부 안내");
+                a.findViewById(R.id.buttonCompanionChatSend).performClick();
+            });
+            int before = reads;
+            delayLoad = true;
+            onView(withId(R.id.buttonCompanionChatMore)).perform(click());
+            onView(withText(R.string.final_chat_refresh)).perform(click());
+            scenario.recreate();
+            assertEquals(before, reads);
+            assertTrue(pendingLoads.isEmpty());
+            scenario.onActivity(a -> {
+                assertFalse(a.findViewById(R.id.buttonCompanionChatSend).isEnabled());
+                completeUpload(completions.get(0));
+            });
+            assertEquals(1, sends);
+            assertEquals("request", sentRequest);
+            assertEquals("첨부 안내", sentBody);
+            assertEquals(1, sentAttachments.size());
+            assertEquals(before + 1, reads);
+            scenario.onActivity(a -> pendingLoads.get(0).onSuccess(detail()));
+            onView(withId(R.id.inputCompanionChatMessage)).check(matches(withText("")));
+            scenario.onActivity(a -> assertTrue(pending(a).isEmpty()));
+        }
+    }
+
+    @Test public void uploadAndRoomPushCoalesceWithoutCancelingSend() {
+        List<RepositoryCallback<CompanionChatAttachment>> completions = delayUploads();
+        try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
+            scenario.onActivity(a -> {
+                addPending(a, 1);
+                a.findViewById(R.id.buttonCompanionChatSend).performClick();
+            });
+            int before = reads;
+            sendPush("request");
+            assertEquals(before, reads);
+            scenario.onActivity(a -> completeUpload(completions.get(0)));
+            assertEquals(1, sends);
+            assertEquals(before + 1, reads);
+        }
+    }
+
+    @Test public void staleRefreshCannotClearIdentityDuringUpload() {
+        session.setRealtimeSessionId("realtime-session");
+        List<RepositoryCallback<CompanionChatAttachment>> completions = delayUploads();
+        try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
+            delayLoad = true;
+            scenario.onActivity(a -> {
+                changed.run();
+                addPending(a, 1);
+                a.findViewById(R.id.buttonCompanionChatSend).performClick();
+                pendingLoads.get(0).onError("전송 전에 시작했던 조회 실패");
+                completeUpload(completions.get(0));
+            });
+            assertEquals(1, sends);
+            assertEquals(2, pendingLoads.size());
+            scenario.onActivity(a -> pendingLoads.get(1).onSuccess(detail()));
+            scenario.onActivity(a -> assertTrue(pending(a).isEmpty()));
+        }
+    }
+
+    @Test public void failedUploadKeepsDraftAndReportsFailureAfterDeferredRefresh() {
+        List<RepositoryCallback<CompanionChatAttachment>> completions = delayUploads();
+        try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
+            CompanionChatViewModel[] model = {null};
+            List<String> errors = new ArrayList<>();
+            androidx.lifecycle.Observer<String> observer = message -> { if (message != null) errors.add(message); };
+            scenario.onActivity(a -> {
+                model[0] = new androidx.lifecycle.ViewModelProvider(a).get(CompanionChatViewModel.class);
+                model[0].getToastMessage().removeObservers(a);
+                model[0].getToastMessage().observeForever(observer);
+                addPending(a, 1);
+                ((EditText) a.findViewById(R.id.inputCompanionChatMessage)).setText("다시 보낼 안내");
+                a.findViewById(R.id.buttonCompanionChatSend).performClick();
+                model[0].reload();
+                completions.get(0).onError("첨부 업로드 실패");
+            });
+            assertEquals(0, sends);
+            assertTrue(errors.contains("첨부 업로드 실패"));
+            onView(withId(R.id.inputCompanionChatMessage)).check(matches(withText("다시 보낼 안내")));
+            scenario.onActivity(a -> {
+                assertEquals(1, pending(a).size());
+                assertTrue(a.findViewById(R.id.buttonCompanionChatSend).isEnabled());
+                model[0].getToastMessage().removeObserver(observer);
+            });
+        }
+    }
+
+    @Test public void managerReassignmentDuringUploadNeverWritesToNewSession() {
+        user = manager;
+        List<RepositoryCallback<CompanionChatAttachment>> completions = delayUploads();
+        try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
+            scenario.onActivity(a -> {
+                addPending(a, 1);
+                ((EditText) a.findViewById(R.id.inputCompanionChatMessage)).setText("이전 동행 안내");
+                a.findViewById(R.id.buttonCompanionChatSend).performClick();
+                session = new CompanionSession("new-session", "new-request", "manager", 1,
+                        SessionStatus.MEETING, "", "", "", "", "", false);
+                request = new AppointmentRequest("new-request", "patient", "guardian", "다른 병원", "신경과",
+                        "", "", "", AppointmentStatus.IN_PROGRESS, "manager");
+                completeUpload(completions.get(0));
+                assertEquals(View.GONE, a.findViewById(R.id.companionChatContentContainer).getVisibility());
+                assertEquals(1, pending(a).size());
+                assertEquals("이전 동행 안내", ((EditText) a.findViewById(R.id.inputCompanionChatMessage)).getText().toString());
+            });
+            assertEquals("request", sentRequest);
+            assertEquals("session", sentSession);
+            assertEquals(0, sends);
+            assertTrue(session.getChatMessages().isEmpty());
+            assertEquals("session", markedSession);
+        }
+    }
+
+    private List<RepositoryCallback<CompanionChatAttachment>> delayUploads() {
+        List<RepositoryCallback<CompanionChatAttachment>> completions = new ArrayList<>();
+        CompanionChatPreviewActivity.uploader = new CompanionChatAttachmentUploader() {
+            @Override public boolean isFirebaseBacked() { return false; }
+            @Override public void uploadAttachment(String id, Uri uri, RepositoryCallback<CompanionChatAttachment> callback) {
+                assertEquals("session", id);
+                uploads++;
+                completions.add(callback);
+            }
+        };
+        return completions;
+    }
+
+    @Test public void accountChangeDuringUploadDoesNotSendPreviousDraft() {
+        List<RepositoryCallback<CompanionChatAttachment>> completions = delayUploads();
+        try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
+            scenario.onActivity(a -> {
+                addPending(a, 1);
+                ((EditText) a.findViewById(R.id.inputCompanionChatMessage)).setText("이전 계정 초안");
+                a.findViewById(R.id.buttonCompanionChatSend).performClick();
+            });
+            scenario.moveToState(Lifecycle.State.CREATED);
+            user = guardian;
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            scenario.onActivity(a -> completeUpload(completions.get(0)));
+            assertEquals(0, sends);
+            onView(withId(R.id.inputCompanionChatMessage)).check(matches(withText("")));
+            scenario.onActivity(a -> assertTrue(pending(a).isEmpty()));
+        }
+    }
+
+    private void completeUpload(RepositoryCallback<CompanionChatAttachment> callback) {
+        callback.onSuccess(new CompanionChatAttachment("test/upload", "안내.pdf", "application/pdf", TIME));
     }
 
     @Test public void guardianUsesReadReceiptAndNoPrivateRealtimeSubscription() {

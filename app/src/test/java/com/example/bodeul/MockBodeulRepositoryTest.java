@@ -1660,6 +1660,8 @@ public class MockBodeulRepositoryTest {
         String expectedMessage = "\uB9E4\uB2C8\uC800\uAC00 \uBCD1\uC6D0 \uB3C4\uCC29 \uC608\uC815 \uC2DC\uAC04\uC744 \uACF5\uC720\uD588\uC2B5\uB2C8\uB2E4.";
         ManagerDashboard updatedDashboard = repository.appendManagerCompanionChatMessage(
                 manager.getId(),
+                repository.getManagerDashboard(manager.getId()).getSession().getAppointmentRequestId(),
+                repository.getManagerDashboard(manager.getId()).getSession().getId(),
                 expectedMessage,
                 null
         );

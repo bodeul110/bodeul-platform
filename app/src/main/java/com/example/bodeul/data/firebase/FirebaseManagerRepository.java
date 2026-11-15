@@ -904,6 +904,8 @@ public class FirebaseManagerRepository implements ManagerRepository {
     @Override
     public void sendCompanionChatMessage(
             String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             List<CompanionChatAttachment> attachments,
             RepositoryCallback<ManagerDashboard> callback
@@ -914,46 +916,60 @@ public class FirebaseManagerRepository implements ManagerRepository {
             return;
         }
 
-        loadSessionDocument(managerUserId, new RepositoryCallback<DocumentSnapshot>() {
-            @Override
-            public void onSuccess(DocumentSnapshot sessionSnapshot) {
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("chatMessages", FieldValue.arrayUnion(
-                        buildChatMessagePayload(UserRole.MANAGER, normalizedMessage, attachments)
-                ));
-                updates.put(resolveChatReadField(UserRole.MANAGER), FieldValue.serverTimestamp());
-                updates.put("updatedAt", FieldValue.serverTimestamp());
-
-                sessionSnapshot.getReference()
-                        .update(updates)
-                        .addOnSuccessListener(unused -> getManagerDashboard(managerUserId, callback))
-                        .addOnFailureListener(exception ->
-                                callback.onError("메시지를 전송하지 못했습니다."));
-            }
-
-            @Override
-            public void onError(String message) {
-                callback.onError(message);
-            }
-        });
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("chatMessages", FieldValue.arrayUnion(
+                buildChatMessagePayload(UserRole.MANAGER, normalizedMessage, attachments)));
+        updateChatSession(managerUserId, expectedRequestId, expectedSessionId, updates,
+                new RepositoryCallback<Boolean>() {
+                    @Override public void onSuccess(Boolean ignored) {
+                        getManagerDashboard(managerUserId, callback);
+                    }
+                    @Override public void onError(String error) { callback.onError(error); }
+                });
     }
 
     @Override
-    public void markCompanionChatRead(String managerUserId) {
-        loadSessionDocument(managerUserId, new RepositoryCallback<DocumentSnapshot>() {
-            @Override
-            public void onSuccess(DocumentSnapshot sessionSnapshot) {
-                Map<String, Object> updates = new HashMap<>();
-                updates.put(resolveChatReadField(UserRole.MANAGER), FieldValue.serverTimestamp());
-                updates.put("updatedAt", FieldValue.serverTimestamp());
-                sessionSnapshot.getReference().update(updates);
-            }
+    public void markCompanionChatRead(String managerUserId, String expectedRequestId, String expectedSessionId) {
+        updateChatSession(managerUserId, expectedRequestId, expectedSessionId, new HashMap<>(),
+                new RepositoryCallback<Boolean>() {
+                    @Override public void onSuccess(Boolean ignored) { }
+                    @Override public void onError(String message) {
+                        // 읽음 처리 실패가 화면 흐름을 막지 않도록 한다.
+                    }
+                });
+    }
 
-            @Override
-            public void onError(String message) {
-                // 읽음 처리 실패가 화면 흐름을 막지 않도록 한다.
-            }
-        });
+    private void updateChatSession(
+            String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
+            Map<String, Object> updates,
+            RepositoryCallback<Boolean> callback
+    ) {
+        if (normalizeText(expectedSessionId).isEmpty()) {
+            callback.onError(ManagerRepository.MESSAGE_STALE_CHAT_SESSION);
+            return;
+        }
+        DocumentReference reference = firestore.collection("companionSessions").document(expectedSessionId);
+        updates.put(resolveChatReadField(UserRole.MANAGER), FieldValue.serverTimestamp());
+        updates.put("updatedAt", FieldValue.serverTimestamp());
+        // 대상 확인과 쓰기를 한 트랜잭션으로 묶어 최신 활성 세션으로 대체하지 않는다.
+        firestore.runTransaction(transaction -> {
+                    DocumentSnapshot latest = transaction.get(reference);
+                    if (!latest.exists() || normalizeText(managerUserId).isEmpty()
+                            || !normalizeText(managerUserId).equals(normalizeText(latest.getString("managerUserId")))
+                            || !ManagerRepository.matchesChatExpectation(
+                            toSession(latest), expectedRequestId, expectedSessionId)) {
+                        return false;
+                    }
+                    transaction.update(reference, updates);
+                    return true;
+                })
+                .addOnSuccessListener(updated -> {
+                    if (Boolean.TRUE.equals(updated)) callback.onSuccess(true);
+                    else callback.onError(ManagerRepository.MESSAGE_STALE_CHAT_SESSION);
+                })
+                .addOnFailureListener(exception -> callback.onError("채팅 정보를 저장하지 못했습니다."));
     }
 
     @Override

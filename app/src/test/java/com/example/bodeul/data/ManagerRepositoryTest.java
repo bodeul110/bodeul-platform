@@ -10,6 +10,30 @@ import org.junit.Test;
 
 public class ManagerRepositoryTest {
     @Test
+    public void matchesChatExpectation_requiresBothPinnedIds() {
+        CompanionSession session = chatSession(SessionStatus.MEETING);
+        assertTrue(ManagerRepository.matchesChatExpectation(session, "appointment-1", "session-1"));
+        assertFalse(ManagerRepository.matchesChatExpectation(session, "appointment-2", "session-1"));
+        assertFalse(ManagerRepository.matchesChatExpectation(session, "appointment-1", "session-2"));
+        assertFalse(ManagerRepository.matchesChatExpectation(session, null, "session-1"));
+        assertFalse(ManagerRepository.matchesChatExpectation(session, "appointment-1", " "));
+        assertFalse(ManagerRepository.matchesChatExpectation(null, "appointment-1", "session-1"));
+    }
+
+    @Test
+    public void matchesChatExpectation_rejectsClosedOrUnknownState() {
+        for (SessionStatus status : new SessionStatus[]{
+                SessionStatus.CARE_ENDED, SessionStatus.COMPLETED, SessionStatus.CANCELED, null}) {
+            assertFalse(ManagerRepository.matchesChatExpectation(chatSession(status), "appointment-1", "session-1"));
+        }
+    }
+
+    private CompanionSession chatSession(SessionStatus status) {
+        return new CompanionSession("session-1", "appointment-1", "manager-1", 1,
+                status, "", "", "", "", "", false);
+    }
+
+    @Test
     public void matchesAdvanceExpectation_requiresFreshSessionAndStep() {
         CompanionSession session = new CompanionSession(
                 "session-1",

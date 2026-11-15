@@ -104,25 +104,29 @@ public class MockManagerRepository implements ManagerRepository {
     @Override
     public void sendCompanionChatMessage(
             String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             List<CompanionChatAttachment> attachments,
             RepositoryCallback<ManagerDashboard> callback
     ) {
         ManagerDashboard dashboard = managerStore.appendManagerCompanionChatMessage(
                 managerUserId,
+                expectedRequestId,
+                expectedSessionId,
                 message,
                 attachments
         );
         if (dashboard == null) {
-            callback.onError("안심 채팅 메시지를 전송하지 못했습니다.");
+            callback.onError(ManagerRepository.MESSAGE_STALE_CHAT_SESSION);
             return;
         }
         callback.onSuccess(dashboard);
     }
 
     @Override
-    public void markCompanionChatRead(String managerUserId) {
-        managerStore.markManagerCompanionChatRead(managerUserId);
+    public void markCompanionChatRead(String managerUserId, String expectedRequestId, String expectedSessionId) {
+        managerStore.markManagerCompanionChatRead(managerUserId, expectedRequestId, expectedSessionId);
     }
 
     @Override

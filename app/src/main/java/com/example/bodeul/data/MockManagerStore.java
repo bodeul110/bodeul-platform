@@ -5,7 +5,6 @@ import androidx.annotation.Nullable;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.domain.model.CompanionChatAttachment;
-import com.example.bodeul.domain.model.CompanionChatMessage;
 import com.example.bodeul.domain.model.CompanionLocationAlertStage;
 import com.example.bodeul.domain.model.CompanionSession;
 import com.example.bodeul.domain.model.GuideStep;
@@ -104,33 +103,19 @@ public final class MockManagerStore {
     @Nullable
     public ManagerDashboard appendManagerCompanionChatMessage(
             String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             @Nullable List<CompanionChatAttachment> attachments
     ) {
-        User manager = repository.findUserById(managerUserId);
-        CompanionSession session = repository.getPrimaryManagerSession(managerUserId);
-        if (manager == null || session == null) {
-            return null;
-        }
-        long sentAtMillis = System.currentTimeMillis();
-        session.addChatMessage(new CompanionChatMessage(
-                manager.getRole(),
-                repository.normalizeText(message),
-                sentAtMillis,
-                attachments
-        ));
-        session.markChatRead(manager.getRole(), sentAtMillis);
-        return getManagerDashboard(managerUserId);
+        return repository.appendManagerCompanionChatMessage(
+                managerUserId, expectedRequestId, expectedSessionId, message, attachments);
     }
 
     @Nullable
-    public ManagerDashboard markManagerCompanionChatRead(String managerUserId) {
-        CompanionSession session = repository.getPrimaryManagerSession(managerUserId);
-        if (session == null) {
-            return null;
-        }
-        session.markChatRead(UserRole.MANAGER, System.currentTimeMillis());
-        return getManagerDashboard(managerUserId);
+    public ManagerDashboard markManagerCompanionChatRead(
+            String managerUserId, String expectedRequestId, String expectedSessionId) {
+        return repository.markManagerCompanionChatRead(managerUserId, expectedRequestId, expectedSessionId);
     }
 
     @Nullable

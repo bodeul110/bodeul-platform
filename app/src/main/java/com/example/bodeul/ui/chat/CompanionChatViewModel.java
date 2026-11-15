@@ -110,7 +110,8 @@ public class CompanionChatViewModel extends ViewModel {
     }
 
     public void reload() {
-        if (!active) return;
+        // 업로드/저장 도중의 갱신은 완료 후 재조회로 합쳐 전송 대상을 비우지 않는다.
+        if (!active || sending) return;
         int expected = ++generation;
         currentUser = null;
         currentSessionId = "";
@@ -189,7 +190,7 @@ public class CompanionChatViewModel extends ViewModel {
                 currentSessionId = result.getSession().getId();
                 publish(coordinator.createForManager(user, result, managerRepository.isFirebaseBacked()));
                 ensureUpdates(result.getSession());
-                managerRepository.markCompanionChatRead(user.getId());
+                managerRepository.markCompanionChatRead(user.getId(), requestId, currentSessionId);
             }
             @Override public void onError(String message) {
                 if (accept(expected)) panel(ManagerRepository.MESSAGE_NO_ACTIVE_SESSION.equals(message)
@@ -208,6 +209,9 @@ public class CompanionChatViewModel extends ViewModel {
             toastMessage.setValue("메시지나 첨부 파일을 준비해 주세요."); return;
         }
         sending = true;
+        // 전송 시작 전에 진행 중이던 조회의 늦은 응답도 전송 상태를 바꿀 수 없다.
+        generation++;
+        stopUpdates();
         publish(state.screenModel);
         SendOperation operation = new SendOperation(currentUser, requestId, currentSessionId, normalized, files);
         uploadNext(operation);
@@ -240,12 +244,30 @@ public class CompanionChatViewModel extends ViewModel {
     }
 
     private void sendInternal(SendOperation op) {
+        // 갱신을 미루더라도 백그라운드에서 바뀐 로그인으로 이전 초안을 보내지는 않는다.
+        authRepository.getCurrentUser(new RepositoryCallback<User>() {
+            @Override public void onSuccess(User user) {
+                if (user == null || !op.user.getId().equals(user.getId())
+                        || op.user.getRole() != user.getRole()) {
+                    sendFailed(op, "로그인 정보가 변경되었습니다. 채팅을 다시 열어 주세요.");
+                    return;
+                }
+                sendToConversation(op);
+            }
+            @Override public void onError(String message) {
+                sendFailed(op, "로그인 정보를 확인한 뒤 다시 전송해 주세요.");
+            }
+        });
+    }
+
+    private void sendToConversation(SendOperation op) {
         if (!sameConversation(op) || !TextUtils.equals(currentSessionId, op.sessionId)) {
             sendFailed(op, "동행 정보를 다시 확인한 뒤 전송해 주세요.");
             return;
         }
         if (op.user.getRole() == UserRole.MANAGER) {
-            managerRepository.sendCompanionChatMessage(op.user.getId(), op.body, op.uploaded, new RepositoryCallback<ManagerDashboard>() {
+            managerRepository.sendCompanionChatMessage(op.user.getId(), op.requestId, op.sessionId,
+                    op.body, op.uploaded, new RepositoryCallback<ManagerDashboard>() {
                 @Override public void onSuccess(ManagerDashboard result) { sendSucceeded(op); }
                 @Override public void onError(String message) { sendFailed(op, message); }
             });
@@ -266,7 +288,7 @@ public class CompanionChatViewModel extends ViewModel {
     private void sendSucceeded(SendOperation op) {
         sending = false;
         messageSentEvent.setValue(op.user.getId() + ":" + op.requestId);
-        refresh();
+        reload();
     }
 
     private void sendFailed(SendOperation op, String message) {
@@ -274,6 +296,7 @@ public class CompanionChatViewModel extends ViewModel {
         if (sameConversation(op)) toastMessage.setValue(message);
         UiState state = uiState.getValue();
         if (state != null && state.screenModel != null) publish(state.screenModel);
+        reload();
     }
 
     private void publish(CompanionChatScreenModel screen) {
@@ -310,7 +333,7 @@ public class CompanionChatViewModel extends ViewModel {
     }
 
     private void refresh() {
-        if (!active || currentUser == null) return;
+        if (!active || sending || currentUser == null) return;
         // 이전 조회 응답이 나중에 도착해 새 메시지/권한 상태를 덮지 못하게 한다.
         generation++;
         if (currentUser.getRole() == UserRole.MANAGER) loadManager(currentUser);
