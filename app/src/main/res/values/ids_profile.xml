@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="profileMenuSupport"/><item type="id" name="profileMenuNotice"/>
+    <item type="id" name="profileMenuFaq"/><item type="id" name="profileMenuTerms"/>
+    <item type="id" name="profileMenuVersion"/><item type="id" name="profileMenuPayment"/>
+    <item type="id" name="profileMenuAccount"/><item type="id" name="profileMenuNotifications"/>
+    <item type="id" name="profileMenuSettlement"/><item type="id" name="profileMenuMatching"/>
+    <item type="id" name="profileMenuReport"/><item type="id" name="profileMenuDocuments"/>
+</resources>

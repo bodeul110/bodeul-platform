@@ -40,6 +40,12 @@ import java.util.TimeZone;
 
 /** 완성본 홈의 인증·조회·이동을 연결하고 표시와 집계는 전용 객체에 위임한다. */
 public class ManagerActivity extends AppCompatActivity {
+    private static final String EXTRA_INITIAL_TAB = "managerInitialTab";
+
+    public static Intent createTabIntent(android.content.Context context, int tab) {
+        return new Intent(context, ManagerActivity.class).putExtra(EXTRA_INITIAL_TAB, tab)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    }
     private AuthRepository authRepository;
     private ManagerRepository managerRepository;
     private ManagerHomeDashboardBinder binder;
@@ -77,6 +83,8 @@ public class ManagerActivity extends AppCompatActivity {
 
         Calendar today = Calendar.getInstance(TimeZone.getTimeZone("Asia/Seoul"), Locale.KOREA);
         selectedDate = dateKey(today.get(Calendar.YEAR), today.get(Calendar.MONTH), today.get(Calendar.DAY_OF_MONTH));
+        int initialTab = getIntent().getIntExtra(EXTRA_INITIAL_TAB, R.id.navManagerHome);
+        if (initialTab == R.id.navManagerCalendar || initialTab == R.id.navManagerMatching) selectedTab = initialTab;
         if (state != null) {
             selectedTab = state.getInt("managerTab", R.id.navManagerHome);
             selectedDate = state.getString("managerDate", selectedDate);
@@ -323,7 +331,7 @@ public class ManagerActivity extends AppCompatActivity {
     private void openGuide() {
         if (currentUser != null && dashboard != null) startActivity(new Intent(this, ManagerGuideActivity.class));
     }
-    private void openProfile() { startActivity(ManagerProfileActivity.createIntent(this)); }
+    private void openProfile() { startActivity(new Intent(this, com.example.bodeul.ui.profile.ManagerMyPageActivity.class)); }
     private void openSupport() { startActivity(ManagerSupportActivity.createIntent(this)); }
     private void openHistory() { startActivity(ManagerHistoryActivity.createIntent(this)); }
 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_profile_general">일반</string>
+    <string name="final_profile_manager">매니저</string>
+    <string name="final_profile_settings">설정</string>
+    <string name="final_profile_notifications">알림설정</string>
+    <string name="final_profile_edit">편집</string>
+    <string name="final_profile_view">계정 정보 보기</string>
+    <string name="final_profile_health">건강정보</string>
+    <string name="final_profile_account">계정설정</string>
+    <string name="final_profile_banner">가장 든든한 동행\n보들이 함께 하겠습니다.</string>
+    <string name="final_profile_support">고객센터</string>
+    <string name="final_profile_notice">공지/이벤트</string>
+    <string name="final_profile_faq">자주 묻는 질문</string>
+    <string name="final_profile_terms">개인정보처리방침/이용약관</string>
+    <string name="final_profile_version">앱 버전(%1$s)</string>
+    <string name="final_profile_payment">결제정보</string>
+    <string name="final_profile_matching">매칭 내역</string>
+    <string name="final_profile_report">간병 리포트</string>
+    <string name="final_profile_documents">서류 관리</string>
+    <string name="final_profile_settlement">서비스 비용 정산 내역</string>
+    <string name="final_profile_earnings">출금 가능 수익금</string>
+    <string name="final_profile_earnings_unavailable">조회 불가</string>
+    <string name="final_profile_withdraw">출금 신청</string>
+    <string name="final_profile_sign_out">로그아웃</string>
+    <string name="final_profile_sign_out_confirm">현재 계정에서 로그아웃할까요?</string>
+    <string name="final_profile_account_details">이름: %1$s\n이메일: %2$s\n연락처: %3$s\n역할: %4$s</string>
+    <string name="final_profile_edit_unavailable">이름 변경에는 본인인증 연결이 필요합니다. 프로필 사진 등록도 아직 지원되지 않습니다.</string>
+    <string name="final_profile_switch_unavailable">현재 계정의 역할은 %1$s입니다. 다른 역할의 계정을 사용하려면 설정에서 로그아웃한 뒤 해당 계정으로 로그인해 주세요.</string>
+    <string name="final_profile_notice_unavailable">아직 공지·이벤트 목록이 연결되지 않았습니다.</string>
+    <string name="final_profile_faq_unavailable">아직 자주 묻는 질문 목록이 연결되지 않았습니다. 문의는 고객센터에서 접수할 수 있습니다.</string>
+    <string name="final_profile_terms_unavailable">현재 앱에서 약관 원문을 불러올 수 없습니다. 고객센터에 문의해 주세요.</string>
+    <string name="final_profile_payment_unavailable">저장된 결제수단 조회·관리는 아직 연결되지 않았습니다. 기존 예약의 결제 상태는 이용 내역에서 확인할 수 있습니다.</string>
+    <string name="final_profile_settlement_unavailable">정산·출금 서비스가 아직 연결되지 않았습니다. 출금 가능 금액을 조회하거나 출금을 신청할 수 없습니다.</string>
+    <string name="final_profile_notification_unavailable">이 기기에서 알림 설정 화면을 열 수 없습니다.</string>
+    <string name="final_profile_unknown">미등록</string>
+    <string name="final_profile_retry">다시 확인</string>
+</resources>

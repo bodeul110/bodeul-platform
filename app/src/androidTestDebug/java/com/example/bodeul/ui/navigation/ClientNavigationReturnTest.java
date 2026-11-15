@@ -61,6 +61,7 @@ import com.example.bodeul.ui.booking.ClientCalendarActivity;
 import com.example.bodeul.ui.booking.BookingAppointmentSelectorActivity;
 import com.example.bodeul.ui.chat.CompanionChatActivity;
 import com.example.bodeul.ui.profile.ClientProfileActivity;
+import com.example.bodeul.ui.profile.ProfileSettingsActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.junit.After;
@@ -139,6 +140,24 @@ public class ClientNavigationReturnTest {
         instrumentation.waitForIdleSync();
         for (Map.Entry<Field, Object> entry : originalRepositories.entrySet()) {
             entry.getKey().set(null, entry.getValue());
+        }
+    }
+
+    @Test
+    public void profileSettingsBackRestoresIdentityAndReturnsToSameHome() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            MainActivity home = awaitActivity(MainActivity.class);
+            click(home, R.id.clientNavProfile);
+            ClientProfileActivity profile = awaitActivity(ClientProfileActivity.class);
+            click(profile, R.id.buttonProfileSettings);
+            ProfileSettingsActivity settings = awaitActivity(ProfileSettingsActivity.class);
+            click(settings, R.id.buttonProfileSettingsBack);
+            assertSame(profile, awaitActivity(ClientProfileActivity.class));
+            onView(withId(R.id.textClientProfileName)).check(matches(
+                    androidx.test.espresso.matcher.ViewMatchers.withText(patient.getName())));
+            assertNavigationBounds(profile, R.id.clientNavProfile);
+            click(profile, R.id.clientNavHome);
+            assertSame(home, awaitActivity(MainActivity.class));
         }
     }
 

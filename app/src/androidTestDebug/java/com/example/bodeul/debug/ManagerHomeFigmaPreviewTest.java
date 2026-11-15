@@ -41,6 +41,23 @@ import org.junit.runner.RunWith;
 /** 네트워크·실제 계정 없이 운영 화면의 표시, 이동 요청, 비동기 경계를 검사한다. */
 @RunWith(AndroidJUnit4.class)
 public class ManagerHomeFigmaPreviewTest {
+    @Test public void myPageReturnIntentSelectsRequestedTabAndRecreationKeepsLatestTab() {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        for (int tab : new int[]{R.id.navManagerHome, R.id.navManagerCalendar, R.id.navManagerMatching, R.id.navManagerProfile}) {
+            Intent intent = ManagerActivity.createTabIntent(context, tab)
+                    .setClass(context, ManagerHomeFigmaPreviewActivity.class).putExtra("scenario", "empty");
+            try (ActivityScenario<ManagerHomeFigmaPreviewActivity> scenario = ActivityScenario.launch(intent)) {
+                int expected = tab == R.id.navManagerCalendar || tab == R.id.navManagerMatching ? tab : R.id.navManagerHome;
+                scenario.onActivity(activity -> assertEquals(expected,
+                        ((BottomNavigationView) activity.findViewById(R.id.layoutManagerHomeBottomNav)).getSelectedItemId()));
+                onView(withId(R.id.navManagerMatching)).perform(click());
+                scenario.recreate();
+                scenario.onActivity(activity -> assertEquals(R.id.navManagerMatching,
+                        ((BottomNavigationView) activity.findViewById(R.id.layoutManagerHomeBottomNav)).getSelectedItemId()));
+            }
+        }
+    }
+
     @Test public void emptyHomeMatchesGeometryWithActualZeroCountsAndFiveTabs() {
         try (ActivityScenario<ManagerHomeFigmaPreviewActivity> scenario = launch("empty")) {
             onView(withId(R.id.textManagerOngoingCount)).check(matches(withText("0")));
@@ -148,8 +165,8 @@ public class ManagerHomeFigmaPreviewTest {
         try (ActivityScenario<ManagerHomeFigmaPreviewActivity> scenario = launch("empty")) {
             int[] views = {R.id.buttonManagerDocuments, R.id.buttonManagerProfile, R.id.buttonManagerSupport,
                     R.id.navManagerChat, R.id.navManagerProfile, R.id.buttonManagerHistory, R.id.buttonManagerFooterSupport};
-            Class<?>[] targets = {ManagerDocumentRegistrationActivity.class, ManagerProfileActivity.class, ManagerSupportActivity.class,
-                    CompanionChatActivity.class, ManagerProfileActivity.class, ManagerHistoryActivity.class, ManagerSupportActivity.class};
+            Class<?>[] targets = {ManagerDocumentRegistrationActivity.class, com.example.bodeul.ui.profile.ManagerMyPageActivity.class, ManagerSupportActivity.class,
+                    CompanionChatActivity.class, com.example.bodeul.ui.profile.ManagerMyPageActivity.class, ManagerHistoryActivity.class, ManagerSupportActivity.class};
             for (int i = 0; i < views.length; i++) {
                 int id = views[i];
                 Class<?> target = targets[i];
