@@ -8,6 +8,7 @@ import com.example.bodeul.domain.model.AppointmentFollowUpRecord;
 import com.example.bodeul.domain.model.AppointmentFollowUpSettlementStatus;
 import com.example.bodeul.domain.model.AppointmentRequest;
 import com.example.bodeul.domain.model.AppointmentRequestDetail;
+import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.domain.model.SessionReport;
 import com.example.bodeul.domain.model.User;
 import com.example.bodeul.ui.booking.AppointmentFollowUpVisibilityPolicy;
@@ -215,6 +216,8 @@ public final class ManagerHistoryCoordinator {
             AppointmentRequest request = detail.getAppointmentRequest();
             AppointmentFollowUpRecord followUpRecord = resolveFollowUpRecord(detail);
             cards.add(new ManagerHistoryEntryCardModel(
+                    request.getStatus() == AppointmentStatus.COMPLETED
+                            ? request.getId() : null,
                     new ManagerHistoryBadgeModel(
                             context.getString(R.string.manager_history_entry_badge),
                             ManagerHistoryBadgeTone.PRIMARY

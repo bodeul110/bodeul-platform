@@ -93,5 +93,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp"
             android:orientation="vertical" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonManagerHistoryFinalReport"
+            style="@style/BodeulFinalPrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="15dp" android:text="@string/final_report_open" android:visibility="gone" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

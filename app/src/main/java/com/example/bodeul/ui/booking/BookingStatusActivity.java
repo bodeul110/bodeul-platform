@@ -33,6 +33,7 @@ import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.ui.common.AppointmentProgressComposer;
 import com.example.bodeul.ui.report.GuardianReportActivity;
+import com.example.bodeul.ui.report.FinalReportActivity;
 import com.example.bodeul.util.LegacyManagerLocationSharingPolicy;
 import com.example.bodeul.util.StatePanelHelper;
 import com.google.android.material.button.MaterialButton;
@@ -112,6 +113,7 @@ public class BookingStatusActivity extends AppCompatActivity {
         findViewById(R.id.buttonBookingStatusEdit).setOnClickListener(view -> handleAction(
                 currentScreenModel == null ? null : currentScreenModel.getPrimaryAction()));
         findViewById(R.id.buttonBookingStatusMap).setOnClickListener(view -> openHospitalMap());
+        findViewById(R.id.buttonBookingStatusFinalReport).setOnClickListener(view -> openFinalReport());
         buttonSecondary.setOnClickListener(view -> handleAction(
                 currentScreenModel == null ? null : currentScreenModel.getSecondaryAction()
         ));
@@ -303,6 +305,12 @@ public class BookingStatusActivity extends AppCompatActivity {
                 followUpRecord
         );
         bookingStatusBinder.bindScreen(currentScreenModel);
+        findViewById(R.id.buttonBookingStatusFinalReport).setVisibility(
+                detail.getAppointmentRequest().getStatus() == AppointmentStatus.COMPLETED
+                        ? View.VISIBLE : View.GONE);
+        if (detail.getAppointmentRequest().getStatus() == AppointmentStatus.COMPLETED) {
+            findViewById(R.id.cardBookingStatusReport).setVisibility(View.VISIBLE);
+        }
         buttonBankTransferPayment.setVisibility(
                 currentUser != null && BankTransferPaymentAccessPolicy.canOpen(
                         currentUser.getRole(),
@@ -416,7 +424,18 @@ public class BookingStatusActivity extends AppCompatActivity {
     }
 
     private void openGuardianReport() {
+        if (currentDetail != null && currentDetail.getAppointmentRequest().getStatus()
+                == AppointmentStatus.COMPLETED) {
+            openFinalReport();
+            return;
+        }
         startActivity(new Intent(this, GuardianReportActivity.class));
+    }
+
+    private void openFinalReport() {
+        if (loading || currentDetail == null || currentDetail.getAppointmentRequest().getStatus()
+                != AppointmentStatus.COMPLETED) return;
+        startActivity(FinalReportActivity.createIntent(this, currentDetail.getAppointmentRequest().getId()));
     }
 
     private void openLiveTracking() {

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/finalReportRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/final_surface">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="60dp" android:orientation="horizontal"
+        android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="6dp" android:background="#C4F2FF">
+        <ImageButton android:id="@+id/buttonFinalReportBack" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:padding="9dp"
+            android:src="@drawable/bodeul_final_back" android:contentDescription="@string/guardian_final_report_back_description" />
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <ImageButton android:id="@+id/buttonFinalReportRefresh" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:padding="16dp"
+            android:src="@drawable/ic_figma_more_vertical" android:contentDescription="@string/guardian_final_report_menu_description" />
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <ScrollView android:id="@+id/finalReportScroll" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:visibility="gone">
+            <include android:id="@+id/finalReportContent" layout="@layout/include_final_report"
+                android:layout_width="match_parent" android:layout_height="wrap_content" />
+        </ScrollView>
+        <ScrollView android:id="@+id/finalReportStateScroll" android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="gone">
+            <include android:id="@+id/finalReportStatePanel" layout="@layout/include_state_panel"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="15dp" />
+        </ScrollView>
+        <ProgressBar android:id="@+id/progressFinalReport" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center" android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

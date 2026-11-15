@@ -105,6 +105,9 @@
                         <com.google.android.material.button.MaterialButton android:id="@+id/buttonBookingStatusReport"
                             style="@style/FinalBookingStatusAccordion" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/final_booking_status_report" />
                         <LinearLayout android:id="@+id/bookingStatusReportContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone" />
+                        <androidx.appcompat.widget.AppCompatButton android:id="@+id/buttonBookingStatusFinalReport"
+                            style="@style/BodeulFinalPrimaryButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp" android:text="@string/final_report_open" android:visibility="gone" />
                     </LinearLayout>
                     <com.google.android.material.button.MaterialButton android:id="@+id/buttonBookingStatusGuardianSharingConsent"
                         style="@style/FinalBookingChoice" android:layout_width="match_parent" android:layout_height="wrap_content"
