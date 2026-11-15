@@ -1,5 +1,6 @@
 package com.example.bodeul.debug;
 
+import static com.example.bodeul.debug.ManagerGuideTestNavigation.*;
 import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -72,14 +73,15 @@ public class ManagerGuideRemainingStepsPreviewTest {
                         .get(ManagerGuideViewModel.class);
                 // 네트워크 대신 저장 상태 알림만 보내 이탈 UI 경계를 분리 검증한다.
                 ((MutableLiveData<Boolean>) viewModel.getMutationInFlight()).setValue(true);
-                activity.findViewById(R.id.buttonBackGuideConsultationSummary).performClick();
+                activity.findViewById(R.id.buttonFinalGuideBack).performClick();
                 assertFalse(activity.isFinishing());
                 activity.getOnBackPressedDispatcher().onBackPressed();
                 assertFalse(activity.isFinishing());
                 assertFalse(activity.findViewById(R.id.buttonAdvanceGuide).isEnabled());
                 ((MutableLiveData<Boolean>) viewModel.getMutationInFlight()).setValue(false);
             });
-            onView(withId(R.id.guideConsultationSummaryToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+            assertDetailTitle(R.string.final_guide_group_6);
         }
     }
 
@@ -110,13 +112,14 @@ public class ManagerGuideRemainingStepsPreviewTest {
                 });
             });
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guideConsultationSummaryToolbar)).check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_6);
             closeSoftKeyboard();
-            onView(withId(R.id.buttonBackGuideConsultationSummary)).perform(click());
+            requestExitFromDetails();
             onView(withText(R.string.guide_consultation_exit_stay)).perform(click());
+            openCurrentStep();
             onView(withId(R.id.inputGuideSummaryNote))
                     .check(matches(withText("저장 전 진료 요약")));
-            onView(withId(R.id.buttonBackGuideConsultationSummary)).perform(click());
+            requestExitFromDetails();
             onView(withText(R.string.guide_consultation_exit_discard)).perform(click());
             assertTrue("버리기 확인 뒤 화면이 종료되지 않았습니다.",
                     destroyed.await(5, TimeUnit.SECONDS));
@@ -142,8 +145,7 @@ public class ManagerGuideRemainingStepsPreviewTest {
 
         try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
                 ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUMMARY"))) {
-            onView(withId(R.id.guideConsultationSummaryToolbar))
-                    .check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_6);
             onView(withId(R.id.managerGuideConsultationSummaryContent))
                     .check(matches(isDisplayed()));
             onView(withId(R.id.cardGuideNotesActions))
@@ -160,7 +162,8 @@ public class ManagerGuideRemainingStepsPreviewTest {
             onView(withId(R.id.inputGuideSummaryNote))
                     .check(matches(withText("검사 결과와 다음 방문 일정을 확인했습니다.")));
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guidePaymentToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+            assertDetailTitle(R.string.final_guide_group_7);
             onView(withId(R.id.managerGuideConsultationSummaryContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -172,7 +175,7 @@ public class ManagerGuideRemainingStepsPreviewTest {
 
         try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
                 ManagerGuidePreviewActivity.createIntent(context, "PHARMACY_ROUTE"))) {
-            onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_8);
             onView(withId(R.id.managerGuidePharmacyRouteContent)).check(matches(isDisplayed()));
             // 카드 전체가 뷰포트보다 클 수 있으므로 지도와 실제 버튼을 각각 스크롤한다.
             onView(withContentDescription(R.string.debug_figma_preview_local_map))
@@ -185,7 +188,8 @@ public class ManagerGuideRemainingStepsPreviewTest {
             onView(withText(R.string.guide_route_confirmation_title))
                     .check(matches(isDisplayed()));
             onView(withText(R.string.guide_action_route_confirmed)).perform(click());
-            onView(withId(R.id.guidePrescriptionToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+            assertDetailTitle(R.string.final_guide_group_8);
             onView(withId(R.id.managerGuidePharmacyRouteContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -197,7 +201,7 @@ public class ManagerGuideRemainingStepsPreviewTest {
 
         try (ActivityScenario<ManagerGuidePreviewActivity> scenario = ActivityScenario.launch(
                 ManagerGuidePreviewActivity.createIntent(context, "CARE_COMPLETION"))) {
-            onView(withId(R.id.guideCareCompletionToolbar)).check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_9);
             onView(withId(R.id.managerGuideCareCompletionContent)).check(matches(isDisplayed()));
             onView(withId(R.id.guideCompletionMemoContainer))
                     .perform(scrollTo()).check(matches(isDisplayed()));
@@ -205,7 +209,8 @@ public class ManagerGuideRemainingStepsPreviewTest {
                     .check(matches(withEffectiveVisibility(GONE)));
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guideJournalToolbar)).check(matches(isDisplayed()));
+            onView(withId(R.id.buttonFinalGuideFinish)).perform(click());
+            assertDetailTitle(R.string.final_guide_journal);
             onView(withId(R.id.managerGuideJournalContent)).check(matches(isDisplayed()));
             onView(withId(R.id.cardGuideReportActions))
                     .check(matches(withEffectiveVisibility(VISIBLE)));
@@ -235,7 +240,7 @@ public class ManagerGuideRemainingStepsPreviewTest {
 
     private void assertPrimaryTextColor(TextView view) {
         assertEquals(
-                ContextCompat.getColor(view.getContext(), R.color.figma_mvp_text_primary),
+                ContextCompat.getColor(view.getContext(), R.color.final_text_primary),
                 view.getCurrentTextColor());
     }
 

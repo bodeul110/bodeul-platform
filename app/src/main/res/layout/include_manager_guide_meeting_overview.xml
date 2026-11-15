@@ -1,236 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:visibility="gone">
-
+    android:orientation="vertical">
+    <TextView
+        style="@style/FinalGuideHeading"
+        android:text="@string/final_guide_meeting_title" />
+    <TextView
+        style="@style/FinalGuideHelper"
+        android:text="@string/final_guide_meeting_helper" />
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="224dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:paddingTop="16dp">
-
-        <FrameLayout
-            android:layout_width="96dp"
-            android:layout_height="96dp"
-            android:background="@drawable/bg_figma_guide_hero_icon"
-            android:elevation="4dp">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="36dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_figma_guide_meeting_vector" />
-        </FrameLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/pretendard_medium"
-            android:gravity="center"
-            android:text="@string/guide_meeting_hero_title"
-            android:textColor="@color/figma_mvp_text_primary"
-            android:textSize="24sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:fontFamily="@font/pretendard_regular"
-            android:gravity="center"
-            android:lineSpacingExtra="2dp"
-            android:text="@string/guide_meeting_hero_body"
-            android:textColor="@color/figma_mvp_text_secondary"
-            android:textSize="14sp" />
-    </LinearLayout>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/figma_mvp_surface"
-        app:cardCornerRadius="48dp"
-        app:cardElevation="2dp"
-        app:strokeColor="@color/figma_mvp_card_outline"
-        app:strokeWidth="1dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="@null"
-                    android:src="@drawable/ic_figma_guide_info_title_vector" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="@font/pretendard_medium"
-                    android:text="@string/guide_meeting_info_title"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="18sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_figma_guide_neutral_icon">
-
-                    <ImageView
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_figma_guide_patient_vector" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:text="@string/guide_meeting_patient_label"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/textGuideMeetingPatient"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="16sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_figma_guide_location_icon">
-
-                    <ImageView
-                        android:layout_width="12dp"
-                        android:layout_height="15dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_figma_guide_location_vector" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:text="@string/guide_meeting_place_label"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/textGuideMeetingPlace"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="16sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <FrameLayout
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_figma_guide_neutral_icon">
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_figma_guide_department_vector" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:text="@string/guide_meeting_department_label"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/textGuideMeetingDepartment"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="16sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonGuideMeetingOpenChat"
-                style="@style/BodeulOutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="@string/companion_chat_open_action" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+        android:layout_marginTop="30dp"
+        android:background="@drawable/bg_final_guide_outline"
+        android:padding="15dp"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/textGuideMeetingPatient"
+            style="@style/FinalGuideLabel" />
+        <TextView
+            android:id="@+id/textGuideMeetingDepartment"
+            style="@style/FinalGuideHelper"
+            android:gravity="start" />
+        <TextView
+            android:id="@+id/textGuideMeetingPlace"
+            style="@style/FinalGuideHelper"
+            android:gravity="start" />
+    </LinearLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonGuideMeetingOpenChat"
+        style="@style/FinalGuideSecondaryButton"
+        android:text="@string/companion_chat_open_action" />
 </LinearLayout>

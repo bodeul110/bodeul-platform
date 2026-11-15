@@ -1,5 +1,6 @@
 package com.example.bodeul.debug;
 
+import static com.example.bodeul.debug.ManagerGuideTestNavigation.*;
 import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -99,7 +100,7 @@ public class ManagerGuideConsultationPreviewTest {
                     .perform(scrollTo(), replaceText("저장하지 않고 버릴 입력"));
             closeSoftKeyboard();
 
-            onView(withId(R.id.buttonBackGuideConsultation)).perform(click());
+            requestExitFromDetails();
             onView(withText(R.string.guide_consultation_exit_title))
                     .check(matches(isDisplayed()));
             onView(withText(R.string.guide_consultation_exit_discard)).perform(click());
@@ -117,7 +118,7 @@ public class ManagerGuideConsultationPreviewTest {
                 ManagerGuidePreviewActivity.createIntent(context, "CONSULTATION_SUPPORT"))) {
             assertConsultationScreenReady();
 
-            onView(withId(R.id.buttonGuideConsultationRecordPreview)).perform(click());
+            onView(withId(R.id.buttonGuideConsultationRecordPreview)).perform(scrollTo(), click());
             onView(withId(R.id.textGuideConsultationRecordStatus))
                     .check(matches(withText(R.string.guide_consultation_record_active)));
             onView(withId(R.id.inputGuideConsultationGuardian))
@@ -136,14 +137,15 @@ public class ManagerGuideConsultationPreviewTest {
                     .check(matches(withText("보호자 공유 진료 진행")));
             onView(withId(R.id.inputGuideConsultationFieldNote))
                     .check(matches(withText("진료실 현장 메모")));
-            onView(withId(R.id.buttonGuideConsultationRecordPreview)).perform(click());
+            onView(withId(R.id.buttonGuideConsultationRecordPreview)).perform(scrollTo(), click());
             onView(withId(R.id.textGuideConsultationRecordStatus))
                     .check(matches(withText(R.string.guide_consultation_record_stopped)));
 
-            onView(withId(R.id.buttonBackGuideConsultation)).perform(click());
+            requestExitFromDetails();
             onView(withText(R.string.guide_consultation_exit_title))
                     .check(matches(isDisplayed()));
             onView(withText(R.string.guide_consultation_exit_stay)).perform(click());
+            openCurrentStep();
             onView(withId(R.id.textGuideConsultationStep))
                     .check(matches(withText("STEP 06")));
             onView(withId(R.id.inputGuideConsultationGuardian))
@@ -166,9 +168,9 @@ public class ManagerGuideConsultationPreviewTest {
                     previousStepScrollY.get() > 0);
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
+            openCurrentStep();
             scenario.onActivity(activity -> assertEquals(0, guideScrollY(activity)));
-            onView(withId(R.id.guideConsultationSummaryToolbar))
-                    .check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_6);
             onView(withId(R.id.managerGuideConsultationContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -180,7 +182,7 @@ public class ManagerGuideConsultationPreviewTest {
         onView(withId(R.id.textGuideConsultationStep))
                 .check(matches(withText("STEP 06")));
         onView(withText(R.string.guide_consultation_record_preview_badge))
-                .check(matches(isDisplayed()));
+                .perform(scrollTo()).check(matches(isDisplayed()));
         onView(withId(R.id.textGuideConsultationRecordStatus))
                 .check(matches(withText(R.string.guide_consultation_record_ready)));
     }

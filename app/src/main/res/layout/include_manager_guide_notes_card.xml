@@ -1,117 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="14dp"
-    app:cardBackgroundColor="@color/bodeul_surface"
-    app:cardCornerRadius="28dp"
-    app:cardElevation="6dp"
+    app:cardBackgroundColor="@color/final_surface"
+    app:cardCornerRadius="0dp"
+    app:cardElevation="0dp"
     app:strokeColor="@color/bodeul_outline"
-    app:strokeWidth="1dp">
-
+    app:strokeWidth="0dp">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="22dp">
-
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp">
         <LinearLayout
             android:id="@+id/groupGuideFieldNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/textGuideFieldNoteTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/guide_photo_section"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutGuideFieldNoteInput"
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/guide_photo_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputGuidePhotoNote"
-                style="@style/BodeulMemoEditText"
+            <TextView
+                android:id="@+id/textGuideFieldNoteTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/guide_photo_section"
+                android:textColor="@color/final_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutGuideFieldNoteInput"
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSaveGuidePhotoNote"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_photo_save" />
-
+                android:layout_marginTop="14dp"
+                android:hint="@string/guide_photo_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputGuidePhotoNote"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSaveGuidePhotoNote"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_photo_save" />
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuideSessionArtifact"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone">
-
             <TextView
                 android:id="@+id/textGuideSessionArtifactTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:text="@string/guide_artifact_payment_title"
-                android:textColor="@color/bodeul_text_primary"
+                android:textColor="@color/final_text_primary"
                 android:textSize="17sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/textGuideSessionArtifactStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/guide_artifact_empty"
-                android:textColor="@color/bodeul_text_secondary"
+                android:textColor="@color/final_text_secondary"
                 android:textSize="13sp" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:orientation="horizontal">
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonSelectGuideSessionArtifact"
-                    style="@style/BodeulOutlinedButton"
+                    style="@style/FinalGuideSecondaryButton"
                     android:layout_width="0dp"
                     android:layout_weight="1"
                     android:text="@string/guide_artifact_select" />
-
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonClearGuideSessionArtifact"
-                    style="@style/BodeulOutlinedButton"
+                    style="@style/FinalGuideSecondaryButton"
                     android:layout_width="0dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:text="@string/guide_artifact_clear" />
             </LinearLayout>
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuidePreConsultationConfirmation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone">
-
             <com.google.android.material.checkbox.MaterialCheckBox
                 android:id="@+id/checkGuidePreConsultationConfirmed"
                 android:layout_width="match_parent"
@@ -120,141 +107,122 @@
                 android:buttonTint="@color/bodeul_primary"
                 android:minHeight="48dp"
                 android:text="@string/guide_pre_consultation_confirm"
-                android:textColor="@color/bodeul_text_primary"
+                android:textColor="@color/final_text_primary"
                 android:textSize="14sp" />
-
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuideMedicationNote"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/guide_medication_section"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/guide_medication_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputMedicationNote"
-                style="@style/BodeulMemoEditText"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/guide_medication_section"
+                android:textColor="@color/final_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSaveMedicationNote"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_medication_save" />
-
+                android:layout_marginTop="14dp"
+                android:hint="@string/guide_medication_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputMedicationNote"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSaveMedicationNote"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_medication_save" />
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuidePharmacy"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/guide_pharmacy_section"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/guide_pharmacy_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputPharmacySummary"
-                style="@style/BodeulMemoEditText"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/guide_pharmacy_section"
+                android:textColor="@color/final_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSavePharmacySummary"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_pharmacy_save" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/guide_pharmacy_progress_summary_label"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textGuidePharmacyProgressSummary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/bg_surface_pill"
-            android:lineSpacingExtra="3dp"
-            android:paddingStart="14dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="12dp"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="13sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_pharmacy_map_helper"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="13sp" />
-
-        <com.example.bodeul.ui.booking.BookingLocationMapView
-            android:id="@+id/viewGuideHospitalMap"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:layout_marginTop="12dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonTogglePrescriptionCollected"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_prescription_mark_collected" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonTogglePharmacyCompleted"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="10dp"
-            android:text="@string/guide_pharmacy_mark_completed" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonToggleMedicationGuidanceCompleted"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="10dp"
-            android:text="@string/guide_medication_guidance_mark_completed" />
+                android:layout_marginTop="14dp"
+                android:hint="@string/guide_pharmacy_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputPharmacySummary"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSavePharmacySummary"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_pharmacy_save" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/guide_pharmacy_progress_summary_label"
+                android:textColor="@color/final_text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/textGuidePharmacyProgressSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_final_guide_input"
+                android:lineSpacingExtra="3dp"
+                android:paddingStart="14dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="12dp"
+                android:textColor="@color/final_text_secondary"
+                android:textSize="13sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_pharmacy_map_helper"
+                android:textColor="@color/final_text_secondary"
+                android:textSize="13sp" />
+            <com.example.bodeul.ui.booking.BookingLocationMapView
+                android:id="@+id/viewGuideHospitalMap"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="12dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonTogglePrescriptionCollected"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_prescription_mark_collected" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonTogglePharmacyCompleted"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="10dp"
+                android:text="@string/guide_pharmacy_mark_completed" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonToggleMedicationGuidanceCompleted"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="10dp"
+                android:text="@string/guide_medication_guidance_mark_completed" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

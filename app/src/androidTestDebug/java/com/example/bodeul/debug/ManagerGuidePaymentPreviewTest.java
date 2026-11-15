@@ -1,5 +1,6 @@
 package com.example.bodeul.debug;
 
+import static com.example.bodeul.debug.ManagerGuideTestNavigation.*;
 import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -43,7 +44,9 @@ public class ManagerGuidePaymentPreviewTest {
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
-            onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+
+            assertDetailTitle(R.string.final_guide_group_8);
             onView(withId(R.id.managerGuidePaymentContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -69,11 +72,12 @@ public class ManagerGuidePaymentPreviewTest {
                     withText("수납 창구에서 보호자에게 확인할 사항")));
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guidePaymentToolbar)).check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_7);
 
             onView(withId(R.id.buttonGuidePaymentSaveNote)).perform(scrollTo(), click());
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guidePharmacyRouteToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+            assertDetailTitle(R.string.final_guide_group_8);
         }
     }
 
@@ -107,7 +111,7 @@ public class ManagerGuidePaymentPreviewTest {
     private void assertPaymentScreen() {
         onView(withText(R.string.debug_manager_guide_preview_banner))
                 .check(matches(isDisplayed()));
-        onView(withId(R.id.guidePaymentToolbar)).check(matches(isDisplayed()));
+        assertDetailTitle(R.string.final_guide_group_7);
         onView(withId(R.id.managerGuidePaymentContent)).check(matches(isDisplayed()));
         onView(withId(R.id.textGuidePaymentStep)).check(matches(withText("08단계")));
         onView(withId(R.id.textGuidePaymentStatus))

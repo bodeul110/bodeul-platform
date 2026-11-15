@@ -1,257 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
-
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:fontFamily="@font/pretendard_bold"
-        android:text="@string/guide_reception_stage_badge"
-        android:textColor="@color/figma_mvp_primary"
-        android:textSize="14sp" />
-
+        style="@style/FinalGuideHeading"
+        android:text="@string/final_guide_reception_title" />
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:fontFamily="@font/pretendard_bold"
-        android:lineSpacingExtra="3dp"
-        android:text="@string/guide_reception_hero_title"
-        android:textColor="@color/figma_mvp_text_primary"
-        android:textSize="25sp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:lineSpacingExtra="3dp"
-        android:text="@string/guide_reception_hero_body"
-        android:textColor="@color/figma_mvp_text_secondary"
-        android:textSize="14sp" />
-
+        style="@style/FinalGuideHelper"
+        android:text="@string/final_guide_reception_helper" />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="26dp"
-        android:orientation="horizontal">
-
-        <com.google.android.material.card.MaterialCardView
+        android:layout_marginTop="40dp"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:cardBackgroundColor="@color/figma_mvp_surface"
-            app:cardCornerRadius="30dp"
-            app:cardElevation="2dp"
-            app:strokeColor="@color/figma_mvp_card_outline"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="108dp"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="15dp"
-                        android:contentDescription="@string/guide_reception_queue_label"
-                        android:src="@drawable/ic_figma_reception_queue_vector" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/guide_reception_queue_label"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <EditText
-                    android:id="@+id/inputGuideReceptionQueue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="@android:color/transparent"
-                    android:hint="@string/guide_reception_queue_hint"
-                    android:importantForAutofill="no"
-                    android:inputType="textCapCharacters|textNoSuggestions"
-                    android:maxLength="20"
-                    android:singleLine="true"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textColorHint="@color/figma_mvp_text_tertiary"
-                    android:textSize="22sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <Space
-            android:layout_width="12dp"
-            android:layout_height="1dp" />
-
-        <com.google.android.material.card.MaterialCardView
+            android:orientation="vertical"
+            android:background="@drawable/bg_final_guide_input"
+            android:padding="15dp">
+            <TextView
+                style="@style/FinalGuideLabel"
+                android:text="@string/guide_reception_queue_label"
+                android:textSize="13sp"
+                android:textColor="@color/final_text_secondary" />
+            <EditText
+                android:id="@+id/inputGuideReceptionQueue"
+                android:importantForAutofill="no"
+                style="@style/FinalGuideInput"
+                android:background="@null"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:textSize="20sp"
+                android:fontFamily="@font/pretendard_bold"
+                android:inputType="textCapCharacters|textNoSuggestions"
+                android:maxLength="20"
+                android:hint="@string/guide_reception_queue_hint" />
+        </LinearLayout>
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:cardBackgroundColor="@color/figma_mvp_surface"
-            app:cardCornerRadius="30dp"
-            app:cardElevation="2dp"
-            app:strokeColor="@color/figma_mvp_card_outline"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="108dp"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="15dp"
-                        android:layout_height="15dp"
-                        android:contentDescription="@string/guide_reception_wait_label"
-                        android:src="@drawable/ic_figma_reception_clock_vector" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/guide_reception_wait_label"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <EditText
-                        android:id="@+id/inputGuideReceptionWaitMinutes"
-                        android:layout_width="70dp"
-                        android:layout_height="wrap_content"
-                        android:background="@android:color/transparent"
-                        android:hint="@string/guide_reception_wait_hint"
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLength="3"
-                        android:singleLine="true"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textColorHint="@color/figma_mvp_text_tertiary"
-                        android:textSize="22sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/guide_reception_minutes_unit"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="17sp" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            android:layout_marginStart="11dp"
+            android:orientation="vertical"
+            android:background="@drawable/bg_final_guide_input"
+            android:padding="15dp">
+            <TextView
+                style="@style/FinalGuideLabel"
+                android:text="@string/guide_reception_wait_label"
+                android:textSize="13sp"
+                android:textColor="@color/final_text_secondary" />
+            <EditText
+                android:id="@+id/inputGuideReceptionWaitMinutes"
+                android:importantForAutofill="no"
+                style="@style/FinalGuideInput"
+                android:background="@null"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:textSize="20sp"
+                android:fontFamily="@font/pretendard_bold"
+                android:inputType="number"
+                android:maxLength="3"
+                android:hint="@string/guide_reception_wait_hint" />
+        </LinearLayout>
     </LinearLayout>
-
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        app:cardBackgroundColor="@color/figma_mvp_icon_blue_background"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="0dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="24dp">
-
-            <ImageView
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_figma_reception_patient_icon_circle"
-                android:contentDescription="@string/guide_reception_patient_label"
-                android:padding="14dp"
-                android:src="@drawable/ic_figma_reception_patient_vector" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/textGuideReceptionPatient"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_bold"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="17sp" />
-
-                <TextView
-                    android:id="@+id/textGuideReceptionHospital"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
+        android:layout_marginTop="30dp"
+        android:background="@drawable/bg_final_guide_outline"
+        android:padding="15dp"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/textGuideReceptionPatient"
+            style="@style/FinalGuideLabel" />
+        <TextView
+            android:id="@+id/textGuideReceptionHospital"
+            style="@style/FinalGuideHelper"
+            android:gravity="start" />
+    </LinearLayout>
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/buttonGuideReceptionShare"
-        android:layout_width="match_parent"
-        android:layout_height="58dp"
-        android:layout_marginTop="40dp"
-        android:background="@drawable/bg_figma_primary_button"
-        android:fontFamily="@font/pretendard_bold"
-        android:text="@string/guide_reception_share_action"
-        android:textAllCaps="false"
-        android:textColor="@color/white"
-        android:textSize="15sp" />
-
-    <TextView
+        style="@style/BodeulFinalPrimaryButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:gravity="center"
-        android:text="@string/guide_reception_share_helper"
-        android:textColor="@color/figma_mvp_text_tertiary"
-        android:textSize="12sp" />
-
+        android:layout_marginTop="30dp"
+        android:text="@string/final_guide_reception_send" />
     <TextView
         android:id="@+id/textGuideReceptionLastShare"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_surface_pill"
-        android:padding="16dp"
-        android:textColor="@color/figma_mvp_text_secondary"
-        android:textSize="13sp"
-        android:visibility="gone" />
-
+        style="@style/FinalGuideHelper" />
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonGuideReceptionFieldNote"
-        style="@style/BodeulOutlinedButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
+        style="@style/FinalGuideSecondaryButton"
         android:text="@string/guide_reception_field_note_open" />
 </LinearLayout>

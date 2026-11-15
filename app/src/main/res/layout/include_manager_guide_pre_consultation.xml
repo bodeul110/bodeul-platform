@@ -1,297 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/guidePreConsultationContent"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:visibility="gone">
-
+    android:orientation="vertical">
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_figma_pre_consultation_step_badge"
-        android:fontFamily="@font/pretendard_bold"
-        android:paddingStart="12dp"
-        android:paddingTop="5dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="5dp"
-        android:text="@string/guide_pre_consultation_step_badge"
-        android:textColor="@color/figma_mvp_primary"
-        android:textSize="11sp" />
-
+        style="@style/FinalGuideHeading"
+        android:text="@string/final_guide_group_5" />
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="11dp"
-        android:fontFamily="@font/pretendard_bold"
-        android:text="@string/guide_pre_consultation_screen_title"
-        android:textColor="@color/figma_mvp_text_primary"
-        android:textSize="30sp" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="11dp"
-        android:fontFamily="@font/pretendard_medium"
-        android:lineSpacingExtra="5dp"
-        android:text="@string/guide_pre_consultation_screen_subtitle"
-        android:textColor="@color/figma_mvp_text_secondary"
-        android:textSize="14sp" />
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        app:cardBackgroundColor="@color/figma_mvp_surface"
-        app:cardCornerRadius="32dp"
-        app:cardElevation="1dp"
-        app:strokeColor="@color/figma_mvp_card_outline"
-        app:strokeWidth="1dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/bg_figma_pre_consultation_guardian_icon"
-                    android:contentDescription="@null"
-                    android:padding="10dp"
-                    android:src="@drawable/ic_figma_pre_consultation_guardian_vector" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/textGuidePreConsultationGuardian"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:textColor="@color/figma_mvp_text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/textGuidePreConsultationPatient"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="14sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@color/figma_mvp_subtle_divider"
-                android:orientation="horizontal">
-
-                <View
-                    android:layout_width="4dp"
-                    android:layout_height="match_parent"
-                    android:background="@color/figma_mvp_patient_icon_background" />
-
-                <TextView
-                    android:id="@+id/textGuidePreConsultationRequest"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:fontFamily="@font/pretendard_medium"
-                    android:lineSpacingExtra="4dp"
-                    android:paddingStart="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="16dp"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
+        style="@style/FinalGuideHelper"
+        android:text="@string/guide_pre_consultation_screen_subtitle" />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="18dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_figma_pre_consultation_checklist_vector" />
-
+        android:layout_marginTop="30dp"
+        android:background="@drawable/bg_final_guide_outline"
+        android:padding="15dp"
+        android:orientation="vertical">
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:fontFamily="@font/pretendard_bold"
-            android:text="@string/guide_pre_consultation_checklist_title"
-            android:textColor="@color/figma_mvp_text_primary"
-            android:textSize="18sp" />
+            android:id="@+id/textGuidePreConsultationPatient"
+            style="@style/FinalGuideLabel" />
+        <TextView
+            android:id="@+id/textGuidePreConsultationGuardian"
+            style="@style/FinalGuideHelper"
+            android:gravity="start" />
+        <TextView
+            android:id="@+id/textGuidePreConsultationRequest"
+            style="@style/FinalGuideHelper"
+            android:gravity="start" />
     </LinearLayout>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        app:cardBackgroundColor="@color/figma_mvp_surface"
-        app:cardCornerRadius="32dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/figma_mvp_card_outline"
-        app:strokeWidth="1dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="top"
-            android:orientation="horizontal"
-            android:padding="20dp">
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/checkGuidePreConsultationMedication"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:buttonTint="@color/figma_mvp_primary"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:contentDescription="@string/guide_pre_consultation_medication_title" />
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:text="@string/guide_pre_consultation_medication_title"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="14sp" />
-                <TextView
-                    android:id="@+id/textGuidePreConsultationMedication"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="@font/pretendard_medium"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        app:cardBackgroundColor="@color/figma_mvp_surface"
-        app:cardCornerRadius="32dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/figma_mvp_card_outline"
-        app:strokeWidth="1dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="20dp">
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/checkGuidePreConsultationRequest"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:buttonTint="@color/figma_mvp_primary"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:contentDescription="@string/guide_pre_consultation_request_check_title" />
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:text="@string/guide_pre_consultation_request_check_title"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="14sp" />
-                <TextView
-                    android:id="@+id/textGuidePreConsultationRequestHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="@font/pretendard_medium"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
-        app:cardBackgroundColor="@color/figma_mvp_surface"
-        app:cardCornerRadius="32dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/figma_mvp_card_outline"
-        app:strokeWidth="1dp">
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="20dp">
-            <com.google.android.material.checkbox.MaterialCheckBox
-                android:id="@+id/checkGuidePreConsultationDocuments"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:buttonTint="@color/figma_mvp_primary"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
-                android:contentDescription="@string/guide_pre_consultation_documents_title" />
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_semibold"
-                    android:text="@string/guide_pre_consultation_documents_title"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="14sp" />
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:fontFamily="@font/pretendard_medium"
-                    android:text="@string/guide_pre_consultation_documents_body"
-                    android:textColor="@color/figma_mvp_text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
+    <TextView
+        style="@style/FinalGuideSection"
+        android:text="@string/guide_pre_consultation_checklist_title" />
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkGuidePreConsultationMedication"
+        style="@style/FinalGuideCheck"
+        android:text="@string/guide_pre_consultation_medication_title" />
+    <TextView
+        android:id="@+id/textGuidePreConsultationMedication"
+        style="@style/FinalGuideHelper"
+        android:gravity="start" />
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkGuidePreConsultationRequest"
+        style="@style/FinalGuideCheck"
+        android:text="@string/guide_pre_consultation_request_check_title" />
+    <TextView
+        android:id="@+id/textGuidePreConsultationRequestHint"
+        style="@style/FinalGuideHelper"
+        android:gravity="start" />
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/checkGuidePreConsultationDocuments"
+        style="@style/FinalGuideCheck"
+        android:text="@string/guide_pre_consultation_documents_title" />
+    <TextView
+        style="@style/FinalGuideHelper"
+        android:text="@string/guide_pre_consultation_documents_body"
+        android:gravity="start" />
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonGuidePreConsultationFieldNote"
-        style="@style/BodeulOutlinedButton"
-        android:layout_width="match_parent"
-        android:layout_marginTop="20dp"
+        style="@style/FinalGuideSecondaryButton"
         android:text="@string/guide_pre_consultation_field_note_open" />
 </LinearLayout>

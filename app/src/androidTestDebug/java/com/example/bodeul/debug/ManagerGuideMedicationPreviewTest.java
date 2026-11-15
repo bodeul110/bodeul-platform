@@ -1,5 +1,6 @@
 package com.example.bodeul.debug;
 
+import static com.example.bodeul.debug.ManagerGuideTestNavigation.*;
 import static androidx.test.espresso.Espresso.closeSoftKeyboard;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
@@ -69,12 +70,13 @@ public class ManagerGuideMedicationPreviewTest {
                     .perform(scrollTo(), replaceText("조제 대기 없이 약을 수령했습니다."));
             closeSoftKeyboard();
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guideMedicationToolbar)).check(matches(isDisplayed()));
+            assertDetailTitle(R.string.final_guide_group_8);
 
             onView(withId(R.id.buttonGuideMedicationSavePharmacyNote))
                     .perform(scrollTo(), click());
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
-            onView(withId(R.id.guideCareCompletionToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+            assertDetailTitle(R.string.final_guide_group_9);
             onView(withId(R.id.managerGuideMedicationContent))
                     .check(matches(withEffectiveVisibility(GONE)));
         }
@@ -118,14 +120,15 @@ public class ManagerGuideMedicationPreviewTest {
                     .perform(scrollTo(), replaceText("저장하지 않고 버릴 약국 메모"));
             closeSoftKeyboard();
 
-            onView(withId(R.id.buttonBackGuideMedication)).perform(click());
+            requestExitFromDetails();
             onView(withText(R.string.guide_medication_exit_body))
                     .check(matches(isDisplayed()));
             onView(withText(R.string.guide_consultation_exit_stay)).perform(click());
+            openCurrentStep();
             onView(withId(R.id.inputGuideMedicationPharmacyNote))
                     .check(matches(withText("저장하지 않고 버릴 약국 메모")));
 
-            onView(withId(R.id.buttonBackGuideMedication)).perform(click());
+            requestExitFromDetails();
             onView(withText(R.string.guide_consultation_exit_discard)).perform(click());
 
             assertTrue("미리보기 화면이 종료되지 않았습니다.",
@@ -136,7 +139,7 @@ public class ManagerGuideMedicationPreviewTest {
     private void assertMedicationScreen() {
         onView(withText(R.string.debug_manager_guide_preview_banner))
                 .check(matches(isDisplayed()));
-        onView(withId(R.id.guideMedicationToolbar)).check(matches(isDisplayed()));
+        assertDetailTitle(R.string.final_guide_group_8);
         onView(withId(R.id.managerGuideMedicationContent)).check(matches(isDisplayed()));
         onView(withId(R.id.textGuideMedicationExistingSummary))
                 .check(matches(withText(R.string.guide_medication_existing_empty)));

@@ -1,43 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="12dp"
-    app:cardBackgroundColor="@color/bodeul_surface_alt"
-    app:cardCornerRadius="24dp"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/bodeul_outline"
-    app:strokeWidth="1dp">
-
+    android:orientation="vertical"
+    android:background="@color/final_surface">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="18dp">
-
+        android:padding="15dp">
         <TextView
             android:id="@+id/textGuideMapActionTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/bodeul_text_primary"
+            android:textColor="@color/final_text_primary"
             android:textSize="16sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/textGuideMapActionBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:lineSpacingExtra="3dp"
-            android:textColor="@color/bodeul_text_secondary"
+            android:textColor="@color/final_text_secondary"
             android:textSize="13sp" />
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonGuideMapAction"
-            style="@style/BodeulOutlinedButton"
-            android:layout_width="wrap_content"
+            style="@style/FinalGuideSecondaryButton"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp" />
     </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
+</LinearLayout>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="final_guide_light_blue">#E7F5FF</color>
+    <color name="final_guide_outline">#ABB4C3</color>
+    <style name="FinalGuideHeading" parent="TextAppearance.BodeulFinal.Body">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">25sp</item>
+        <item name="android:fontFamily">@font/pretendard_bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:breakStrategy">balanced</item>
+        <item name="lineHeight">32sp</item>
+    </style>
+    <style name="FinalGuideHelper" parent="TextAppearance.BodeulFinal.Body">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/final_text_secondary</item>
+    </style>
+    <style name="FinalGuideLabel" parent="TextAppearance.BodeulFinal.Body">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/pretendard_semibold</item>
+        <item name="android:textSize">15sp</item>
+        <item name="lineHeight">22sp</item>
+    </style>
+    <style name="FinalGuideSection" parent="FinalGuideLabel">
+        <item name="android:layout_marginTop">30dp</item>
+        <item name="android:layout_marginBottom">15dp</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:fontFamily">@font/pretendard_bold</item>
+        <item name="lineHeight">26sp</item>
+    </style>
+    <style name="FinalGuideInput" parent="BodeulFinalInput">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:background">@drawable/bg_final_guide_input</item>
+        <item name="android:singleLine">false</item>
+    </style>
+    <style name="FinalGuideTextArea" parent="FinalGuideInput">
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:minHeight">150dp</item>
+        <item name="android:gravity">top|start</item>
+        <item name="android:inputType">textMultiLine|textCapSentences</item>
+    </style>
+    <style name="FinalGuideButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:layout_marginTop">15dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.BodeulFinal.Button</item>
+        <item name="android:textColor">@color/final_text_on_primary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:paddingStart">15dp</item>
+        <item name="android:paddingEnd">15dp</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="backgroundTint">@color/final_guide_button</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+    <style name="FinalGuideSecondaryButton" parent="FinalGuideButton">
+        <item name="backgroundTint">@color/final_input_surface</item>
+        <item name="android:textColor">@color/final_text_primary</item>
+    </style>
+    <style name="FinalGuideFilledInput" parent="Widget.MaterialComponents.TextInputLayout.FilledBox">
+        <item name="boxBackgroundColor">@color/final_input_surface</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">1dp</item>
+        <item name="hintTextColor">@color/final_text_secondary</item>
+        <item name="android:textColorHint">@color/final_text_secondary</item>
+    </style>
+    <style name="FinalGuideFilledEdit" parent="TextAppearance.BodeulFinal.Body">
+        <item name="android:minHeight">56dp</item>
+        <item name="android:textColor">@color/final_text_primary</item>
+        <item name="android:textColorHint">@color/final_text_secondary</item>
+        <item name="android:gravity">top|start</item>
+        <item name="android:paddingStart">15dp</item>
+        <item name="android:paddingEnd">15dp</item>
+    </style>
+    <style name="FinalGuideCheck" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">10dp</item>
+        <item name="android:minHeight">64dp</item>
+        <item name="android:padding">15dp</item>
+        <item name="android:background">@drawable/bg_final_guide_input</item>
+        <item name="android:textAppearance">@style/FinalGuideLabel</item>
+        <item name="buttonTint">@color/final_text_accent_accessible</item>
+    </style>
+</resources>

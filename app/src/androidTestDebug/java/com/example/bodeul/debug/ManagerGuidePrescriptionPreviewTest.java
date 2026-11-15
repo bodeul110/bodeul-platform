@@ -1,5 +1,6 @@
 package com.example.bodeul.debug;
 
+import static com.example.bodeul.debug.ManagerGuideTestNavigation.*;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
@@ -38,7 +39,9 @@ public class ManagerGuidePrescriptionPreviewTest {
 
             onView(withId(R.id.buttonAdvanceGuide)).perform(click());
 
-            onView(withId(R.id.guideMedicationToolbar)).check(matches(isDisplayed()));
+            openCurrentStep();
+
+            assertDetailTitle(R.string.final_guide_group_8);
             onView(withId(R.id.managerGuideMedicationContent)).check(matches(isDisplayed()));
             onView(withId(R.id.textGuideMedicationExistingSummary))
                     .check(matches(withText(R.string.guide_medication_existing_empty)));

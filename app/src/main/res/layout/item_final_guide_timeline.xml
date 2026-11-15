@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:baselineAligned="false">
+    <FrameLayout
+        android:layout_width="35dp"
+        android:layout_height="match_parent">
+        <View
+            android:id="@+id/finalGuideTimelineLine"
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="9dp"
+            android:layout_marginTop="30dp"
+            android:background="@color/final_line" />
+        <TextView
+            android:id="@+id/finalGuideTimelineNumber"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:textSize="12sp"
+            android:fontFamily="@font/pretendard_bold"
+            android:textColor="@color/final_text_secondary" />
+        <ImageView
+            android:id="@+id/finalGuideTimelineCheck"
+            android:layout_width="6.43dp"
+            android:layout_height="8.96dp"
+            android:layout_marginStart="7dp"
+            android:layout_marginTop="19dp"
+            android:rotation="90"
+            android:src="@drawable/bodeul_final_guide_check"
+            android:contentDescription="@null"
+            android:visibility="gone" />
+    </FrameLayout>
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/finalGuideTimelineCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginBottom="20dp"
+        app:cardCornerRadius="15dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:cardBackgroundColor="@color/final_surface"
+        app:strokeColor="@color/final_guide_outline">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/finalGuideTimelineHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:paddingStart="15dp"
+                android:paddingEnd="15dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@color/final_input_surface">
+                <TextView
+                    android:id="@+id/finalGuideTimelineTitle"
+                    style="@style/FinalGuideLabel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/pretendard_bold" />
+                <FrameLayout
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_final_guide_circle">
+                    <ImageView
+                        android:id="@+id/finalGuideTimelineNext"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_gravity="center"
+                        android:rotation="270"
+                        android:src="@drawable/bodeul_final_guide_next_gray"
+                        android:contentDescription="@null" />
+                </FrameLayout>
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/finalGuideTimelineBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="15dp"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/finalGuideTimelineDescription"
+                    style="@style/FinalGuideHelper"
+                    android:layout_marginTop="0dp"
+                    android:gravity="start"
+                    android:textSize="13sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonFinalGuideOpenStep"
+                    style="@style/FinalGuideButton"
+                    android:minHeight="48dp"
+                    android:text="@string/final_guide_open" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>
