@@ -23,6 +23,7 @@ import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.util.StatePanelHelper;
+import com.example.bodeul.ui.report.FinalReportActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -147,9 +148,14 @@ public class ManagerHistoryActivity extends AppCompatActivity {
                         managerRepository.isFirebaseBacked(),
                         selectedFilter
                 ),
-                filter -> {
-                    selectedFilter = filter;
-                    renderHistory();
+                new ManagerHistoryBinder.Listener() {
+                    @Override public void onSelectFilter(ManagerHistoryFilter filter) {
+                        selectedFilter = filter;
+                        renderHistory();
+                    }
+                    @Override public void onOpenReport(String requestId) {
+                        startActivity(FinalReportActivity.createIntent(ManagerHistoryActivity.this, requestId));
+                    }
                 }
         );
     }

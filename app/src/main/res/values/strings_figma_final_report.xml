@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_report_title">최종 리포트</string>
+    <string name="final_report_open">최종 리포트 보기</string>
+    <string name="final_report_pending">아직 조회할 수 있는 최종 리포트가 없습니다. 잠시 후 다시 확인해 주세요.</string>
+    <string name="final_report_manager_scope">종료된 동행의 진료·처방 정보는 조회할 수 없습니다. 작성한 완료 일지만 확인할 수 있습니다.</string>
+    <string name="final_report_missing">이 동행의 리포트를 조회할 수 없습니다.</string>
+    <string name="final_report_refresh">리포트 새로고침</string>
+</resources>

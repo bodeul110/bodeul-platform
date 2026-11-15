@@ -99,6 +99,10 @@
             android:name=".ui.report.GuardianReportActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.report.FinalReportActivity"
+            android:theme="@style/Theme.Bodeul.FinalAuth"
+            android:exported="false" />
+        <activity
             android:name=".ui.booking.ClientBookingHistoryActivity"
             android:exported="false" />
         <activity

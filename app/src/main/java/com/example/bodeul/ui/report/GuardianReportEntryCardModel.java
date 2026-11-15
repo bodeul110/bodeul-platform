@@ -17,6 +17,7 @@ public final class GuardianReportEntryCardModel {
     private final String titleText;
     private final String heroBodyText;
     private final String appointmentDateText;
+    private final String patientNameText;
     private final String hospitalNameText;
     private final String departmentNameText;
     @Nullable
@@ -46,6 +47,7 @@ public final class GuardianReportEntryCardModel {
             String titleText,
             String heroBodyText,
             String appointmentDateText,
+            String patientNameText,
             String hospitalNameText,
             String departmentNameText,
             @Nullable String patientConditionText,
@@ -69,6 +71,7 @@ public final class GuardianReportEntryCardModel {
         this.titleText = titleText;
         this.heroBodyText = heroBodyText;
         this.appointmentDateText = appointmentDateText;
+        this.patientNameText = patientNameText;
         this.hospitalNameText = hospitalNameText;
         this.departmentNameText = departmentNameText;
         this.patientConditionText = patientConditionText;
@@ -110,6 +113,10 @@ public final class GuardianReportEntryCardModel {
 
     public String getAppointmentDateText() {
         return appointmentDateText;
+    }
+
+    public String getPatientNameText() {
+        return patientNameText;
     }
 
     public String getHospitalNameText() {

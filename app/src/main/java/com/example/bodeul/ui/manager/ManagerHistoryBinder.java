@@ -17,6 +17,7 @@ import com.google.android.material.button.MaterialButton;
 public final class ManagerHistoryBinder {
     public interface Listener {
         void onSelectFilter(ManagerHistoryFilter filter);
+        void onOpenReport(String requestId);
     }
 
     private final LayoutInflater inflater;
@@ -77,7 +78,7 @@ public final class ManagerHistoryBinder {
         textEmpty.setVisibility(screenModel.getEntryCards().isEmpty() ? View.VISIBLE : View.GONE);
         for (ManagerHistoryEntryCardModel cardModel : screenModel.getEntryCards()) {
             View itemView = inflater.inflate(R.layout.item_manager_history_entry, entryContainer, false);
-            entryCardBinder.bind(itemView, cardModel);
+            entryCardBinder.bind(itemView, cardModel, listener);
             entryContainer.addView(itemView);
         }
     }

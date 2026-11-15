@@ -20,7 +20,11 @@ public final class ManagerHistoryEntryCardBinder {
         this.inflater = inflater;
     }
 
-    public void bind(View itemView, ManagerHistoryEntryCardModel model) {
+    public void bind(View itemView, ManagerHistoryEntryCardModel model, ManagerHistoryBinder.Listener listener) {
+        View reportButton = itemView.findViewById(R.id.buttonManagerHistoryFinalReport);
+        reportButton.setVisibility(model.getReportRequestId() == null ? View.GONE : View.VISIBLE);
+        reportButton.setOnClickListener(model.getReportRequestId() == null ? null
+                : view -> listener.onOpenReport(model.getReportRequestId()));
         TextView statusBadgeView = itemView.findViewById(R.id.textManagerHistoryEntryBadge);
         TextView followUpBadgeView = itemView.findViewById(R.id.textManagerHistoryEntryFollowUpBadge);
         TextView titleView = itemView.findViewById(R.id.textManagerHistoryEntryTitle);

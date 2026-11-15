@@ -10,6 +10,8 @@ import java.util.List;
  * 과거 동행 이력 카드 한 장을 표현하는 모델이다.
  */
 public final class ManagerHistoryEntryCardModel {
+    @Nullable
+    private final String reportRequestId;
     private final ManagerHistoryBadgeModel statusBadge;
     @Nullable
     private final ManagerHistoryBadgeModel followUpBadge;
@@ -20,6 +22,7 @@ public final class ManagerHistoryEntryCardModel {
     private final List<ManagerInfoLineItem> detailLines;
 
     public ManagerHistoryEntryCardModel(
+            @Nullable String reportRequestId,
             ManagerHistoryBadgeModel statusBadge,
             @Nullable ManagerHistoryBadgeModel followUpBadge,
             String titleText,
@@ -28,6 +31,7 @@ public final class ManagerHistoryEntryCardModel {
             String activityText,
             List<ManagerInfoLineItem> detailLines
     ) {
+        this.reportRequestId = reportRequestId;
         this.statusBadge = statusBadge;
         this.followUpBadge = followUpBadge;
         this.titleText = titleText;
@@ -42,6 +46,9 @@ public final class ManagerHistoryEntryCardModel {
     public ManagerHistoryBadgeModel getStatusBadge() {
         return statusBadge;
     }
+
+    @Nullable
+    public String getReportRequestId() { return reportRequestId; }
 
     @Nullable
     public ManagerHistoryBadgeModel getFollowUpBadge() {

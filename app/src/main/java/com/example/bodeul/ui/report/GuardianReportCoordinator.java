@@ -153,51 +153,66 @@ public final class GuardianReportCoordinator {
     private List<GuardianReportEntryCardModel> createEntryCards(List<GuardianReportEntry> entries) {
         List<GuardianReportEntryCardModel> cards = new ArrayList<>();
         for (GuardianReportEntry entry : entries) {
-            List<GuardianReportSectionModel> reportSections = createReportSections(entry);
-            boolean finalReportReady = GuardianFinalReportPolicy.hasReportContent(
-                    entry.getSessionReport()
-            ) && GuardianFinalReportPolicy.shouldRenderFinalReport(
-                    entry.getAppointmentRequest().getStatus(),
-                    reportSections
-            );
-            CompanionSession session = entry.getSession();
-            cards.add(new GuardianReportEntryCardModel(
-                    entry.getAppointmentRequest().getId(),
-                    entry.getAppointmentRequest().getStatus(),
-                    finalReportReady,
-                    context.getString(
-                            R.string.guardian_report_item_title,
-                            entry.getAppointmentRequest().getHospitalName(),
-                            entry.getAppointmentRequest().getDepartmentName()
-                    ),
-                    buildHeroBody(entry),
-                    GuardianFinalReportPolicy.resolveDateText(
-                            session,
-                            entry.getAppointmentRequest().getAppointmentAt()
-                    ),
-                    entry.getAppointmentRequest().getHospitalName(),
-                    entry.getAppointmentRequest().getDepartmentName(),
-                    GuardianFinalReportPolicy.optionalText(
-                            entry.getAppointmentRequest().getPatientConditionSummary()
-                    ),
-                    resolveManagerName(entry),
-                    resolveManagerMessageLabel(session),
-                    GuardianFinalReportPolicy.resolveManagerMessage(session),
-                    context.getString(R.string.guardian_report_live_section_title),
-                    createLiveLines(entry),
-                    context.getString(R.string.guardian_report_history_section_title),
-                    createHistoryLines(entry),
-                    context.getString(R.string.guardian_report_memo_section_title),
-                    createMemoLines(entry),
-                    context.getString(R.string.guardian_report_report_section_title),
-                    reportSections,
-                    reportSections.isEmpty()
-                            ? context.getString(R.string.guardian_report_report_pending)
-                            : null,
-                    context.getString(R.string.guardian_report_action_open_detail)
-            ));
+            cards.add(createEntryCardModel(entry));
         }
         return cards;
+    }
+
+    public GuardianReportEntryCardModel createEntryCardModel(GuardianReportEntry entry) {
+        return createEntryCardModel(entry, false);
+    }
+
+    public GuardianReportEntryCardModel createEntryCardModel(GuardianReportEntry entry, boolean managerView) {
+        List<GuardianReportSectionModel> reportSections = managerView
+                ? Collections.emptyList() : createReportSections(entry);
+        boolean finalReportReady = GuardianFinalReportPolicy.hasReportContent(
+                entry.getSessionReport()
+        ) && GuardianFinalReportPolicy.shouldRenderFinalReport(
+                entry.getAppointmentRequest().getStatus(),
+                reportSections
+        );
+        CompanionSession session = entry.getSession();
+        return new GuardianReportEntryCardModel(
+                entry.getAppointmentRequest().getId(),
+                entry.getAppointmentRequest().getStatus(),
+                finalReportReady,
+                context.getString(
+                        R.string.guardian_report_item_title,
+                        entry.getAppointmentRequest().getHospitalName(),
+                        entry.getAppointmentRequest().getDepartmentName()
+                ),
+                buildHeroBody(entry),
+                GuardianFinalReportPolicy.resolveDateText(
+                        session,
+                        entry.getAppointmentRequest().getAppointmentAt()
+                ),
+                entry.getPatient() == null || GuardianFinalReportPolicy.optionalText(entry.getPatient().getName()) == null
+                        ? entry.getAppointmentRequest().getPatientName()
+                        : entry.getPatient().getName(),
+                entry.getAppointmentRequest().getHospitalName(),
+                entry.getAppointmentRequest().getDepartmentName(),
+                managerView ? null : GuardianFinalReportPolicy.optionalText(
+                        entry.getAppointmentRequest().getPatientConditionSummary()
+                ),
+                resolveManagerName(entry),
+                managerView ? context.getString(R.string.guardian_final_report_manager_message)
+                        : resolveManagerMessageLabel(session),
+                managerView ? GuardianFinalReportPolicy.optionalText(
+                        session == null ? null : session.getManagerJournal())
+                        : GuardianFinalReportPolicy.resolveManagerMessage(session),
+                context.getString(R.string.guardian_report_live_section_title),
+                createLiveLines(entry),
+                context.getString(R.string.guardian_report_history_section_title),
+                createHistoryLines(entry),
+                context.getString(R.string.guardian_report_memo_section_title),
+                createMemoLines(entry),
+                context.getString(R.string.guardian_report_report_section_title),
+                reportSections,
+                reportSections.isEmpty()
+                        ? context.getString(R.string.guardian_report_report_pending)
+                        : null,
+                context.getString(R.string.guardian_report_action_open_detail)
+        );
     }
 
     @Nullable

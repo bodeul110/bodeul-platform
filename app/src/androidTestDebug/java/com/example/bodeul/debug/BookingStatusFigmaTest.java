@@ -33,6 +33,7 @@ import com.example.bodeul.domain.model.*;
 import com.example.bodeul.ui.booking.*;
 import com.example.bodeul.ui.common.AppointmentProgressComposer;
 import com.example.bodeul.ui.report.GuardianReportActivity;
+import com.example.bodeul.ui.report.FinalReportActivity;
 
 import org.junit.After;
 import org.junit.Before;
@@ -125,7 +126,10 @@ public class BookingStatusFigmaTest {
                         assertVisible(a, R.id.buttonBookingStatusSecondary, false);
                     } else if (status == AppointmentStatus.IN_PROGRESS || status == AppointmentStatus.COMPLETED) {
                         a.findViewById(R.id.buttonBookingStatusSecondary).performClick();
-                        assertEquals(GuardianReportActivity.class.getName(), a.lastStartedIntent.getComponent().getClassName());
+                        assertEquals(status == AppointmentStatus.COMPLETED
+                                        ? FinalReportActivity.class.getName() : GuardianReportActivity.class.getName(),
+                                a.lastStartedIntent.getComponent().getClassName());
+                        if (status == AppointmentStatus.COMPLETED) assertRoute(a, FinalReportActivity.class, "requestId");
                     }
                 });
             }
@@ -185,6 +189,8 @@ public class BookingStatusFigmaTest {
     @Test public void completionPreservesReportFollowUpAndHistory() {
         fixture.detail = detail(AppointmentStatus.COMPLETED, "AUTHORIZED", false);
         try (ActivityScenario<BookingStatusPreviewActivity> scenario = launch()) {
+            onView(withId(R.id.buttonBookingStatusFinalReport)).perform(scrollTo(), click());
+            scenario.onActivity(a -> assertRoute(a, FinalReportActivity.class, "requestId"));
             onView(withId(R.id.buttonBookingStatusReport)).perform(scrollTo(), click());
             scenario.onActivity(a -> {
                 assertContains(a.findViewById(R.id.bookingStatusReportContainer), "합성 진료 요약");

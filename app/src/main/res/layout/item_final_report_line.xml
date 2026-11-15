@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:padding="15dp" android:background="@drawable/bg_final_report_note">
+    <TextView android:id="@+id/textFinalReportLineLabel" style="@style/FinalReportLabel" />
+    <TextView android:id="@+id/textFinalReportLineValue" style="@style/FinalReportText" android:layout_marginTop="5dp" />
+</LinearLayout>
