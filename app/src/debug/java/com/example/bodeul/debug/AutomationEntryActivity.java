@@ -654,6 +654,7 @@ public class AutomationEntryActivity extends AppCompatActivity {
                 public void onSuccess(ManagerDashboard result) {
                     uploadChatAttachmentAndSend(
                             user,
+                            result.getAppointmentRequest().getId(),
                             result.getSession() == null ? "" : result.getSession().getId(),
                             message,
                             completionAction
@@ -680,6 +681,7 @@ public class AutomationEntryActivity extends AppCompatActivity {
                     public void onSuccess(AppointmentRequestDetail result) {
                         uploadChatAttachmentAndSend(
                                 user,
+                                resolveChatRequestId(),
                                 result.getSession() == null ? "" : result.getSession().getId(),
                                 message,
                                 completionAction
@@ -696,6 +698,7 @@ public class AutomationEntryActivity extends AppCompatActivity {
 
     private void uploadChatAttachmentAndSend(
             User user,
+            String expectedRequestId,
             String sessionId,
             String message,
             Runnable completionAction
@@ -720,6 +723,8 @@ public class AutomationEntryActivity extends AppCompatActivity {
                     public void onSuccess(CompanionChatAttachment result) {
                         sendChatMessageWithAttachments(
                                 user,
+                                expectedRequestId,
+                                sessionId,
                                 message,
                                 Collections.singletonList(result),
                                 completionAction,
@@ -742,8 +747,22 @@ public class AutomationEntryActivity extends AppCompatActivity {
             java.util.List<CompanionChatAttachment> attachments,
             Runnable completionAction
     ) {
+        if (user.getRole() == UserRole.MANAGER) {
+            managerRepository.getManagerDashboard(user.getId(), new RepositoryCallback<ManagerDashboard>() {
+                @Override public void onSuccess(ManagerDashboard result) {
+                    sendChatMessageWithAttachments(user, result.getAppointmentRequest().getId(),
+                            result.getSession().getId(), message, attachments, completionAction, () -> { });
+                }
+                @Override public void onError(String error) {
+                    showError("채팅 세션을 찾지 못했습니다.", error);
+                }
+            });
+            return;
+        }
         sendChatMessageWithAttachments(
                 user,
+                resolveChatRequestId(),
+                "",
                 message,
                 attachments,
                 completionAction,
@@ -753,6 +772,8 @@ public class AutomationEntryActivity extends AppCompatActivity {
 
     private void sendChatMessageWithAttachments(
             User user,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             java.util.List<CompanionChatAttachment> attachments,
             Runnable completionAction,
@@ -762,6 +783,8 @@ public class AutomationEntryActivity extends AppCompatActivity {
         if (user.getRole() == UserRole.MANAGER) {
             managerRepository.sendCompanionChatMessage(
                     user.getId(),
+                    expectedRequestId,
+                    expectedSessionId,
                     message,
                     attachments,
                     new RepositoryCallback<ManagerDashboard>() {
@@ -788,7 +811,7 @@ public class AutomationEntryActivity extends AppCompatActivity {
 
         bookingRepository.sendCompanionChatMessage(
                 user,
-                resolveChatRequestId(),
+                expectedRequestId,
                 message,
                 attachments,
                 new RepositoryCallback<AppointmentRequestDetail>() {

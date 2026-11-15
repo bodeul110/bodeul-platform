@@ -276,6 +276,29 @@ public class ClientNavigationReturnTest {
     }
 
     @Test
+    public void chatDetailBackAndHomeMenuReuseExistingHome() {
+        for (AppointmentRequest existing : data.getAppointmentRequestsForUser(patient.getId(), UserRole.PATIENT)) {
+            existing.setStatus(AppointmentStatus.CANCELED);
+        }
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            MainActivity home = awaitActivity(MainActivity.class);
+            click(home, R.id.clientNavCompanionRoom);
+            CompanionChatActivity chat = awaitActivity(CompanionChatActivity.class);
+            assertTrue(chat.findViewById(R.id.clientBottomNavigation) == null);
+            click(chat, R.id.buttonBackCompanionChat);
+            assertSame(home, awaitActivity(MainActivity.class));
+            assertNavigationBounds(home, R.id.clientNavHome);
+            click(home, R.id.clientNavCompanionRoom);
+            chat = awaitActivity(CompanionChatActivity.class);
+            click(chat, R.id.buttonCompanionChatMore);
+            onView(androidx.test.espresso.matcher.ViewMatchers.withText(R.string.final_chat_home))
+                    .perform(androidx.test.espresso.action.ViewActions.click());
+            assertSame(home, awaitActivity(MainActivity.class));
+            assertNavigationBounds(home, R.id.clientNavHome);
+        }
+    }
+
+    @Test
     public void submittedBooking_realKeyboardAndAllTabs_keepNavigationBounds() {
         // 진행 중인 fixture를 제외해 동행방에서 원격 Realtime 구독을 시작하지 않는다.
         for (AppointmentRequest existing : data.getAppointmentRequestsForUser(
@@ -341,8 +364,17 @@ public class ClientNavigationReturnTest {
             assertNavigationBounds(history, R.id.clientNavScheduleHistory);
             click(history, R.id.clientNavCompanionRoom);
             CompanionChatActivity chat = awaitActivity(CompanionChatActivity.class);
-            assertNavigationBounds(chat, R.id.clientNavCompanionRoom);
-            click(chat, R.id.clientNavProfile);
+            // 완성본의 채팅 상세는 탭 대신 뒤로가기와 메뉴로 기존 홈에 복귀한다.
+            assertTrue(chat.findViewById(R.id.clientBottomNavigation) == null);
+            click(chat, R.id.buttonBackCompanionChat);
+            assertSame(home, awaitActivity(MainActivity.class));
+            click(home, R.id.clientNavCompanionRoom);
+            chat = awaitActivity(CompanionChatActivity.class);
+            click(chat, R.id.buttonCompanionChatMore);
+            onView(androidx.test.espresso.matcher.ViewMatchers.withText(R.string.final_chat_home))
+                    .perform(androidx.test.espresso.action.ViewActions.click());
+            assertSame(home, awaitActivity(MainActivity.class));
+            click(home, R.id.clientNavProfile);
             ClientProfileActivity profile = awaitActivity(ClientProfileActivity.class);
             assertNavigationBounds(profile, R.id.clientNavProfile);
             click(profile, R.id.clientNavHome);

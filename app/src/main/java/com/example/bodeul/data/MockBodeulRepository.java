@@ -1260,12 +1260,15 @@ public class MockBodeulRepository implements BodeulRepository {
     @Nullable
     public synchronized ManagerDashboard appendManagerCompanionChatMessage(
             String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             @Nullable List<CompanionChatAttachment> attachments
     ) {
         User manager = findUserById(managerUserId);
         CompanionSession session = getPrimaryManagerSession(managerUserId);
-        if (manager == null || session == null) {
+        if (manager == null || !ManagerRepository.matchesChatExpectation(
+                session, expectedRequestId, expectedSessionId)) {
             return null;
         }
         long sentAtMillis = System.currentTimeMillis();
@@ -1306,9 +1309,10 @@ public class MockBodeulRepository implements BodeulRepository {
     }
 
     @Nullable
-    public synchronized ManagerDashboard markManagerCompanionChatRead(String managerUserId) {
+    public synchronized ManagerDashboard markManagerCompanionChatRead(
+            String managerUserId, String expectedRequestId, String expectedSessionId) {
         CompanionSession session = getPrimaryManagerSession(managerUserId);
-        if (session == null) {
+        if (!ManagerRepository.matchesChatExpectation(session, expectedRequestId, expectedSessionId)) {
             return null;
         }
         session.markChatRead(UserRole.MANAGER, System.currentTimeMillis());

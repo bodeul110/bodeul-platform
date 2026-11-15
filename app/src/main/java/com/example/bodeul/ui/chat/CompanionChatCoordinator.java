@@ -24,7 +24,8 @@ import java.util.Locale;
 
 public final class CompanionChatCoordinator {
     private final Context context;
-    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.KOREA);
+    private final SimpleDateFormat timeFormat = new SimpleDateFormat("a hh:mm", Locale.KOREA);
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd E", Locale.KOREA);
 
     public CompanionChatCoordinator(Context context) {
         this.context = context.getApplicationContext();
@@ -79,8 +80,16 @@ public final class CompanionChatCoordinator {
                 : context.getString(R.string.companion_chat_role_manager);
 
         return new CompanionChatScreenModel(
+                request.getId(),
+                currentUser.getId() + ":" + request.getId(),
+                currentUser.getRole() == UserRole.MANAGER,
+                session.getStatus() != SessionStatus.CARE_ENDED
+                        && session.getStatus() != SessionStatus.COMPLETED
+                        && session.getStatus() != SessionStatus.CANCELED,
                 EnvironmentModeBadgeHelper.resolveUserFacingLabel(context, isFirebaseBacked),
-                context.getString(R.string.companion_chat_title),
+                currentUser.getRole() == UserRole.MANAGER
+                        ? namedRole(patientName, UserRole.PATIENT)
+                        : namedRole(manager == null ? "" : manager.getName(), UserRole.MANAGER),
                 context.getString(
                         currentUser.getRole() == UserRole.MANAGER
                                 ? R.string.companion_chat_subtitle_manager
@@ -97,7 +106,7 @@ public final class CompanionChatCoordinator {
                 ),
                 context.getString(R.string.companion_chat_section_title),
                 context.getString(R.string.companion_chat_empty_body),
-                context.getString(R.string.companion_chat_input_hint),
+                context.getString(R.string.final_chat_hint),
                 context.getString(R.string.companion_chat_send),
                 toMessageItems(currentUser, request, patient, guardian, manager, session)
         );
@@ -114,6 +123,7 @@ public final class CompanionChatCoordinator {
         List<CompanionChatMessageItemModel> items = new ArrayList<>();
         List<CompanionChatMessage> messages = session.getChatMessages();
         int lastMineIndex = findLastMineIndex(currentUser, messages);
+        String previousDate = "";
         for (int index = 0; index < messages.size(); index++) {
             CompanionChatMessage message = messages.get(index);
             boolean mine = currentUser.getRole() == message.getSenderRole();
@@ -134,14 +144,28 @@ public final class CompanionChatCoordinator {
                 );
             }
             items.add(new CompanionChatMessageItemModel(
-                    toRoleLabel(message.getSenderRole()),
+                    dateFormat.format(new Date(message.getSentAtMillis())).equals(previousDate)
+                            ? "" : dateFormat.format(new Date(message.getSentAtMillis())),
+                    senderLabel(message.getSenderRole(), patient, guardian, manager),
                     message.getBody(),
                     sentAtLabel,
                     mine,
                     toAttachmentItems(message.getAttachments())
             ));
+            previousDate = dateFormat.format(new Date(message.getSentAtMillis()));
         }
         return items;
+    }
+
+    private String senderLabel(UserRole role, User patient, User guardian, User manager) {
+        User sender = role == UserRole.PATIENT ? patient
+                : role == UserRole.GUARDIAN ? guardian : role == UserRole.MANAGER ? manager : null;
+        return namedRole(sender == null ? "" : sender.getName(), role);
+    }
+
+    private String namedRole(String name, UserRole role) {
+        return TextUtils.isEmpty(name) ? toRoleLabel(role)
+                : context.getString(R.string.final_chat_counterpart, name, toRoleLabel(role));
     }
 
     private List<CompanionChatAttachmentItemModel> toAttachmentItems(

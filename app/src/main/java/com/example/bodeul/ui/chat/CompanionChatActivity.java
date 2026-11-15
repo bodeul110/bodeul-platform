@@ -9,7 +9,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.EditText;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -18,6 +20,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.bodeul.MainActivity;
@@ -31,21 +37,18 @@ import com.example.bodeul.data.ManagerRepository;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.data.ServiceLocator;
 import com.example.bodeul.data.realtime.SupabaseCompanionRealtimeSubscriber;
+import com.example.bodeul.data.realtime.CompanionRealtimeSubscriber;
 import com.example.bodeul.domain.model.CompanionChatAttachment;
 import com.example.bodeul.firebase.CompanionChatPushContract;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationBinder;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationInsets;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationRouter;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
+import com.example.bodeul.ui.booking.BookingStatusActivity;
+import com.example.bodeul.ui.manager.ManagerGuideActivity;
 import com.example.bodeul.util.DocumentPreviewLauncher;
 import com.example.bodeul.util.StatePanelHelper;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
+import androidx.appcompat.widget.PopupMenu;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,8 +65,10 @@ public class CompanionChatActivity extends AppCompatActivity {
     private View statePanel;
     private View contentContainer;
     private ProgressBar progressBar;
-    private BottomNavigationView bottomNavigation;
-    private TextInputEditText inputMessage;
+    private EditText inputMessage;
+    private CompanionChatScreenModel currentScreen;
+    private String draftOwner = "";
+    private Toast currentToast;
     private String requestId;
     private boolean chatRefreshReceiverRegistered;
     private final List<CompanionChatPendingAttachment> pendingAttachments = new ArrayList<>();
@@ -95,16 +100,38 @@ public class CompanionChatActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_companion_chat);
-        ClientBottomNavigationInsets.applyScrollableContent(findViewById(R.id.scrollCompanionChat));
+        View root = findViewById(R.id.companionChatRoot);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            view.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+            // 큰 글꼴과 IME가 함께 켜지면 대화·입력 공간을 우선 확보한다.
+            boolean largeText = getResources().getConfiguration().fontScale > 1.3f;
+            boolean compact = insets.isVisible(WindowInsetsCompat.Type.ime()) && largeText;
+            findViewById(R.id.companionChatActions).setVisibility(compact ? View.GONE : View.VISIBLE);
+            TextView title = findViewById(R.id.textCompanionChatTitle);
+            title.setTextSize(largeText ? 16 : 22);
+            int width = view.getWidth() > 0 ? view.getWidth() : getResources().getDisplayMetrics().widthPixels;
+            int reserved = Math.round((compact ? 69 : 187) * getResources().getDisplayMetrics().density);
+            int titleWidth = Math.max(1, width - bars.left - bars.right - reserved);
+            if (title.getMaxWidth() != titleWidth) title.setMaxWidth(titleWidth);
+            findViewById(R.id.textCompanionChatHeroBadge).setVisibility(currentScreen != null && !compact ? View.VISIBLE : View.GONE);
+            findViewById(R.id.textCompanionChatAvatar).setVisibility(currentScreen != null && !compact ? View.VISIBLE : View.GONE);
+            return insets;
+        });
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), root).setAppearanceLightNavigationBars(true);
+        ViewCompat.requestApplyInsets(root);
 
         requestId = getIntent().getStringExtra(EXTRA_REQUEST_ID);
 
-        AuthRepository authRepository = ServiceLocator.provideAuthRepository(this);
-        BookingRepository bookingRepository = ServiceLocator.provideBookingRepository(this);
-        ManagerRepository managerRepository = ServiceLocator.provideManagerRepository(this);
+        AuthRepository authRepository = provideAuthRepository();
+        BookingRepository bookingRepository = provideBookingRepository();
+        ManagerRepository managerRepository = provideManagerRepository();
         CompanionChatAttachmentUploader attachmentUploader =
-                ServiceLocator.provideCompanionChatAttachmentUploader(this);
-        attachmentPreviewResolver = ServiceLocator.provideCompanionChatAttachmentPreviewResolver(this);
+                provideAttachmentUploader();
+        attachmentPreviewResolver = provideAttachmentPreviewResolver();
         attachmentThumbnailLoader = new CompanionChatAttachmentThumbnailLoader(this);
         CompanionChatCoordinator coordinator = new CompanionChatCoordinator(this);
 
@@ -114,7 +141,7 @@ public class CompanionChatActivity extends AppCompatActivity {
                 managerRepository,
                 attachmentUploader,
                 coordinator,
-                new SupabaseCompanionRealtimeSubscriber(this)
+                provideRealtimeSubscriber()
         );
         viewModel = new ViewModelProvider(this, factory).get(CompanionChatViewModel.class);
 
@@ -131,19 +158,7 @@ public class CompanionChatActivity extends AppCompatActivity {
         binder = new CompanionChatBinder(
                 this,
                 getLayoutInflater(),
-                findViewById(R.id.textCompanionChatMode),
-                findViewById(R.id.textCompanionChatTitle),
-                findViewById(R.id.textCompanionChatSubtitle),
-                findViewById(R.id.textCompanionChatHeroBadge),
-                findViewById(R.id.textCompanionChatHeroTitle),
-                findViewById(R.id.textCompanionChatHeroBody),
-                findViewById(R.id.textCompanionChatSectionTitle),
-                findViewById(R.id.textCompanionChatEmptyBody),
-                findViewById(R.id.layoutCompanionChatMessages),
-                findViewById(R.id.layoutCompanionChatInput),
-                findViewById(R.id.buttonCompanionChatSend),
-                findViewById(R.id.layoutCompanionChatPendingAttachment),
-                findViewById(R.id.layoutCompanionChatPendingAttachmentItems),
+                root,
                 this::bindPendingAttachmentThumbnail,
                 this::bindMessageAttachmentThumbnail,
                 this::openMessageAttachment
@@ -152,38 +167,33 @@ public class CompanionChatActivity extends AppCompatActivity {
         findViewById(R.id.buttonBackCompanionChat).setOnClickListener(view -> finish());
         findViewById(R.id.buttonCompanionChatSend).setOnClickListener(view -> sendMessage());
         findViewById(R.id.buttonCompanionChatAttach).setOnClickListener(view -> openAttachmentPicker());
-        bottomNavigation = findViewById(R.id.clientBottomNavigation);
-        bottomNavigation.setVisibility(View.GONE);
-        ClientBottomNavigationBinder.bind(
-                bottomNavigation,
-                ClientBottomNavigationTab.COMPANION_ROOM,
-                tab -> ClientBottomNavigationRouter.open(
-                        this,
-                        ClientBottomNavigationTab.COMPANION_ROOM,
-                        tab
-                )
-        );
+        findViewById(R.id.buttonCompanionChatProgress).setOnClickListener(view -> openProgress());
+        findViewById(R.id.buttonCompanionChatDetails).setOnClickListener(view -> openDetails());
+        findViewById(R.id.buttonCompanionChatMore).setOnClickListener(this::openMenu);
         contentContainer.setVisibility(View.GONE);
+        inputMessage.setSaveEnabled(false);
+        restoreDraft(savedInstanceState);
 
         viewModel.getUiState().observe(this, this::handleUiState);
         viewModel.getToastMessage().observe(this, message -> {
             if (message != null) {
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                if (currentToast != null) currentToast.cancel();
+                currentToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+                currentToast.show();
                 viewModel.toastMessageHandled();
             }
         });
-        viewModel.getMessageSentEvent().observe(this, eventMillis -> {
-            if (eventMillis == null) {
+        viewModel.getMessageSentEvent().observe(this, ownerKey -> {
+            if (ownerKey == null) {
                 return;
             }
-            inputMessage.setText("");
-            clearPendingAttachments();
+            if (draftOwner.equals(ownerKey)) {
+                inputMessage.setText("");
+                clearPendingAttachments();
+            }
             viewModel.messageSentHandled();
         });
 
-        if (savedInstanceState == null) {
-            viewModel.init(requestId);
-        }
         refreshPendingAttachmentUi();
     }
 
@@ -191,11 +201,14 @@ public class CompanionChatActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         registerChatRefreshReceiver();
+        viewModel.start(requestId);
     }
 
     @Override
     protected void onStop() {
         unregisterChatRefreshReceiver();
+        if (currentToast != null) currentToast.cancel();
+        viewModel.stop();
         super.onStop();
     }
 
@@ -205,7 +218,23 @@ public class CompanionChatActivity extends AppCompatActivity {
         }
 
         progressBar.setVisibility(state.isLoading ? View.VISIBLE : View.GONE);
-        bottomNavigation.setVisibility(state.showClientNavigation ? View.VISIBLE : View.GONE);
+        currentScreen = state.screenModel;
+        boolean hasScreen = state.screenModel != null && state.statePanelType == CompanionChatViewModel.StatePanelType.NONE;
+        findViewById(R.id.scrollCompanionChatState).setVisibility(hasScreen ? View.GONE : View.VISIBLE);
+        findViewById(R.id.buttonCompanionChatProgress).setEnabled(hasScreen && !state.isLoading);
+        findViewById(R.id.buttonCompanionChatDetails).setEnabled(hasScreen && !state.isLoading);
+        boolean writable = hasScreen && state.screenModel.isWritable();
+        inputMessage.setEnabled(writable && !state.isLoading);
+        findViewById(R.id.buttonCompanionChatSend).setEnabled(writable && !state.isLoading);
+        findViewById(R.id.buttonCompanionChatSend).setAlpha(writable && !state.isLoading ? 1f : .35f);
+        findViewById(R.id.buttonCompanionChatAttach).setEnabled(writable && !state.isLoading);
+        findViewById(R.id.layoutCompanionChatInput).setVisibility(writable ? View.VISIBLE : View.GONE);
+        findViewById(R.id.textCompanionChatClosed).setVisibility(hasScreen && !writable ? View.VISIBLE : View.GONE);
+        if (!hasScreen) {
+            binder.clearScreen();
+            inputMessage.clearFocus();
+            WindowCompat.getInsetsController(getWindow(), inputMessage).hide(WindowInsetsCompat.Type.ime());
+        }
 
         if (state.requireProfileCompletion) {
             openProfileCompletion();
@@ -234,9 +263,19 @@ public class CompanionChatActivity extends AppCompatActivity {
         } else {
             StatePanelHelper.hide(statePanel);
             if (state.screenModel != null) {
+                if (!draftOwner.isEmpty() && !draftOwner.equals(state.screenModel.getOwnerKey())) {
+                    inputMessage.setText("");
+                    clearPendingAttachments();
+                }
+                draftOwner = state.screenModel.getOwnerKey();
                 contentContainer.setVisibility(View.VISIBLE);
+                ScrollView scroll = findViewById(R.id.scrollCompanionChat);
+                boolean atEnd = !scroll.canScrollVertically(1);
+                int oldY = scroll.getScrollY();
                 binder.bindScreen(state.screenModel);
+                ViewCompat.requestApplyInsets(findViewById(R.id.companionChatRoot));
                 refreshPendingAttachmentUi();
+                scroll.post(() -> { if (atEnd) scroll.fullScroll(View.FOCUS_DOWN); else scroll.scrollTo(0, oldY); });
             } else {
                 contentContainer.setVisibility(View.GONE);
             }
@@ -250,6 +289,72 @@ public class CompanionChatActivity extends AppCompatActivity {
 
     private void openAttachmentPicker() {
         attachmentPickerLauncher.launch(new String[]{"application/pdf", "image/*"});
+    }
+
+    protected AuthRepository provideAuthRepository() { return ServiceLocator.provideAuthRepository(this); }
+    protected BookingRepository provideBookingRepository() { return ServiceLocator.provideBookingRepository(this); }
+    protected ManagerRepository provideManagerRepository() { return ServiceLocator.provideManagerRepository(this); }
+    protected CompanionChatAttachmentUploader provideAttachmentUploader() { return ServiceLocator.provideCompanionChatAttachmentUploader(this); }
+    protected CompanionChatAttachmentPreviewResolver provideAttachmentPreviewResolver() { return ServiceLocator.provideCompanionChatAttachmentPreviewResolver(this); }
+    protected CompanionRealtimeSubscriber provideRealtimeSubscriber() { return new SupabaseCompanionRealtimeSubscriber(this); }
+
+    private void openProgress() {
+        if (currentScreen == null) return;
+        if (currentScreen.isManager()) startActivity(new Intent(this, ManagerGuideActivity.class));
+        else startActivity(BookingStatusActivity.createIntent(this, currentScreen.getRequestId()));
+    }
+
+    private void openDetails() {
+        if (currentScreen == null) return;
+        if (currentScreen.isManager()) showSessionInfo();
+        else startActivity(BookingStatusActivity.createIntent(this, currentScreen.getRequestId()));
+    }
+
+    private void openMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenu().add(0, 1, 0, R.string.final_chat_refresh);
+        if (currentScreen != null) menu.getMenu().add(0, 2, 1, R.string.final_chat_info);
+        menu.getMenu().add(0, 3, 2, R.string.final_chat_home);
+        menu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == 1) viewModel.reload();
+            else if (item.getItemId() == 2) showSessionInfo();
+            else openHome();
+            return true;
+        });
+        menu.show();
+    }
+
+    private void showSessionInfo() {
+        if (currentScreen == null) return;
+        new MaterialAlertDialogBuilder(this).setTitle(currentScreen.getHeroTitle())
+                .setMessage(currentScreen.getHeroBody()).setPositiveButton(android.R.string.ok, null).show();
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        super.onSaveInstanceState(state);
+        state.putString("chat.draft", inputMessage.getText().toString());
+        state.putString("chat.owner", draftOwner);
+        ArrayList<Bundle> attachments = new ArrayList<>();
+        for (CompanionChatPendingAttachment item : pendingAttachments) {
+            Bundle value = new Bundle();
+            value.putString("uri", item.getFileUri().toString());
+            value.putString("name", item.getFileName());
+            value.putString("type", item.getContentType());
+            attachments.add(value);
+        }
+        state.putParcelableArrayList("chat.attachments", attachments);
+    }
+
+    private void restoreDraft(@Nullable Bundle state) {
+        if (state == null) return;
+        inputMessage.setText(state.getString("chat.draft", ""));
+        draftOwner = state.getString("chat.owner", "");
+        ArrayList<Bundle> values = state.getParcelableArrayList("chat.attachments");
+        if (values != null) for (Bundle value : values) {
+            String uri = value.getString("uri", "");
+            if (!uri.isEmpty() && pendingAttachments.size() < MAX_PENDING_ATTACHMENTS)
+                pendingAttachments.add(new CompanionChatPendingAttachment(Uri.parse(uri), value.getString("name", ""), value.getString("type", "")));
+        }
     }
 
     private void handleAttachmentsPicked(@Nullable List<Uri> fileUris) {
@@ -328,7 +433,10 @@ public class CompanionChatActivity extends AppCompatActivity {
     }
 
     private void refreshPendingAttachmentUi() {
-        binder.bindPendingAttachments(pendingAttachments, new CompanionChatBinder.PendingAttachmentActionListener() {
+        CompanionChatViewModel.UiState state = viewModel.getUiState().getValue();
+        boolean actionsEnabled = state != null && !state.isLoading && state.screenModel != null
+                && state.screenModel.isWritable();
+        binder.bindPendingAttachments(pendingAttachments, actionsEnabled, new CompanionChatBinder.PendingAttachmentActionListener() {
             @Override
             public void onPreviewPendingAttachment(CompanionChatPendingAttachment pendingAttachment) {
                 previewPendingAttachment(pendingAttachment);
@@ -517,7 +625,9 @@ public class CompanionChatActivity extends AppCompatActivity {
     }
 
     private void openHome() {
-        startActivity(new Intent(this, MainActivity.class));
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
         finish();
     }
 
@@ -564,19 +674,15 @@ public class CompanionChatActivity extends AppCompatActivity {
         String updatedRequestId = intent.getStringExtra(
                 CompanionChatPushContract.EXTRA_APPOINTMENT_REQUEST_ID
         );
-        return TextUtils.isEmpty(requestId)
+        String visibleRequest = currentScreen == null ? requestId : currentScreen.getRequestId();
+        return TextUtils.isEmpty(visibleRequest)
                 || TextUtils.isEmpty(updatedRequestId)
-                || TextUtils.equals(requestId, updatedRequestId);
+                || TextUtils.equals(visibleRequest, updatedRequestId);
     }
 
     private void showChatMessageSnackbar(@Nullable Intent intent) {
         String message = getString(R.string.companion_chat_push_body_fallback);
-        if (intent != null) {
-            String payloadBody = intent.getStringExtra(CompanionChatPushContract.EXTRA_BODY);
-            if (!TextUtils.isEmpty(payloadBody)) {
-                message = payloadBody.trim();
-            }
-        }
+        // 갱신 후 인가가 실패해도 푸시 본문으로 이전 대화를 다시 노출하지 않는다.
         Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG).show();
     }
 }

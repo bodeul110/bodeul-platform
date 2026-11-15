@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_chat_counterpart">%1$s %2$s</string>
+    <string name="final_chat_progress">실시간 동행 현황</string>
+    <string name="final_chat_details">이용 상세</string>
+    <string name="final_chat_more">채팅 메뉴</string>
+    <string name="final_chat_refresh">새로고침</string>
+    <string name="final_chat_info">동행 정보</string>
+    <string name="final_chat_home">홈으로</string>
+    <string name="final_chat_hint">메시지를 입력해주세요.</string>
+    <string name="final_chat_closed">종료된 동행입니다. 이전 대화만 볼 수 있어요.</string>
+</resources>

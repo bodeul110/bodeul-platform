@@ -13,6 +13,7 @@ import com.example.bodeul.domain.model.CompanionLocationAlertStage;
 import com.example.bodeul.domain.model.CompanionSession;
 import com.example.bodeul.domain.model.MedicationComparisonDecision;
 import com.example.bodeul.domain.model.SessionReport;
+import com.example.bodeul.domain.model.SessionStatus;
 import com.example.bodeul.domain.model.SupportInquiry;
 import com.example.bodeul.domain.model.SupportInquiryCategory;
 
@@ -24,6 +25,7 @@ import java.util.List;
 public interface ManagerRepository {
     String MESSAGE_NO_ACTIVE_SESSION = "현재 배정된 동행 일정이 없습니다.";
     String MESSAGE_STALE_GUIDE_STEP = "진행 단계가 변경되어 다시 확인해야 합니다.";
+    String MESSAGE_STALE_CHAT_SESSION = "동행 정보가 변경되었습니다. 채팅을 다시 열어 주세요.";
 
     void getManagerDashboard(String managerUserId, RepositoryCallback<ManagerDashboard> callback);
 
@@ -79,12 +81,31 @@ public interface ManagerRepository {
 
     void sendCompanionChatMessage(
             String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             List<CompanionChatAttachment> attachments,
             RepositoryCallback<ManagerDashboard> callback
     );
 
-    void markCompanionChatRead(String managerUserId);
+    void markCompanionChatRead(String managerUserId, String expectedRequestId, String expectedSessionId);
+
+    /** 화면에서 연 예약·세션이 같고 대화가 열려 있을 때만 기록한다. 참여자 인가는 저장소가 수행한다. */
+    static boolean matchesChatExpectation(
+            CompanionSession session,
+            String expectedRequestId,
+            String expectedSessionId
+    ) {
+        return session != null
+                && !normalize(expectedRequestId).isEmpty()
+                && !normalize(expectedSessionId).isEmpty()
+                && normalize(expectedRequestId).equals(normalize(session.getAppointmentRequestId()))
+                && normalize(expectedSessionId).equals(normalize(session.getId()))
+                && session.getStatus() != null
+                && session.getStatus() != SessionStatus.CARE_ENDED
+                && session.getStatus() != SessionStatus.COMPLETED
+                && session.getStatus() != SessionStatus.CANCELED;
+    }
 
     void saveCompanionLocationAlert(String managerUserId, CompanionLocationAlertStage stage);
 

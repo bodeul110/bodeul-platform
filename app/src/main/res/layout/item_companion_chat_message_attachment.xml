@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
     android:orientation="vertical">
 
     <ImageView
         android:id="@+id/imageCompanionChatAttachmentPreview"
-        android:layout_width="160dp"
+        android:layout_width="match_parent"
         android:layout_height="120dp"
         android:adjustViewBounds="true"
         android:background="@drawable/bg_surface_card_soft"
@@ -17,18 +17,22 @@
 
     <TextView
         android:id="@+id/textCompanionChatAttachmentSummary"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:textColor="@color/bodeul_text_secondary"
+        android:fontFamily="@font/pretendard_medium"
+        android:textColor="@color/final_text_secondary"
         android:textSize="12sp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonCompanionChatAttachmentOpen"
         style="@style/BodeulOutlinedButton"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:minWidth="0dp"
+        android:fontFamily="@font/pretendard_medium"
+        android:textColor="@color/final_text_primary"
+        android:textSize="13sp"
         android:text="@string/companion_chat_attachment_open" />
 </LinearLayout>

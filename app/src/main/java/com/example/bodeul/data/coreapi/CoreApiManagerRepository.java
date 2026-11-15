@@ -131,13 +131,21 @@ public final class CoreApiManagerRepository implements ManagerRepository {
     @Override
     public void sendCompanionChatMessage(
             String managerUserId,
+            String expectedRequestId,
+            String expectedSessionId,
             String message,
             List<CompanionChatAttachment> attachments,
             RepositoryCallback<ManagerDashboard> callback
     ) {
-        withDashboard(managerUserId, callback, dashboard ->
-                sessionClient.sendRealtimeMessage(
-                        dashboard.getSession().getId(),
+        withDashboard(managerUserId, callback, dashboard -> {
+            if (!ManagerRepository.matchesChatExpectation(
+                    dashboard.getSession(), expectedRequestId, expectedSessionId)) {
+                callback.onError(ManagerRepository.MESSAGE_STALE_CHAT_SESSION);
+                return;
+            }
+            // 재조회 이후 배정이 바뀌어도 요청 URL은 화면에서 연 세션에 고정한다.
+            sessionClient.sendRealtimeMessage(
+                        expectedSessionId,
                         message,
                         attachments,
                         new RepositoryCallback<CoreApiCompanionSessionClient.RealtimeSnapshot>() {
@@ -152,15 +160,19 @@ public final class CoreApiManagerRepository implements ManagerRepository {
                             public void onError(String errorMessage) {
                                 callback.onError(errorMessage);
                             }
-                        }));
+                        });
+        });
     }
 
     @Override
-    public void markCompanionChatRead(String managerUserId) {
+    public void markCompanionChatRead(String managerUserId, String expectedRequestId, String expectedSessionId) {
         getManagerDashboard(managerUserId, new RepositoryCallback<ManagerDashboard>() {
             @Override
             public void onSuccess(ManagerDashboard result) {
-                sessionClient.markRealtimeRead(result.getSession().getId());
+                if (result != null && ManagerRepository.matchesChatExpectation(
+                        result.getSession(), expectedRequestId, expectedSessionId)) {
+                    sessionClient.markRealtimeRead(expectedSessionId);
+                }
             }
 
             @Override
