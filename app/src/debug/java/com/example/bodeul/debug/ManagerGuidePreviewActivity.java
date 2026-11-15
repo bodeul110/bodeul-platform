@@ -29,6 +29,8 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
     static final String PREVIEW_BANNER_TAG = "manager-guide-preview-banner";
     static final String EXTRA_STEP_CODE =
             "com.example.bodeul.debug.extra.MANAGER_GUIDE_STEP_CODE";
+    static final String EXTRA_START_TIMELINE =
+            "com.example.bodeul.debug.extra.START_GUIDE_TIMELINE";
     private static final String EXTRA_SEED_PAYMENT_EVIDENCE =
             "com.example.bodeul.debug.extra.SEED_PAYMENT_EVIDENCE";
     private static final String EXTRA_LEGACY_MODE =
@@ -75,6 +77,11 @@ public final class ManagerGuidePreviewActivity extends ManagerGuideActivity {
         addPreviewBanner();
         replaceExternalMapWithLocalPreview();
         disableServerBackedDestinations();
+    }
+
+    @Override
+    protected boolean shouldOpenGuideDetailsInitially() {
+        return !getIntent().getBooleanExtra(EXTRA_START_TIMELINE, false);
     }
 
     @Override

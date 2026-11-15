@@ -127,6 +127,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
     private TextInputEditText inputGuidePhotoNote;
     private MaterialCheckBox checkGuidePreConsultationConfirmed;
     private MaterialButton buttonAdvanceGuide;
+    private ManagerGuideFinalBinder finalGuideBinder;
     private TextInputEditText inputMedicationNote;
     private TextInputEditText inputPharmacySummary;
     private TextInputEditText inputReportSummary;
@@ -363,6 +364,9 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 LayoutInflater.from(this), findViewById(android.R.id.content));
         managerGuideJournalBinder = new ManagerGuideJournalBinder(
                 findViewById(android.R.id.content));
+        finalGuideBinder = new ManagerGuideFinalBinder(findViewById(android.R.id.content),
+                savedInstanceState, shouldOpenGuideDetailsInitially());
+        findViewById(R.id.buttonFinalGuideBack).setOnClickListener(view -> navigateBack());
 
         findViewById(R.id.buttonBackGuide).setOnClickListener(
                 view -> attemptExit(this::finish));
@@ -391,7 +395,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                attemptExit(ManagerGuideActivity.this::finish);
+                navigateBack();
             }
         });
         findViewById(R.id.buttonGuideReceptionShare).setOnClickListener(view -> {
@@ -551,6 +555,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             mutationInFlight = Boolean.TRUE.equals(inFlight);
             if (mutationInFlight) {
                 disableMutationActions();
+                finalGuideBinder.disableActions();
                 return;
             }
             ManagerGuideViewModel.UiState state = viewModel.getUiState().getValue();
@@ -597,6 +602,16 @@ public class ManagerGuideActivity extends AppCompatActivity {
         return false;
     }
 
+    protected boolean shouldOpenGuideDetailsInitially() {
+        return false;
+    }
+
+    private void navigateBack() {
+        if (finalGuideBinder == null || !finalGuideBinder.backToTimeline()) {
+            attemptExit(this::finish);
+        }
+    }
+
     private void handleUiState(ManagerGuideViewModel.UiState state) {
         if (state == null) return;
 
@@ -623,6 +638,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
             clearCurrentLocationMarkerOutsideMeetingStep();
             managerGuideContentContainer.setVisibility(View.GONE);
             managerGuideBottomAction.setVisibility(View.GONE);
+            finalGuideBinder.showState();
             switch (state.statePanelType) {
                 case PERMISSION:
                     showPermissionState();
@@ -707,6 +723,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 if (mutationInFlight) {
                     disableMutationActions();
                 }
+                finalGuideBinder.bind(state.screenModel, state.dashboard, mutationInFlight);
                 updateMapMarker();
             } else {
                 managerGuideReceptionBinder.hideForState();
@@ -726,6 +743,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
                 clearCurrentLocationMarkerOutsideMeetingStep();
                 managerGuideContentContainer.setVisibility(View.GONE);
                 managerGuideBottomAction.setVisibility(View.GONE);
+                finalGuideBinder.showState();
             }
         }
 
@@ -1208,31 +1226,24 @@ public class ManagerGuideActivity extends AppCompatActivity {
     }
 
     private void configureBottomActionInsets() {
-        int initialLeftPadding = managerGuideBottomAction.getPaddingLeft();
-        int initialTopPadding = managerGuideBottomAction.getPaddingTop();
-        int initialRightPadding = managerGuideBottomAction.getPaddingRight();
-        int initialBottomPadding = managerGuideBottomAction.getPaddingBottom();
-
-        ViewCompat.setOnApplyWindowInsetsListener(managerGuideBottomAction, (view, windowInsets) -> {
-            Insets navigationInsets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.navigationBars()
-            );
-            view.setPadding(
-                    initialLeftPadding + navigationInsets.left,
-                    initialTopPadding,
-                    initialRightPadding + navigationInsets.right,
-                    initialBottomPadding + navigationInsets.bottom
-            );
-            return windowInsets;
-        });
-        ViewCompat.requestApplyInsets(managerGuideBottomAction);
+        for (int id : new int[]{R.id.managerGuideBottomAction, R.id.finalGuideTimelineFooter}) {
+            View footer = findViewById(id);
+            int left = footer.getPaddingLeft();
+            int right = footer.getPaddingRight();
+            int bottom = footer.getPaddingBottom();
+            ViewCompat.setOnApplyWindowInsetsListener(footer, (view, insets) -> {
+                Insets navigation = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+                view.setPadding(left + navigation.left, view.getPaddingTop(),
+                        right + navigation.right, bottom + navigation.bottom);
+                return insets;
+            });
+            ViewCompat.requestApplyInsets(footer);
+        }
     }
 
     private void configureSystemBars() {
-        getWindow().setStatusBarColor(ContextCompat.getColor(
-                this, R.color.figma_mvp_background));
-        getWindow().setNavigationBarColor(ContextCompat.getColor(
-                this, R.color.figma_mvp_surface));
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.final_surface));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.final_surface));
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
                 .setAppearanceLightStatusBars(true);
         WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
@@ -1241,42 +1252,16 @@ public class ManagerGuideActivity extends AppCompatActivity {
 
     private void configureRemainingStepToolbarInsets() {
         View root = findViewById(android.R.id.content);
-        View[] toolbars = new View[]{
-                findViewById(R.id.guideConsultationSummaryToolbar),
-                findViewById(R.id.guidePharmacyRouteToolbar),
-                findViewById(R.id.guideCareCompletionToolbar),
-                findViewById(R.id.guideJournalToolbar)
-        };
-        int[] initialHeights = new int[toolbars.length];
-        int[] initialLeftPaddings = new int[toolbars.length];
-        int[] initialTopPaddings = new int[toolbars.length];
-        int[] initialRightPaddings = new int[toolbars.length];
-        for (int index = 0; index < toolbars.length; index++) {
-            initialHeights[index] = toolbars[index].getLayoutParams().height;
-            initialLeftPaddings[index] = toolbars[index].getPaddingLeft();
-            initialTopPaddings[index] = toolbars[index].getPaddingTop();
-            initialRightPaddings[index] = toolbars[index].getPaddingRight();
-        }
-        ViewCompat.setOnApplyWindowInsetsListener(root, (view, windowInsets) -> {
-            Insets systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-            Insets displayCutout = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.displayCutout());
-            int safeTop = Math.max(systemBars.top, displayCutout.top);
-            int safeLeft = Math.max(systemBars.left, displayCutout.left);
-            int safeRight = Math.max(systemBars.right, displayCutout.right);
-            for (int index = 0; index < toolbars.length; index++) {
-                View toolbar = toolbars[index];
-                ViewGroup.LayoutParams params = toolbar.getLayoutParams();
-                params.height = initialHeights[index] + safeTop;
-                toolbar.setLayoutParams(params);
-                toolbar.setPadding(
-                        initialLeftPaddings[index] + safeLeft,
-                        initialTopPaddings[index] + safeTop,
-                        initialRightPaddings[index] + safeRight,
-                        toolbar.getPaddingBottom()
-                );
-            }
-            return windowInsets;
+        View toolbar = findViewById(R.id.finalGuideToolbar);
+        int left = toolbar.getPaddingLeft();
+        int right = toolbar.getPaddingRight();
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout());
+            // 미리보기는 별도 배너가 상태 표시줄 여백을 이미 담당한다.
+            toolbar.setPadding(left + bars.left, isGuidePreviewMode() ? 0 : bars.top,
+                    right + bars.right, 0);
+            return insets;
         });
         ViewCompat.requestApplyInsets(root);
     }
@@ -1661,6 +1646,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
+        if (finalGuideBinder != null) finalGuideBinder.save(outState);
         if (managerGuideConsultationBinder != null) {
             managerGuideConsultationBinder.saveInstanceState(outState);
         }

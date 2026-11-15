@@ -1,51 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="14dp"
-    app:cardBackgroundColor="@color/bodeul_surface"
-    app:cardCornerRadius="28dp"
-    app:cardElevation="6dp"
+    app:cardBackgroundColor="@color/final_surface"
+    app:cardCornerRadius="0dp"
+    app:cardElevation="0dp"
     app:strokeColor="@color/bodeul_outline"
-    app:strokeWidth="1dp">
-
+    app:strokeWidth="0dp">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="22dp">
-
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp">
         <LinearLayout
             android:id="@+id/groupGuideMemoSummary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone">
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/guide_memo_summary_title"
-                android:textColor="@color/bodeul_text_primary"
+                android:textColor="@color/final_text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:lineSpacingExtra="3dp"
                 android:text="@string/guide_memo_summary_helper"
-                android:textColor="@color/bodeul_text_secondary"
+                android:textColor="@color/final_text_secondary"
                 android:textSize="13sp" />
-
             <LinearLayout
                 android:id="@+id/guideMemoSummaryContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
-
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
@@ -53,213 +49,184 @@
                 android:layout_marginBottom="18dp"
                 android:background="@color/bodeul_outline" />
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuideReportSummary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/guide_report_section"
-                android:textColor="@color/bodeul_text_primary"
-                android:textSize="17sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_badge_blue"
-                android:paddingStart="10dp"
-                android:paddingTop="4dp"
-                android:paddingEnd="10dp"
-                android:paddingBottom="4dp"
-                android:text="@string/guide_report_hint_label"
-                android:textColor="@color/bodeul_primary"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/layoutReportSummary"
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/guide_report_summary_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputReportSummary"
-                style="@style/BodeulMemoEditText"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/guide_report_treatment_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputReportTreatment"
-                style="@style/BodeulMemoEditText"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/guide_report_section"
+                    android:textColor="@color/final_text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_blue"
+                    android:paddingStart="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="@string/guide_report_hint_label"
+                    android:textColor="@color/bodeul_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutReportSummary"
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
+                android:layout_marginTop="14dp"
+                android:hint="@string/guide_report_summary_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReportSummary"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="@string/guide_report_treatment_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReportTreatment"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuideReportMedication"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/guide_report_medication_name_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputReportMedicationName"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:textColor="@color/figma_mvp_text_primary" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_report_medication_comparison_label"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/groupReportMedicationComparisonDecision"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical">
-
-            <com.google.android.material.radiobutton.MaterialRadioButton
-                android:id="@+id/radioMedicationComparisonMatched"
+                android:layout_marginTop="12dp"
+                android:hint="@string/guide_report_medication_name_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReportMedicationName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColor="@color/final_text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_report_medication_comparison_label"
+                android:textColor="@color/final_text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <RadioGroup
+                android:id="@+id/groupReportMedicationComparisonDecision"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/guide_report_medication_comparison_matched"
-                android:textColor="@color/figma_mvp_text_primary" />
-
-            <com.google.android.material.radiobutton.MaterialRadioButton
-                android:id="@+id/radioMedicationComparisonChanged"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radioMedicationComparisonMatched"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/guide_report_medication_comparison_matched"
+                    android:textColor="@color/final_text_primary" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radioMedicationComparisonChanged"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/guide_report_medication_comparison_changed"
+                    android:textColor="@color/final_text_primary" />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radioMedicationComparisonRecheck"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/guide_report_medication_comparison_recheck"
+                    android:textColor="@color/final_text_primary" />
+            </RadioGroup>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/guide_report_medication_comparison_changed"
-                android:textColor="@color/figma_mvp_text_primary" />
-
-            <com.google.android.material.radiobutton.MaterialRadioButton
-                android:id="@+id/radioMedicationComparisonRecheck"
+                android:layout_marginTop="12dp"
+                android:hint="@string/guide_report_medication_comparison_note_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReportMedicationComparisonNote"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="2" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/guide_report_medication_comparison_recheck"
-                android:textColor="@color/figma_mvp_text_primary" />
-        </RadioGroup>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/guide_report_medication_comparison_note_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputReportMedicationComparisonNote"
-                style="@style/BodeulMemoEditText"
+                android:layout_marginTop="12dp"
+                android:hint="@string/guide_report_medication_change_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReportMedicationChangeSummary"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="2" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="2" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/guide_report_medication_change_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputReportMedicationChangeSummary"
-                style="@style/BodeulMemoEditText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="2" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/guide_report_medication_schedule_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputReportMedicationScheduleNote"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text"
-                android:textColor="@color/figma_mvp_text_primary" />
-        </com.google.android.material.textfield.TextInputLayout>
-
+                android:layout_marginTop="12dp"
+                android:hint="@string/guide_report_medication_schedule_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputReportMedicationScheduleNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColor="@color/final_text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuideReportNextVisit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/guide_report_next_visit_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputNextVisit"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:textColor="@color/figma_mvp_text_primary" />
-        </com.google.android.material.textfield.TextInputLayout>
-
+                android:layout_marginTop="12dp"
+                android:hint="@string/guide_report_next_visit_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputNextVisit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColor="@color/final_text_primary" />
+            </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonSubmitReport"
-            style="@style/BodeulHomeButton"
+            style="@style/FinalGuideButton"
             android:layout_marginTop="16dp"
             android:visibility="gone" />
     </LinearLayout>

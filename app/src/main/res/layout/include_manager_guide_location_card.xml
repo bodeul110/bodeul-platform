@@ -1,170 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="14dp"
-    app:cardBackgroundColor="@color/bodeul_surface"
-    app:cardCornerRadius="28dp"
-    app:cardElevation="6dp"
+    app:cardBackgroundColor="@color/final_surface"
+    app:cardCornerRadius="0dp"
+    app:cardElevation="0dp"
     app:strokeColor="@color/bodeul_outline"
-    app:strokeWidth="1dp">
-
+    app:strokeWidth="0dp">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="22dp">
-
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp">
         <LinearLayout
             android:id="@+id/groupGuideLocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/guide_location_section"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/guide_location_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputGuideLocationSummary"
-                style="@style/BodeulMemoEditText"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/guide_location_section"
+                android:textColor="@color/final_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSaveLocationSummary"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_location_save" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonShareCurrentLocation"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="10dp"
-            android:text="@string/guide_share_location_action" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
+                android:layout_marginTop="14dp"
+                android:hint="@string/guide_location_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputGuideLocationSummary"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonStartLiveLocationSharing"
-                style="@style/BodeulOutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/guide_live_location_start" />
-
-            <Space
-                android:layout_width="10dp"
-                android:layout_height="1dp" />
-
+                android:id="@+id/buttonSaveLocationSummary"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_location_save" />
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonStopLiveLocationSharing"
-                style="@style/BodeulOutlinedButton"
-                android:layout_width="0dp"
+                android:id="@+id/buttonShareCurrentLocation"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="10dp"
+                android:text="@string/guide_share_location_action" />
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/guide_live_location_stop" />
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonStartLiveLocationSharing"
+                    style="@style/FinalGuideSecondaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/guide_live_location_start" />
+                <Space
+                    android:layout_width="10dp"
+                    android:layout_height="1dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonStopLiveLocationSharing"
+                    style="@style/FinalGuideSecondaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/guide_live_location_stop" />
+            </LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/guide_live_location_status_label"
+                android:textColor="@color/final_text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/textGuideLiveLocationStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="3dp"
+                android:textColor="@color/final_text_secondary"
+                android:textSize="13sp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_live_location_history_label"
+                android:textColor="@color/final_text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/textGuideLiveLocationHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_final_guide_input"
+                android:lineSpacingExtra="3dp"
+                android:paddingStart="14dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="12dp"
+                android:textColor="@color/final_text_secondary"
+                android:textSize="13sp" />
         </LinearLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/guide_live_location_status_label"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textGuideLiveLocationStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:lineSpacingExtra="3dp"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="13sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_live_location_history_label"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/textGuideLiveLocationHistory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/bg_surface_pill"
-            android:lineSpacingExtra="3dp"
-            android:paddingStart="14dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="12dp"
-            android:textColor="@color/bodeul_text_secondary"
-            android:textSize="13sp" />
-
-        </LinearLayout>
-
         <LinearLayout
             android:id="@+id/groupGuideGuardian"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="@string/guide_guardian_section"
-            android:textColor="@color/bodeul_text_primary"
-            android:textSize="17sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/BodeulMemoFilledInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/guide_guardian_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputGuardianUpdate"
-                style="@style/BodeulMemoEditText"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/guide_guardian_section"
+                android:textColor="@color/final_text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/FinalGuideFilledInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textMultiLine"
-                android:minLines="3" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonSaveGuardianUpdate"
-            style="@style/BodeulOutlinedButton"
-            android:layout_marginTop="14dp"
-            android:text="@string/guide_guardian_save" />
+                android:layout_marginTop="14dp"
+                android:hint="@string/guide_guardian_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/inputGuardianUpdate"
+                    style="@style/FinalGuideFilledEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textMultiLine"
+                    android:minLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonSaveGuardianUpdate"
+                style="@style/FinalGuideSecondaryButton"
+                android:layout_marginTop="14dp"
+                android:text="@string/guide_guardian_save" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
