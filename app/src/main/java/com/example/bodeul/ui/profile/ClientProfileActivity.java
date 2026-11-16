@@ -3,11 +3,9 @@ package com.example.bodeul.ui.profile;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ProgressBar;
-
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.example.bodeul.R;
 import com.example.bodeul.data.AuthRepository;
 import com.example.bodeul.data.RepositoryCallback;
@@ -16,161 +14,124 @@ import com.example.bodeul.domain.model.User;
 import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
-import com.example.bodeul.ui.health.HealthInfoActivity;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationBinder;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationInsets;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationRouter;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationTab;
-import com.example.bodeul.ui.navigation.ClientBottomNavigationVisibility;
+import com.example.bodeul.ui.chat.CompanionChatActivity;
+import com.example.bodeul.ui.home.ClientHomeInsets;
+import com.example.bodeul.ui.manager.ManagerActivity;
+import com.example.bodeul.ui.navigation.*;
 import com.example.bodeul.util.StatePanelHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-/**
- * 환자와 보호자의 로그인 계정 정보를 표시하는 공통 내 정보 화면이다.
- */
-public final class ClientProfileActivity extends AppCompatActivity {
-    private AuthRepository authRepository;
-    private ClientProfileCoordinator coordinator;
+/** 인증된 역할별로 완성본 마이페이지를 표시하고 기존 상세 화면으로 연결한다. */
+public class ClientProfileActivity extends AppCompatActivity {
+    private AuthRepository auth;
     private ClientProfileBinder binder;
-    private View statePanel;
-    private View contentContainer;
-    private ProgressBar progressBar;
-    private BottomNavigationView bottomNavigation;
+    private ClientProfileCoordinator coordinator;
+    private ProfileActionRouter actions;
+    private User user;
+    private int generation;
+    private BottomNavigationView navigation;
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected boolean isManagerPage() { return false; }
+    protected AuthRepository provideAuthRepository() { return ServiceLocator.provideAuthRepository(this); }
+
+    @Override protected void onCreate(@Nullable Bundle state) {
+        super.onCreate(state);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_client_profile);
-        ClientBottomNavigationInsets.applyScrollableContent(findViewById(R.id.scrollClientProfile));
-
-        authRepository = ServiceLocator.provideAuthRepository(this);
+        auth = provideAuthRepository();
+        binder = new ClientProfileBinder(findViewById(android.R.id.content));
         coordinator = new ClientProfileCoordinator(this);
-        statePanel = findViewById(R.id.clientProfileStatePanel);
-        contentContainer = findViewById(R.id.clientProfileContentContainer);
-        progressBar = findViewById(R.id.progressClientProfile);
-        binder = new ClientProfileBinder(
-                findViewById(R.id.textClientProfileTitle),
-                findViewById(R.id.textClientProfileSubtitle),
-                findViewById(R.id.textClientProfileHeroTitle),
-                findViewById(R.id.textClientProfileHeroBody),
-                findViewById(R.id.textClientProfileRole),
-                findViewById(R.id.textClientProfileName),
-                findViewById(R.id.textClientProfileEmail),
-                findViewById(R.id.textClientProfilePhone)
-        );
-
-        findViewById(R.id.buttonClientProfileHealth).setOnClickListener(view ->
-                startActivity(HealthInfoActivity.createIntent(this))
-        );
-        findViewById(R.id.buttonClientProfileSignOut).setOnClickListener(view -> signOut());
-        bottomNavigation = findViewById(R.id.clientBottomNavigation);
-        bottomNavigation.setVisibility(View.GONE);
-        ClientBottomNavigationBinder.bind(
-                bottomNavigation,
-                ClientBottomNavigationTab.PROFILE,
-                tab -> ClientBottomNavigationRouter.open(
-                        this,
-                        ClientBottomNavigationTab.PROFILE,
-                        tab
-                )
-        );
-        contentContainer.setVisibility(View.GONE);
+        actions = new ProfileActionRouter(this);
+        navigation = findViewById(isManagerPage() ? R.id.profileManagerBottomNavigation : R.id.clientBottomNavigation);
+        findViewById(isManagerPage() ? R.id.clientBottomNavigation : R.id.profileManagerBottomNavigation).setVisibility(View.GONE);
+        ClientHomeInsets.apply(findViewById(R.id.scrollClientProfile), findViewById(R.id.profileTopBar), navigation);
+        if (isManagerPage()) {
+            navigation.setSelectedItemId(R.id.navManagerProfile);
+            navigation.setOnItemSelectedListener(item -> {
+                if (user == null || item.getItemId() == R.id.navManagerProfile) return false;
+                if (item.getItemId() == R.id.navManagerChat) startActivity(CompanionChatActivity.createIntent(this));
+                else {
+                    startActivity(ManagerActivity.createTabIntent(this, item.getItemId()));
+                    finish();
+                }
+                return false;
+            });
+        } else {
+            ClientBottomNavigationBinder.bind(navigation, ClientBottomNavigationTab.PROFILE,
+                    tab -> { if (user != null) ClientBottomNavigationRouter.open(this, ClientBottomNavigationTab.PROFILE, tab); });
+        }
+        findViewById(R.id.buttonProfileSettings).setOnClickListener(view -> {
+            if (user != null) startActivity(ProfileSettingsActivity.createIntent(this));
+        });
+        findViewById(R.id.buttonProfileNotifications).setOnClickListener(view -> actions.open(ProfileMenuItem.NOTIFICATIONS, user));
+        findViewById(R.id.buttonProfileEdit).setOnClickListener(view -> actions.showAccount(user, true));
+        findViewById(R.id.buttonProfileView).setOnClickListener(view -> actions.showAccount(user, false));
+        findViewById(R.id.buttonProfileWithdraw).setOnClickListener(view -> actions.open(ProfileMenuItem.SETTLEMENT, user));
+        findViewById(R.id.buttonProfileGeneral).setOnClickListener(view -> { if (isManagerPage()) actions.explainRole(user); });
+        findViewById(R.id.buttonProfileManager).setOnClickListener(view -> { if (!isManagerPage()) actions.explainRole(user); });
+        clearPrivateState();
     }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        reload();
+    @Override protected void onStart() { super.onStart(); reload(); }
+    @Override protected void onStop() {
+        generation++;
+        actions.dismiss();
+        clearPrivateState();
+        super.onStop();
     }
-
     private void reload() {
-        setLoading(true);
-        bottomNavigation.setVisibility(View.GONE);
-        StatePanelHelper.hide(statePanel);
-        authRepository.getCurrentUser(new RepositoryCallback<User>() {
-            @Override
-            public void onSuccess(User result) {
+        int attempt = ++generation;
+        clearPrivateState();
+        StatePanelHelper.hide(findViewById(R.id.clientProfileStatePanel));
+        findViewById(R.id.progressClientProfile).setVisibility(View.VISIBLE);
+        auth.getCurrentUser(new RepositoryCallback<User>() {
+            @Override public void onSuccess(User result) {
+                if (attempt != generation) return;
+                findViewById(R.id.progressClientProfile).setVisibility(View.GONE);
+                if (result == null) { showAuth(); return; }
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
-                    openProfileCompletion();
-                    return;
+                    startActivity(ProfileCompletionActivity.createIntent(ClientProfileActivity.this)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                    finish(); return;
                 }
-                if (!ClientBottomNavigationVisibility.isVisibleFor(result.getRole())) {
-                    setLoading(false);
-                    showPermissionState();
-                    return;
-                }
-                bottomNavigation.setVisibility(View.VISIBLE);
-                setLoading(false);
-                StatePanelHelper.hide(statePanel);
-                binder.bind(coordinator.createScreenModel(result));
-                contentContainer.setVisibility(View.VISIBLE);
+                boolean allowed = ProfileAccessPolicy.canOpenHome(result.getRole(), isManagerPage());
+                if (!allowed) { showPermission(); return; }
+                user = result;
+                binder.bind(coordinator.createScreenModel(result), isManagerPage(), item -> actions.open(item, user));
+                findViewById(R.id.clientProfileContentContainer).setVisibility(View.VISIBLE);
+                navigation.setVisibility(View.VISIBLE);
+                setHeaderEnabled(true);
             }
-
-            @Override
-            public void onError(String message) {
-                setLoading(false);
-                showAuthState();
+            @Override public void onError(String message) {
+                if (attempt != generation) return;
+                findViewById(R.id.progressClientProfile).setVisibility(View.GONE);
+                showAuth();
             }
         });
     }
-
-    private void signOut() {
-        authRepository.signOut();
-        openRoleSelection();
+    private void clearPrivateState() {
+        user = null;
+        binder.clear();
+        findViewById(R.id.clientProfileContentContainer).setVisibility(View.GONE);
+        navigation.setVisibility(View.GONE);
+        setHeaderEnabled(false);
     }
-
-    private void setLoading(boolean loading) {
-        progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
-        if (loading) {
-            contentContainer.setVisibility(View.GONE);
-        }
+    private void setHeaderEnabled(boolean enabled) {
+        for (int id : new int[]{R.id.buttonProfileSettings, R.id.buttonProfileNotifications,
+                R.id.buttonProfileGeneral, R.id.buttonProfileManager}) findViewById(id).setEnabled(enabled);
     }
-
-    private void showPermissionState() {
-        StatePanelHelper.show(
-                statePanel,
-                StatePanelHelper.Tone.WARNING,
-                getString(R.string.state_badge_permission),
-                getString(R.string.state_permission_title, getString(R.string.client_profile_title)),
-                getString(R.string.state_permission_body),
-                getString(R.string.state_action_open_home),
-                view -> ClientBottomNavigationRouter.open(
-                        this,
-                        ClientBottomNavigationTab.PROFILE,
-                        ClientBottomNavigationTab.HOME
-                ),
-                getString(R.string.state_action_open_login),
-                view -> openRoleSelection()
-        );
-        contentContainer.setVisibility(View.GONE);
+    private void showAuth() {
+        StatePanelHelper.show(findViewById(R.id.clientProfileStatePanel), StatePanelHelper.Tone.WARNING,
+                getString(R.string.state_badge_auth), getString(R.string.state_auth_title), getString(R.string.state_auth_body),
+                getString(R.string.final_profile_retry), view -> reload(),
+                getString(R.string.state_action_open_login), view -> openLogin());
     }
-
-    private void showAuthState() {
-        StatePanelHelper.show(
-                statePanel,
-                StatePanelHelper.Tone.WARNING,
-                getString(R.string.state_badge_auth),
-                getString(R.string.state_auth_title),
-                getString(R.string.state_auth_body),
-                getString(R.string.state_action_open_login),
-                view -> openRoleSelection(),
-                null,
-                null
-        );
-        contentContainer.setVisibility(View.GONE);
+    private void showPermission() {
+        StatePanelHelper.show(findViewById(R.id.clientProfileStatePanel), StatePanelHelper.Tone.WARNING,
+                getString(R.string.state_badge_permission), getString(R.string.state_permission_title, getString(R.string.client_profile_title)),
+                getString(R.string.state_permission_body), getString(R.string.state_action_open_login), view -> openLogin(), null, null);
     }
-
-    private void openRoleSelection() {
-        Intent intent = new Intent(this, RoleSelectionActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
-    private void openProfileCompletion() {
-        Intent intent = ProfileCompletionActivity.createIntent(this);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
+    private void openLogin() {
+        startActivity(new Intent(this, RoleSelectionActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
         finish();
     }
 }

@@ -28,9 +28,8 @@ public final class ClientProfileCoordinator {
                 context.getString(complete
                         ? R.string.client_profile_hero_body_complete
                         : R.string.client_profile_hero_body_incomplete),
-                context.getString(user.getRole() == UserRole.GUARDIAN
-                        ? R.string.login_role_guardian
-                        : R.string.login_role_patient),
+                context.getString(user.getRole() == UserRole.MANAGER ? R.string.login_role_manager
+                        : user.getRole() == UserRole.GUARDIAN ? R.string.login_role_guardian : R.string.login_role_patient),
                 name,
                 displayValue(user.getEmail()),
                 displayValue(user.getPhone())

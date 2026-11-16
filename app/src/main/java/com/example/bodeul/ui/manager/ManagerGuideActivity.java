@@ -412,7 +412,7 @@ public class ManagerGuideActivity extends AppCompatActivity {
         findViewById(R.id.navGuideHistory).setOnClickListener(view -> attemptExit(() ->
                 startActivity(new Intent(this, ManagerHistoryActivity.class))));
         findViewById(R.id.navGuideProfile).setOnClickListener(view -> attemptExit(() ->
-                startActivity(new Intent(this, ManagerProfileActivity.class))));
+                startActivity(new Intent(this, com.example.bodeul.ui.profile.ManagerMyPageActivity.class))));
         findViewById(R.id.buttonGuidePreConsultationComplete).setOnClickListener(view -> {
             if (isPresentationStep("PRE_CONSULTATION")
                     && !managerGuidePreConsultationBinder.isConfirmed()) {

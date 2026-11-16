@@ -112,7 +112,12 @@
             android:exported="false" />
         <activity
             android:name=".ui.profile.ClientProfileActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome"
             android:exported="false" />
+        <activity android:name=".ui.profile.ManagerMyPageActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
+        <activity android:name=".ui.profile.ProfileSettingsActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity
             android:name=".ui.support.ClientSupportActivity"
             android:exported="false" />
