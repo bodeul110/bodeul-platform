@@ -25,6 +25,7 @@ import com.example.bodeul.R;
 import com.example.bodeul.data.AuthRepository;
 import com.example.bodeul.data.ServiceLocator;
 import com.example.bodeul.firebase.ClientSupportPushContract;
+import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.util.StatePanelHelper;
@@ -72,6 +73,7 @@ public abstract class SupportScreenActivity extends AppCompatActivity {
         findViewById(R.id.supportFilterAnswered).setOnClickListener(view -> model.filter(SupportViewModel.Filter.ANSWERED));
         findViewById(R.id.supportCategory).setOnClickListener(view -> chooseCategory());
         findViewById(R.id.supportAttachment).setOnClickListener(view -> showAttachmentNotice());
+        findViewById(R.id.supportBookingRetry).setOnClickListener(view -> model.refresh());
         findViewById(R.id.supportSubmit).setOnClickListener(view -> {
             hideKeyboard();
             if (model.mode() == SupportViewModel.Mode.LIST) model.compose(); else model.submit();
@@ -114,14 +116,17 @@ public abstract class SupportScreenActivity extends AppCompatActivity {
             boolean permission = gate == SupportViewModel.Gate.PERMISSION;
             boolean profile = gate == SupportViewModel.Gate.PROFILE;
             StatePanelHelper.show(findViewById(R.id.supportState), StatePanelHelper.Tone.WARNING,
-                    getString(error ? R.string.final_support_title : R.string.state_badge_auth),
-                    getString(error ? R.string.final_support_read_error : profile ? R.string.profile_completion_title : R.string.state_auth_title),
+                    getString(error ? R.string.final_support_title : permission ? R.string.state_badge_permission : R.string.state_badge_auth),
+                    permission ? getString(R.string.state_permission_title, getString(R.string.final_support_title))
+                            : getString(error ? R.string.final_support_read_error : profile ? R.string.profile_completion_title : R.string.state_auth_title),
                     getString(error ? R.string.final_support_read_error_body : profile ? R.string.profile_completion_subtitle : permission ? R.string.state_permission_body : R.string.state_auth_body),
-                    getString(error ? R.string.final_support_retry : profile ? R.string.final_support_complete_profile : R.string.state_action_open_login),
+                    getString(error ? R.string.final_support_retry : permission ? R.string.state_action_open_home
+                            : profile ? R.string.final_support_complete_profile : R.string.state_action_open_login),
                     view -> {
                         if (error) model.refresh();
                         else {
-                            startActivity((gate == SupportViewModel.Gate.PROFILE ? ProfileCompletionActivity.createIntent(this)
+                            startActivity((permission ? AuthFlowRouter.createPostAuthIntent(this, model.currentUser())
+                                    : profile ? ProfileCompletionActivity.createIntent(this)
                                     : new Intent(this, RoleSelectionActivity.class))
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
                             finish();

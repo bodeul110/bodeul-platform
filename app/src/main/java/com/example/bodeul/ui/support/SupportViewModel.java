@@ -22,6 +22,7 @@ public final class SupportViewModel extends ViewModel {
     public enum Mode { LIST, COMPOSE, DETAIL }
     public enum Filter { ALL, WAITING, ANSWERED }
     public enum Gate { NONE, AUTH, PROFILE, PERMISSION, ERROR }
+    public enum ContextState { CHECKING, READY, ERROR }
     private final AuthRepository auth;
     final SupportSource source;
     private final SavedStateHandle saved;
@@ -31,6 +32,7 @@ public final class SupportViewModel extends ViewModel {
     private int generation, operation;
     private boolean active, loading, submitting, ready, recovery;
     private Gate gate = Gate.NONE;
+    private ContextState contextState = ContextState.CHECKING;
     private int notice;
     private String contextId = "";
 
@@ -57,8 +59,11 @@ public final class SupportViewModel extends ViewModel {
     public boolean isSubmitting() { return submitting; }
     public boolean isReady() { return ready && active && gate == Gate.NONE; }
     public Gate gate() { return gate; }
+    public ContextState contextState() { return contextState; }
+    User currentUser() { return user; }
     public boolean hasDraft() { return !title().isEmpty() || !body().isEmpty() || !category().isEmpty(); }
-    public boolean canSubmit() { return isReady() && !submitting && !loading && source.hasCategory(category())
+    public boolean canSubmit() { return isReady() && contextState == ContextState.READY
+            && !submitting && !loading && source.hasCategory(category())
             && !title().trim().isEmpty() && !body().trim().isEmpty(); }
     public int consumeNotice() { int result = notice; notice = 0; return result; }
 
@@ -83,37 +88,46 @@ public final class SupportViewModel extends ViewModel {
         loading = true;
         ready = false;
         gate = Gate.NONE;
+        contextId = "";
+        contextState = ContextState.CHECKING;
         changed();
         auth.getCurrentUser(new RepositoryCallback<User>() {
             @Override public void onSuccess(User result) {
                 if (!current(token)) return;
                 if (!authenticate(result)) return;
                 if (submitting) { loading = false; changed(); return; }
+                // 예약 확인은 새 접수의 조건일 뿐, 본인 문의·답변 조회를 막지 않는다.
                 source.validateContext(user, appointmentId(), new RepositoryCallback<String>() {
                     @Override public void onSuccess(String id) {
                         if (!current(token)) return;
                         contextId = id;
-                        source.load(user, new RepositoryCallback<List<SupportTicket>>() {
-                            @Override public void onSuccess(List<SupportTicket> result) {
-                                if (!current(token)) return;
-                                tickets = result;
-                                loading = false;
-                                ready = true;
-                                if (recovery) {
-                                    recovery = false;
-                                    saved.set("pending", false);
-                                    saved.set("mode", Mode.LIST.name());
-                                    notice = R.string.final_support_check_submission;
-                                }
-                                if (mode() == Mode.DETAIL && selectedTicket() == null) {
-                                    saved.set("mode", Mode.LIST.name());
-                                    notice = R.string.final_support_not_found;
-                                }
-                                source.markRead(user, result);
-                                changed();
-                            }
-                            @Override public void onError(String message) { if (current(token)) fail(Gate.ERROR); }
-                        });
+                        contextState = ContextState.READY;
+                        changed();
+                    }
+                    @Override public void onError(String message) {
+                        if (!current(token)) return;
+                        contextState = ContextState.ERROR;
+                        changed();
+                    }
+                });
+                source.load(user, new RepositoryCallback<List<SupportTicket>>() {
+                    @Override public void onSuccess(List<SupportTicket> result) {
+                        if (!current(token)) return;
+                        tickets = result;
+                        loading = false;
+                        ready = true;
+                        if (recovery) {
+                            recovery = false;
+                            saved.set("pending", false);
+                            saved.set("mode", Mode.LIST.name());
+                            notice = R.string.final_support_check_submission;
+                        }
+                        if (mode() == Mode.DETAIL && selectedTicket() == null) {
+                            saved.set("mode", Mode.LIST.name());
+                            notice = R.string.final_support_not_found;
+                        }
+                        source.markRead(user, result);
+                        changed();
                     }
                     @Override public void onError(String message) { if (current(token)) fail(Gate.ERROR); }
                 });

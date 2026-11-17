@@ -35,6 +35,12 @@ final class SupportScreenBinder {
         visible(R.id.supportSubmit, ready && mode != SupportViewModel.Mode.DETAIL);
         visible(R.id.supportStateScroll, model.gate() != SupportViewModel.Gate.NONE);
         visible(R.id.supportBookingContext, !model.appointmentId().isEmpty());
+        SupportViewModel.ContextState context = model.contextState();
+        text(R.id.supportBookingContext, activity.getString(context == SupportViewModel.ContextState.ERROR
+                ? R.string.final_support_booking_error : context == SupportViewModel.ContextState.CHECKING
+                ? R.string.final_support_booking_checking : R.string.final_support_booking_context));
+        visible(R.id.supportBookingRetry, !model.appointmentId().isEmpty() && context == SupportViewModel.ContextState.ERROR);
+        activity.findViewById(R.id.supportBookingRetry).setEnabled(ready && !model.isSubmitting());
         activity.findViewById(R.id.supportFilterAll).setSelected(model.filter() == SupportViewModel.Filter.ALL);
         activity.findViewById(R.id.supportFilterWaiting).setSelected(model.filter() == SupportViewModel.Filter.WAITING);
         activity.findViewById(R.id.supportFilterAnswered).setSelected(model.filter() == SupportViewModel.Filter.ANSWERED);

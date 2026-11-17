@@ -41,6 +41,12 @@
                     <com.google.android.material.textview.MaterialTextView android:id="@+id/supportBookingContext" style="@style/FinalSupportLabel"
                         android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
                         android:textColor="@color/final_text_accent_accessible" android:text="@string/final_support_booking_context" android:visibility="gone"/>
+                    <com.google.android.material.button.MaterialButton android:id="@+id/supportBookingRetry"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:minHeight="48dp" android:layout_marginTop="4dp"
+                        android:fontFamily="@font/pretendard_medium" android:letterSpacing="0"
+                        android:text="@string/final_support_booking_retry" android:textColor="@color/final_text_accent_accessible"
+                        android:visibility="gone"/>
                     <com.google.android.material.textview.MaterialTextView style="@style/FinalSupportLabel" android:layout_width="match_parent"
                         android:layout_height="wrap_content" android:layout_marginTop="30dp" android:labelFor="@id/supportCategory" android:text="@string/final_support_category"/>
                     <LinearLayout android:id="@+id/supportCategory" android:layout_width="match_parent" android:layout_height="wrap_content"

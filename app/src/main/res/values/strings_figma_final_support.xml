@@ -31,6 +31,9 @@
     <string name="final_support_check_submission">접수 결과를 확인하지 못했습니다. 중복 접수를 피하려면 목록을 먼저 확인해 주세요. 작성 내용은 유지됩니다.</string>
     <string name="final_support_not_found">해당 문의를 찾을 수 없습니다.</string>
     <string name="final_support_booking_context">예약에 연결된 문의</string>
+    <string name="final_support_booking_checking">연결할 예약을 확인하고 있습니다. 확인이 끝나면 문의를 접수할 수 있습니다.</string>
+    <string name="final_support_booking_error">예약을 확인하지 못해 새 문의를 접수할 수 없습니다. 기존 문의와 답변은 계속 볼 수 있습니다.</string>
+    <string name="final_support_booking_retry">예약 다시 확인</string>
     <string name="final_support_response_missing">답변 내용을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.</string>
     <string name="final_support_response_author">답변 담당자: %1$s</string>
     <string name="final_support_date_missing">날짜 확인 중</string>

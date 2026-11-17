@@ -153,9 +153,99 @@ public class SupportViewModelTest {
     @Test public void failedBookingContextDoesNotSilentlyBecomeGenericInquiry() {
         Harness h = new Harness(false);
         h.failContext = true; h.model = h.create("booking", ""); h.start();
-        assertEquals(SupportViewModel.Gate.ERROR, h.model.gate());
+        assertEquals(SupportViewModel.Gate.NONE, h.model.gate());
+        assertTrue(h.model.isReady());
+        assertEquals(SupportViewModel.ContextState.ERROR, h.model.contextState());
+        h.draft();
         assertFalse(h.model.submit());
         assertEquals(0, h.writes);
+    }
+
+    @Test public void failedBookingStillLoadsOwnedDeepLinkAndMarksAnswerRead() {
+        Harness h = new Harness(false);
+        h.failContext = true; h.model = h.create("booking", "answered"); h.start();
+        assertEquals(1, h.reads);
+        assertEquals(1, h.readMarks);
+        assertEquals(SupportViewModel.Mode.DETAIL, h.model.mode());
+        assertEquals("answered", h.model.selectedTicket().id);
+        assertEquals("답변 첫 줄\n답변 둘째 줄", h.model.selectedTicket().response);
+        h.model.list(false);
+        assertEquals(2, h.model.visibleTickets().size());
+        h.model.onPush("pending");
+        assertEquals("pending", h.model.selectedTicket().id);
+    }
+
+    @Test public void pendingBookingAllowsReadingButCannotSubmitUntilVerified() {
+        Harness h = new Harness(false);
+        h.deferContext = true; h.model = h.create("booking", "answered"); h.start();
+        assertTrue(h.model.isReady());
+        assertEquals("answered", h.model.selectedTicket().id);
+        assertEquals(SupportViewModel.ContextState.CHECKING, h.model.contextState());
+        h.draft();
+        assertFalse(h.model.submit());
+        assertEquals(0, h.writes);
+        h.context.onSuccess(h.detail("booking"));
+        assertTrue(h.model.submit());
+        assertEquals("booking", h.payload[1]);
+    }
+
+    @Test public void bookingRetryPreservesDraftAndNeverFallsBackToGenericInquiry() {
+        Harness h = new Harness(false);
+        h.failContext = true; h.model = h.create("booking", ""); h.start(); h.draft();
+        h.failContext = false; h.deferContext = true; h.model.refresh();
+        assertEquals(" 제목 ", h.model.title());
+        assertEquals("OTHER", h.model.category());
+        assertFalse(h.model.submit());
+        h.context.onSuccess(h.detail("booking"));
+        assertTrue(h.model.submit());
+        assertEquals("booking", h.payload[1]);
+        assertEquals(1, h.writes);
+    }
+
+    @Test public void staleBookingSuccessCannotUnlockFailedValidationAfterReturn() {
+        Harness h = new Harness(false);
+        h.deferContext = true; h.model = h.create("booking", ""); h.start(); h.draft();
+        RepositoryCallback<AppointmentRequestDetail> old = h.context;
+        h.model.stop(); h.deferContext = false; h.failContext = true; h.start();
+        old.onSuccess(h.detail("booking"));
+        assertEquals(SupportViewModel.ContextState.ERROR, h.model.contextState());
+        assertFalse(h.model.submit());
+        assertEquals(0, h.writes);
+    }
+
+    @Test public void staleBookingCannotAttachPreviousAccountsReservation() {
+        Harness h = new Harness(false);
+        h.deferContext = true; h.model = h.create("booking", ""); h.start();
+        RepositoryCallback<AppointmentRequestDetail> old = h.context;
+        h.model.stop(); h.user = user("other", UserRole.PATIENT); h.start();
+        old.onSuccess(h.detail("booking"));
+        assertEquals("", h.model.appointmentId());
+        h.draft();
+        assertTrue(h.model.submit());
+        assertEquals("", h.payload[1]);
+        assertEquals("other", ((User) h.payload[0]).getId());
+    }
+
+    @Test public void bookingSuccessCannotHideInquiryReadFailure() {
+        Harness h = new Harness(false);
+        h.failRead = true; h.deferContext = true; h.model = h.create("booking", "answered"); h.start();
+        h.context.onSuccess(h.detail("booking"));
+        assertEquals(SupportViewModel.Gate.ERROR, h.model.gate());
+        assertFalse(h.model.isReady());
+        assertNull(h.model.selectedTicket());
+        assertFalse(h.model.submit());
+    }
+
+    @Test public void wrongRoleKeepsAuthenticatedUserForPermissionRecoveryWithoutReading() {
+        for (boolean managerMode : new boolean[]{false, true}) {
+            Harness h = new Harness(managerMode);
+            h.user = user("owner", managerMode ? UserRole.PATIENT : UserRole.MANAGER);
+            h.start();
+            assertEquals(SupportViewModel.Gate.PERMISSION, h.model.gate());
+            assertEquals(h.user, h.model.currentUser());
+            assertEquals(0, h.reads);
+            assertFalse(h.model.submit());
+        }
     }
 
     @Test public void writeFailureKeepsDraftAndRequiresFreshListBeforeRetry() {
@@ -269,10 +359,11 @@ public class SupportViewModelTest {
 
     private static final class Harness {
         User user;
-        boolean failRead, failContext, deferRead, deferAuth;
+        boolean failRead, failContext, deferRead, deferAuth, deferContext;
         int reads, writes, readMarks;
         Object[] payload;
         RepositoryCallback<User> authCallback;
+        RepositoryCallback<AppointmentRequestDetail> context;
         RepositoryCallback<List<ClientSupportRequest>> read;
         RepositoryCallback<Object> save;
         final List<ClientSupportRequest> clientRows = new ArrayList<>(Arrays.asList(client("pending", "owner", UserRole.PATIENT, false), client("answered", "owner", UserRole.PATIENT, true)));
@@ -309,8 +400,9 @@ public class SupportViewModelTest {
             BookingRepository booking = (BookingRepository) Proxy.newProxyInstance(BookingRepository.class.getClassLoader(), new Class[]{BookingRepository.class}, (p, m, a) -> {
                 if (m.getName().equals("getAppointmentRequestDetail")) {
                     RepositoryCallback<AppointmentRequestDetail> callback = (RepositoryCallback<AppointmentRequestDetail>) a[2];
-                    if (failContext) callback.onError("예약 확인 실패");
-                    else callback.onSuccess(new AppointmentRequestDetail(new AppointmentRequest((String) a[1], user.getId(), "", "테스트 병원", "내과", "일시", "정문", "", AppointmentStatus.REQUESTED, ""), user, null, null, null, null, null));
+                    if (deferContext) context = callback;
+                    else if (failContext) callback.onError("예약 확인 실패");
+                    else callback.onSuccess(detail((String) a[1]));
                 }
                 return null;
             });
@@ -318,6 +410,9 @@ public class SupportViewModelTest {
             model = create("", "");
         }
         SupportViewModel create(String booking, String focus) { state = new SavedStateHandle(); return new SupportViewModel(auth, source, state, booking, focus); }
+        AppointmentRequestDetail detail(String id) {
+            return new AppointmentRequestDetail(new AppointmentRequest(id, user.getId(), "", "테스트 병원", "내과", "일시", "정문", "", AppointmentStatus.REQUESTED, ""), user, null, null, null, null, null);
+        }
         void start() { model.start(); }
         void draft() { model.compose(); model.selectCategory("OTHER"); model.setDraft(" 제목 ", " 본문\n다음 줄 "); }
         void restore() {

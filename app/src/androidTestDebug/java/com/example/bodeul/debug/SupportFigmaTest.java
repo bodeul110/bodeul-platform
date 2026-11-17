@@ -9,6 +9,8 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 
 import android.content.Context;
+import android.app.Activity;
+import android.app.Instrumentation;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
@@ -25,10 +27,12 @@ import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.example.bodeul.R;
+import com.example.bodeul.MainActivity;
 import com.example.bodeul.data.*;
 import com.example.bodeul.domain.model.*;
 import com.example.bodeul.firebase.ClientSupportPushContract;
 import com.example.bodeul.ui.support.*;
+import com.example.bodeul.ui.manager.ManagerActivity;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import java.io.File;
@@ -42,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 public class SupportFigmaTest {
     private User user;
-    private boolean managerMode, failRead, empty, delayedAuth;
+    private boolean managerMode, failRead, failContext, empty, delayedAuth;
     private int writes, marks;
     private Object[] payload;
     private RepositoryCallback<Object> save;
@@ -78,7 +82,9 @@ public class SupportFigmaTest {
         });
         BookingRepository booking = (BookingRepository) Proxy.newProxyInstance(BookingRepository.class.getClassLoader(), new Class[]{BookingRepository.class}, (p, m, a) -> {
             if (m.getName().equals("getAppointmentRequestDetail")) {
-                ((RepositoryCallback<AppointmentRequestDetail>) a[2]).onSuccess(new AppointmentRequestDetail(
+                RepositoryCallback<AppointmentRequestDetail> callback = (RepositoryCallback<AppointmentRequestDetail>) a[2];
+                if (failContext) callback.onError("예약 확인 실패");
+                else callback.onSuccess(new AppointmentRequestDetail(
                         new AppointmentRequest((String) a[1], "owner", "", "테스트 병원", "내과", "예약 일시", "정문", "", AppointmentStatus.REQUESTED, ""), user, null, null, null, null, null));
             } else throw new AssertionError("예약 변경 금지: " + m.getName());
             return null;
@@ -218,6 +224,84 @@ public class SupportFigmaTest {
         }
     }
 
+    @Test public void bookingFailureKeepsAnswerReadableAndRetryPreservesBlockedDraft() {
+        failContext = true;
+        try (ActivityScenario<SupportFigmaPreviewActivity> scenario = launch("booking-id", "answered")) {
+            onView(withId(R.id.supportResponseBody)).check(matches(withText(answer)));
+            assertTrue(marks > 0);
+            onView(withId(R.id.supportBack)).perform(click());
+            assertRows(scenario, 3);
+            onView(withId(R.id.supportSubmit)).perform(click());
+            onView(withId(R.id.supportBookingContext)).check(matches(withText(R.string.final_support_booking_error)));
+            choose("RESERVATION"); fill(scenario, "예약 문의", "예약 확인을 기다리는 본문");
+            onView(withId(R.id.supportSubmit)).check(matches(org.hamcrest.Matchers.not(isEnabled())));
+            scenario.recreate();
+            onView(withId(R.id.supportTitle)).check(matches(withText("예약 문의")));
+            onView(withId(R.id.supportSubmit)).check(matches(org.hamcrest.Matchers.not(isEnabled())));
+            onView(withId(R.id.supportBookingRetry)).perform(scrollTo());
+            scenario.onActivity(a -> {
+                TextView retry = a.findViewById(R.id.supportBookingRetry);
+                assertEquals(0f, retry.getLetterSpacing(), 0f);
+                assertTrue(retry.getHeight() >= 48 * a.getResources().getDisplayMetrics().density);
+            });
+            layout(scenario); geometry(scenario); capture("booking-error");
+            assertEquals(0, writes);
+            failContext = false;
+            onView(withId(R.id.supportBookingRetry)).perform(click());
+            onView(withId(R.id.supportTitle)).check(matches(withText("예약 문의")));
+            onView(withId(R.id.supportBody)).check(matches(withText("예약 확인을 기다리는 본문")));
+            onView(withId(R.id.supportCategoryText)).check(matches(withText(R.string.client_support_category_reservation)));
+            onView(withId(R.id.supportSubmit)).check(matches(isEnabled()));
+            onView(withId(R.id.supportSubmit)).perform(click());
+            assertEquals(1, writes);
+            assertEquals("booking-id", payload[1]);
+            scenario.onActivity(a -> save.onSuccess(rows()));
+        }
+    }
+
+    @Test public void wrongRoleShowsPermissionAndReturnsToCurrentRolesHome() {
+        for (UserRole screenRole : new UserRole[]{UserRole.MANAGER, UserRole.PATIENT}) {
+            configure(screenRole);
+            user = new User("owner", managerMode ? UserRole.PATIENT : UserRole.MANAGER, "사용자", "", "01000000000");
+            try (ActivityScenario<SupportFigmaPreviewActivity> scenario = launch("", "")) {
+                assertPermissionPanel();
+                layout(scenario); geometry(scenario); capture(managerMode ? "permission-patient" : "permission-manager");
+                assertHomeNavigation(managerMode ? MainActivity.class : ManagerActivity.class);
+                assertEquals(0, writes);
+                assertEquals(0, marks);
+            }
+        }
+    }
+
+    @Test public void roleChangeOnReturnClearsDraftAndShowsPermissionInsteadOfAuthFailure() {
+        try (ActivityScenario<SupportFigmaPreviewActivity> scenario = launch("booking-id", "")) {
+            onView(withId(R.id.supportSubmit)).perform(click());
+            choose("OTHER"); fill(scenario, "이전 역할 초안", "이전 역할 본문");
+            scenario.moveToState(Lifecycle.State.CREATED);
+            user = new User("owner", UserRole.MANAGER, "사용자", "", "01000000000");
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            assertPermissionPanel();
+            scenario.onActivity(a -> {
+                assertEquals("", ((EditText) a.findViewById(R.id.supportTitle)).getText().toString());
+                assertEquals("", ((EditText) a.findViewById(R.id.supportBody)).getText().toString());
+                assertEquals(View.GONE, a.findViewById(R.id.supportScroll).getVisibility());
+            });
+            assertHomeNavigation(ManagerActivity.class);
+            assertEquals(0, writes);
+        }
+    }
+
+    @Test public void missingAuthenticationStillUsesLoginGate() {
+        user = null;
+        try (ActivityScenario<SupportFigmaPreviewActivity> scenario = launch("", "")) {
+            onView(withId(R.id.textStatePanelBadge)).check(matches(withText(R.string.state_badge_auth)));
+            onView(withId(R.id.textStatePanelTitle)).check(matches(withText(R.string.state_auth_title)));
+            onView(withId(R.id.buttonStatePanelPrimary)).check(matches(withText(R.string.state_action_open_login)));
+            assertEquals(0, writes);
+            assertEquals(0, marks);
+        }
+    }
+
     @Test public void accountChangeAndLateAuthCannotExposePreviousDraft() {
         try (ActivityScenario<SupportFigmaPreviewActivity> scenario = launch("", "")) {
             onView(withId(R.id.supportSubmit)).perform(click());
@@ -294,6 +378,34 @@ public class SupportFigmaTest {
                     answered ? response : "", 1794794400000L, "운영 담당자", false, 0, 0, 0));
         }
         return rows;
+    }
+    private static void assertPermissionPanel() {
+        onView(withId(R.id.textStatePanelBadge)).check(matches(withText(R.string.state_badge_permission)));
+        onView(withId(R.id.textStatePanelTitle)).check(matches(withText(context().getString(
+                R.string.state_permission_title, context().getString(R.string.final_support_title)))));
+        onView(withId(R.id.textStatePanelBody)).check(matches(withText(R.string.state_permission_body)));
+        onView(withId(R.id.buttonStatePanelPrimary)).check(matches(withText(R.string.state_action_open_home)));
+    }
+    private static void assertHomeNavigation(Class<?> target) {
+        List<Intent> launched = new ArrayList<>();
+        // 실제 홈 저장소는 실행하지 않고 화면에서 만든 이동 대상·태스크 경계를 확인한다.
+        Instrumentation.ActivityMonitor monitor = new Instrumentation.ActivityMonitor() {
+            @Override public Instrumentation.ActivityResult onStartActivity(Intent intent) {
+                launched.add(intent);
+                return new Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null);
+            }
+        };
+        InstrumentationRegistry.getInstrumentation().addMonitor(monitor);
+        try {
+            onView(withId(R.id.buttonStatePanelPrimary)).perform(scrollTo(), click());
+            assertEquals(1, launched.size());
+            Intent intent = launched.get(0);
+            assertEquals(target.getName(), intent.getComponent().getClassName());
+            assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK,
+                    intent.getFlags() & (Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        } finally {
+            InstrumentationRegistry.getInstrumentation().removeMonitor(monitor);
+        }
     }
     private static String repeat(String value, int n) { StringBuilder result = new StringBuilder(); for (int i = 0; i < n; i++) result.append(value).append('\n'); return result.toString(); }
     private static Context context() { return InstrumentationRegistry.getInstrumentation().getTargetContext(); }
