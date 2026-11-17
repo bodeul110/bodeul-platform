@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_support_title">고객센터</string>
+    <string name="final_support_all">전체</string>
+    <string name="final_support_waiting">답변대기</string>
+    <string name="final_support_answered">답변완료</string>
+    <string name="final_support_compose">1:1 문의하기</string>
+    <string name="final_support_heading">궁금한 사항을 문의해주세요.</string>
+    <string name="final_support_hours">고객센터 운영시간 월~금 09:00 ~ 18:00\n점심시간 12:00 ~ 13:00</string>
+    <string name="final_support_category">문의 분야</string>
+    <string name="final_support_category_hint">문의 분야를 선택해주세요.</string>
+    <string name="final_support_content">상세 내용</string>
+    <string name="final_support_title_hint">제목을 입력해주세요.</string>
+    <string name="final_support_body_hint">상세하게 작성해주시면 문제를 빠르게\n해결드리겠습니다.</string>
+    <string name="final_support_cancel">취소</string>
+    <string name="final_support_confirm">확인</string>
+    <string name="final_support_complete_profile">프로필 입력</string>
+    <string name="final_support_attachment">사진 첨부</string>
+    <string name="final_support_attachment_unavailable">현재 문의에는 사진을 첨부할 수 없습니다. 내용을 글로 작성해 주세요.</string>
+    <string name="final_support_pending_message">아직 관리자의 답변을\n기다리는 중입니다.</string>
+    <string name="final_support_empty">아직 등록된 문의가 없습니다.</string>
+    <string name="final_support_filter_empty">해당 상태의 문의가 없습니다.</string>
+    <string name="final_support_read_error">문의를 불러오지 못했습니다.</string>
+    <string name="final_support_read_error_body">문의와 연결된 예약을 다시 확인해 주세요.</string>
+    <string name="final_support_retry">다시 시도</string>
+    <string name="final_support_discard_title">작성을 취소할까요?</string>
+    <string name="final_support_discard_body">작성 중인 문의 내용이 삭제됩니다.</string>
+    <string name="final_support_discard">작성 취소</string>
+    <string name="final_support_continue">계속 작성</string>
+    <string name="final_support_sending">문의 접수 중입니다.</string>
+    <string name="final_support_check_submission">접수 결과를 확인하지 못했습니다. 중복 접수를 피하려면 목록을 먼저 확인해 주세요. 작성 내용은 유지됩니다.</string>
+    <string name="final_support_not_found">해당 문의를 찾을 수 없습니다.</string>
+    <string name="final_support_booking_context">예약에 연결된 문의</string>
+    <string name="final_support_booking_checking">연결할 예약을 확인하고 있습니다. 확인이 끝나면 문의를 접수할 수 있습니다.</string>
+    <string name="final_support_booking_error">예약을 확인하지 못해 새 문의를 접수할 수 없습니다. 기존 문의와 답변은 계속 볼 수 있습니다.</string>
+    <string name="final_support_booking_retry">예약 다시 확인</string>
+    <string name="final_support_response_missing">답변 내용을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.</string>
+    <string name="final_support_response_author">답변 담당자: %1$s</string>
+    <string name="final_support_date_missing">날짜 확인 중</string>
+</resources>

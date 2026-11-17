@@ -19,6 +19,8 @@
 
 ## 최근 화면 구현 근거
 
+- [완성본 고객센터·문의](figma-final-support-implementation-2026-11-16.md)
+  - 목록·작성·답변 상세, 기존 역할별 저장·예약 연결·알림 유지, 초안·인증 수명주기·IME 검증과 사진 첨부 미연동 경계
 - [완성본 일반·매니저 마이페이지와 설정 진입](figma-final-profile-implementation-2026-11-16.md)
   - 기존 건강정보·문의·서류·이력·로그아웃 유지, 인증 수명주기와 확대 글꼴 검증, 미연동 상세 기능 구분
 - [완성본 동행 진행·단계별 입력](figma-final-companion-progress-2026-11-13.md)

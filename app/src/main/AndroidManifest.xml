@@ -81,6 +81,8 @@
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".ui.manager.ManagerSupportActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity
             android:name=".ui.manager.ManagerDocumentRegistrationActivity"
@@ -120,6 +122,8 @@
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity
             android:name=".ui.support.ClientSupportActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome"
+            android:windowSoftInputMode="adjustResize"
             android:exported="false" />
         <activity
             android:name=".ui.manager.ManagerActivity"

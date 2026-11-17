@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="final_support_answer_surface">#E7F5FF</color>
+    <style name="FinalSupportLabel" parent="FinalHomeCaption">
+        <item name="android:textColor">@color/final_text_primary</item>
+        <item name="android:textSize">13sp</item>
+        <item name="lineHeight">18sp</item>
+    </style>
+    <style name="FinalSupportInput" parent="Widget.AppCompat.EditText">
+        <item name="android:fontFamily">@font/pretendard_medium</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="lineHeight">20sp</item>
+        <item name="android:minHeight">50dp</item>
+        <item name="android:padding">15dp</item>
+        <item name="android:textColor">@color/final_text_primary</item>
+        <item name="android:textColorHint">@color/final_text_hint</item>
+        <item name="android:background">@drawable/bg_final_support_input</item>
+        <item name="backgroundTint">@null</item>
+    </style>
+    <style name="FinalSupportFilter" parent="BodeulFinalLink">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/final_text_primary</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:background">@drawable/bg_final_support_filter</item>
+    </style>
+    <style name="FinalSupportBadge" parent="FinalHomeCaption">
+        <item name="android:textColor">@color/final_text_on_primary</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:paddingTop">7dp</item>
+        <item name="android:paddingBottom">7dp</item>
+        <item name="android:background">@drawable/bg_final_support_badge</item>
+    </style>
+</resources>
