@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="final_documents_title">서류 관리</string>
+    <string name="final_documents_registration">자격 서류 등록</string>
+    <string name="final_documents_registration_heading">마지막으로\n매니저 자격 인증을 해주세요.</string>
+    <string name="final_documents_registration_body">모든 매니저는 필수 자격 검증 후 활동할 수 있어요.</string>
+    <string name="final_documents_heading">보유한 자격증을 관리해 보세요.</string>
+    <string name="final_documents_body">등록된 서류는 관리자 검토 후 인증 상태가 반영됩니다.</string>
+    <string name="final_documents_upload_title">자격 서류 업로드</string>
+    <string name="final_documents_privacy">인증 목적으로만 사용되며,\n보관기간이 지나면 안전하게 파기됩니다.</string>
+    <string name="final_documents_required">(필수 · 1종)</string>
+    <string name="final_documents_format">JPEG, PNG, WebP · 10MB 이하\n주민등록번호 등 불필요한 개인정보는 가려주세요.</string>
+    <string name="final_documents_upload">+ 파일 업로드</string>
+    <string name="final_documents_replace">다시 첨부</string>
+    <string name="final_documents_preview">서류 미리보기</string>
+    <string name="final_documents_add">+ 등록하기</string>
+    <string name="final_documents_draft">제출 전</string>
+    <string name="final_documents_pending">검토 중</string>
+    <string name="final_documents_approved">인증 완료</string>
+    <string name="final_documents_rejected">서류를 다시 확인하고 제출해주세요.</string>
+    <string name="final_documents_replacement">현재 허용되는 자격 증빙으로 교체해주세요.</string>
+    <string name="final_documents_history">등록 이력·활동 일정</string>
+    <string name="final_documents_submit">검토 요청</string>
+    <string name="final_documents_retry">다시 검토 요청</string>
+    <string name="final_documents_loading">서류 정보를 확인하고 있어요.</string>
+    <string name="final_documents_identity_changed">로그인 상태가 변경되었습니다. 서류 정보를 다시 확인한 뒤 선택해주세요.</string>
+    <string name="final_documents_close">서류 상세 닫기</string>
+</resources>

@@ -18,6 +18,7 @@ public final class ManagerDocumentRegistrationScreenModel {
     private final String reviewBodyText;
     private final String requestButtonText;
     private final boolean requestButtonEnabled;
+    private final ManagerDocumentDisplayState displayState;
 
     public ManagerDocumentRegistrationScreenModel(
             String modeText,
@@ -29,7 +30,8 @@ public final class ManagerDocumentRegistrationScreenModel {
             String reviewTitleText,
             String reviewBodyText,
             String requestButtonText,
-            boolean requestButtonEnabled
+            boolean requestButtonEnabled,
+            ManagerDocumentDisplayState displayState
     ) {
         this.modeText = modeText;
         this.statusBadgeText = statusBadgeText;
@@ -43,11 +45,14 @@ public final class ManagerDocumentRegistrationScreenModel {
         this.reviewBodyText = reviewBodyText;
         this.requestButtonText = requestButtonText;
         this.requestButtonEnabled = requestButtonEnabled;
+        this.displayState = displayState;
     }
 
     public String getModeText() {
         return modeText;
     }
+
+    public ManagerDocumentDisplayState getDisplayState() { return displayState; }
 
     public String getStatusBadgeText() {
         return statusBadgeText;

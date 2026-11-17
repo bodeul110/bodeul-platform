@@ -6,17 +6,20 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.example.bodeul.MainActivity;
 import com.example.bodeul.R;
@@ -66,34 +69,46 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
     private View contentContainer;
     private ProgressBar progressBar;
     private View buttonBack;
-    private View buttonClose;
-    private View buttonSkip;
     private MaterialButton buttonRequest;
     private final ManagerQualificationCompletionDialogGate completionDialogGate =
             new ManagerQualificationCompletionDialogGate();
     private boolean operationInFlight;
     private boolean screenLoading;
+    private boolean screenReady;
+    private int loadGeneration;
+    @Nullable private ManagerDocumentRegistrationScreenModel screenModel;
+    @Nullable private androidx.appcompat.app.AlertDialog typeSelector;
+    private static final String EXTRA_MANAGEMENT = "manager_document_management";
 
     public static Intent createIntent(Context context) {
         return new Intent(context, ManagerDocumentRegistrationActivity.class);
     }
 
+    public static Intent createManagementIntent(Context context) {
+        return createIntent(context).putExtra(EXTRA_MANAGEMENT, true);
+    }
+
+    protected AuthRepository provideAuthRepository() { return ServiceLocator.provideAuthRepository(this); }
+    protected ManagerRepository provideManagerRepository() { return ServiceLocator.provideManagerRepository(this); }
+    protected ManagerDocumentStorageUploader provideStorageUploader() { return ServiceLocator.provideManagerDocumentStorageUploader(this); }
+    protected ManagerDocumentPreviewResolver providePreviewResolver() { return ServiceLocator.provideManagerDocumentPreviewResolver(this); }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_manager_document_registration);
-
-        ManagerScreenInsets.apply(
-                findViewById(R.id.scrollManagerDocumentRegistration),
-                findViewById(R.id.layoutManagerDocumentTopBar),
-                findViewById(R.id.layoutManagerDocumentBottomAction)
-        );
-        authRepository = ServiceLocator.provideAuthRepository(this);
-        managerRepository = ServiceLocator.provideManagerRepository(this);
-        ManagerDocumentStorageUploader storageUploader =
-                ServiceLocator.provideManagerDocumentStorageUploader(this);
-        ManagerDocumentPreviewResolver previewResolver =
-                ServiceLocator.provideManagerDocumentPreviewResolver(this);
+        View root = findViewById(R.id.managerDocumentRoot);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+        authRepository = provideAuthRepository();
+        managerRepository = provideManagerRepository();
+        ManagerDocumentStorageUploader storageUploader = provideStorageUploader();
+        ManagerDocumentPreviewResolver previewResolver = providePreviewResolver();
         ManagerDocumentRegistrationViewModel.Factory factory =
                 new ManagerDocumentRegistrationViewModel.Factory(
                         this,
@@ -126,33 +141,15 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
         progressBar = findViewById(R.id.progressManagerDocumentRegistration);
 
         buttonBack = findViewById(R.id.buttonBackManagerDocument);
-        buttonClose = findViewById(R.id.buttonCloseManagerDocument);
-        buttonSkip = findViewById(R.id.buttonManagerDocumentSkip);
         buttonRequest = findViewById(R.id.buttonManagerDocumentRequest);
         binder = new ManagerDocumentRegistrationBinder(
-                getLayoutInflater(),
-                this,
-                findViewById(R.id.textManagerDocumentMode),
-                findViewById(R.id.managerDocumentHiddenStatusContainer),
-                findViewById(R.id.textManagerDocumentStatusBadge),
-                findViewById(R.id.textManagerDocumentStatusTitle),
-                findViewById(R.id.textManagerDocumentStatusBody),
-                findViewById(R.id.textManagerDocumentPrimaryTitle),
-                findViewById(R.id.textManagerDocumentPrimaryHelper),
-                findViewById(R.id.textManagerDocumentPrimaryFileName),
-                findViewById(R.id.textManagerDocumentPrimaryFileMeta),
-                findViewById(R.id.buttonManagerDocumentPrimaryPreview),
-                findViewById(R.id.buttonManagerDocumentPrimaryUpload),
-                (LinearLayout) findViewById(R.id.managerDocumentRegistrationContainer),
-                findViewById(R.id.cardManagerDocumentReview),
-                findViewById(R.id.textManagerDocumentReviewTitle),
-                findViewById(R.id.textManagerDocumentReviewBody),
-                buttonRequest
+                root, this, getIntent().getBooleanExtra(EXTRA_MANAGEMENT, false)
         );
 
         buttonBack.setOnClickListener(view -> requestExit());
-        buttonClose.setOnClickListener(view -> requestExit());
-        buttonSkip.setOnClickListener(view -> requestExit());
+        findViewById(R.id.buttonManagerDocumentHistory).setOnClickListener(view -> {
+            if (screenReady && !operationInFlight) startActivity(ManagerProfileActivity.createIntent(this));
+        });
         buttonRequest.setOnClickListener(view -> submitRegistrationRequest());
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -180,9 +177,21 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
         loadScreen();
     }
 
+    @Override protected void onStop() {
+        if (typeSelector != null) { typeSelector.dismiss(); typeSelector = null; }
+        loadGeneration++;
+        screenReady = false;
+        currentUser = null;
+        currentOverview = null;
+        screenModel = null;
+        contentContainer.setVisibility(View.GONE);
+        updateInteractions();
+        super.onStop();
+    }
+
     @Override
     public void onDocumentUploadRequested(@Nullable ManagerDocumentFileType fileType) {
-        if (operationInFlight) {
+        if (operationInFlight || !screenReady) {
             return;
         }
         if (currentUser == null) {
@@ -196,12 +205,12 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
         }
         
         viewModel.setPendingDocumentSelection(currentUser.getId(), fileType);
-        documentPickerLauncher.launch(QUALIFICATION_IMAGE_MIME_TYPES);
+        launchDocumentPicker(QUALIFICATION_IMAGE_MIME_TYPES);
     }
 
     @Override
     public void onDocumentPreviewRequested(@Nullable ManagerDocumentFileType fileType) {
-        if (operationInFlight) {
+        if (operationInFlight || !screenReady || currentUser == null) {
             return;
         }
         ManagerDocumentFileMetadata metadata = findDocumentMetadata(fileType);
@@ -213,7 +222,7 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
             ).show();
             return;
         }
-        if (!viewModel.resolvePreview(metadata)) {
+        if (!viewModel.resolvePreview(currentUser.getId(), metadata)) {
             showOperationInProgressMessage();
         }
     }
@@ -233,16 +242,23 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
                 ManagerDocumentFileType.LICENSE
         };
 
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+        if (typeSelector != null) return;
+        typeSelector = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.manager_document_registration_document_nursing_or_elderly_care_license)
                 .setItems(options, (dialog, which) -> {
-                    viewModel.setPendingDocumentSelection(managerUserId, types[which]);
-                    documentPickerLauncher.launch(QUALIFICATION_IMAGE_MIME_TYPES);
+                    if (screenReady && currentUser != null && managerUserId.equals(currentUser.getId())) {
+                        viewModel.setPendingDocumentSelection(managerUserId, types[which]);
+                        launchDocumentPicker(QUALIFICATION_IMAGE_MIME_TYPES);
+                    }
                 })
-                .show();
+                .create();
+        typeSelector.setOnDismissListener(dialog -> typeSelector = null);
+        typeSelector.show();
     }
 
-    private void handleDocumentPicked(@Nullable Uri fileUri) {
+    protected void launchDocumentPicker(String[] mimeTypes) { documentPickerLauncher.launch(mimeTypes); }
+
+    protected void handleDocumentPicked(@Nullable Uri fileUri) {
         ManagerDocumentRegistrationViewModel.PendingDocumentSelection selection =
                 viewModel.consumePendingDocumentSelection();
         if (fileUri == null || selection == null) {
@@ -257,14 +273,23 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
             return;
         }
 
-        persistDocumentReadPermission(fileUri);
-        if (!viewModel.uploadDocument(
-                selection.getManagerUserId(),
-                selection.getFileType(),
-                fileUri
-        )) {
-            showOperationInProgressMessage();
-        }
+        // 외부 파일 선택기에서 돌아올 때는 선택 당시 계정이 여전히 매니저인지 확인한다.
+        authRepository.getCurrentUser(new RepositoryCallback<User>() {
+            @Override public void onSuccess(User user) {
+                if (!isActivityUsable()) return;
+                if (user == null || user.getRole() != UserRole.MANAGER || AuthFlowRouter.requiresProfileCompletion(user)
+                        || !selection.getManagerUserId().equals(user.getId())) {
+                    Toast.makeText(ManagerDocumentRegistrationActivity.this, R.string.final_documents_identity_changed, Toast.LENGTH_SHORT).show();
+                    loadScreen();
+                    return;
+                }
+                persistDocumentReadPermission(fileUri);
+                if (!viewModel.uploadDocument(selection.getManagerUserId(), selection.getFileType(), fileUri)) showOperationInProgressMessage();
+            }
+            @Override public void onError(String message) {
+                if (isActivityUsable()) { setLoading(false); showAuthState(); }
+            }
+        });
     }
 
     @Nullable
@@ -290,7 +315,7 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
     }
 
     private void submitRegistrationRequest() {
-        if (operationInFlight) {
+        if (operationInFlight || !screenReady) {
             return;
         }
         if (currentUser == null || currentOverview == null) {
@@ -324,30 +349,47 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
     }
 
     private void loadScreen() {
+        int generation = ++loadGeneration;
+        screenReady = false;
+        currentUser = null;
+        currentOverview = null;
+        screenModel = null;
+        contentContainer.setVisibility(View.GONE);
         setLoading(true);
-        hideBlockingState();
+        StatePanelHelper.hide(statePanel);
+        findViewById(R.id.managerDocumentStateScroll).setVisibility(View.GONE);
         authRepository.getCurrentUser(new RepositoryCallback<User>() {
             @Override
             public void onSuccess(User result) {
-                if (!isActivityUsable()) {
+                if (!isActivityUsable() || generation != loadGeneration) {
                     return;
                 }
+                if (result == null) { setLoading(false); showAuthState(); return; }
                 if (AuthFlowRouter.requiresProfileCompletion(result)) {
                     openProfileCompletion();
                     return;
                 }
                 if (result.getRole() != UserRole.MANAGER) {
+                    currentUser = result;
                     setLoading(false);
                     showPermissionState();
                     return;
                 }
                 currentUser = result;
+                if (!viewModel.isOperationOwner(result.getId())) {
+                    viewModel.clearCompletionPending();
+                    androidx.fragment.app.Fragment completion = getSupportFragmentManager().findFragmentByTag(ManagerQualificationCompletionDialog.TAG);
+                    if (completion instanceof ManagerQualificationCompletionDialog) {
+                        ((ManagerQualificationCompletionDialog) completion).dismiss();
+                        completionDialogGate.clear();
+                    }
+                }
                 loadOverview();
             }
 
             @Override
             public void onError(String message) {
-                if (!isActivityUsable()) {
+                if (!isActivityUsable() || generation != loadGeneration) {
                     return;
                 }
                 setLoading(false);
@@ -362,15 +404,20 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
             showAuthState();
             return;
         }
+        int generation = ++loadGeneration;
+        String userId = currentUser.getId();
+        setLoading(true);
         managerRepository.getManagerDocumentOverview(
-                currentUser.getId(),
+                userId,
                 new RepositoryCallback<ManagerDocumentOverview>() {
                     @Override
                     public void onSuccess(ManagerDocumentOverview result) {
-                        if (!isActivityUsable()) {
+                        if (!isActivityUsable() || generation != loadGeneration || currentUser == null || !userId.equals(currentUser.getId())) {
                             return;
                         }
+                        if (result == null) { setLoading(false); showLoadErrorState(""); return; }
                         currentOverview = result;
+                        screenReady = true;
                         viewModel.reconcileRecoveredSubmission(
                                 currentUser.getId(),
                                 result.getProfile()
@@ -378,17 +425,13 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
                         setLoading(false);
                         hideBlockingState();
                         contentContainer.setVisibility(View.VISIBLE);
-                        binder.bindScreen(
-                                coordinator.createScreenModel(
-                                        result,
-                                        managerRepository.isFirebaseBacked()
-                                )
-                        );
+                        bindOverview();
+                        handleUiState(viewModel.getUiEvent().getValue());
                     }
 
                     @Override
                     public void onError(String message) {
-                        if (!isActivityUsable()) {
+                        if (!isActivityUsable() || generation != loadGeneration) {
                             return;
                         }
                         setLoading(false);
@@ -401,18 +444,36 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
     private void setLoading(boolean loading) {
         screenLoading = loading;
         updateProgressVisibility();
+        updateInteractions();
     }
 
     private void setOperationInFlight(boolean inFlight) {
         operationInFlight = inFlight;
         updateProgressVisibility();
         buttonBack.setEnabled(!inFlight);
-        buttonClose.setEnabled(!inFlight);
-        buttonSkip.setEnabled(!inFlight);
         buttonBack.setAlpha(inFlight ? 0.45f : 1f);
-        buttonClose.setAlpha(inFlight ? 0.45f : 1f);
-        buttonSkip.setAlpha(inFlight ? 0.45f : 1f);
-        binder.setInteractionsEnabled(!inFlight);
+        updateInteractions();
+    }
+
+    private void updateInteractions() {
+        binder.setInteractionsEnabled(screenReady && !screenLoading && !operationInFlight);
+        findViewById(R.id.layoutManagerDocumentBottomAction).setVisibility(screenReady ? View.VISIBLE : View.GONE);
+        androidx.fragment.app.Fragment sheet = getSupportFragmentManager().findFragmentByTag(ManagerDocumentDetailSheet.TAG);
+        if (sheet instanceof ManagerDocumentDetailSheet) bindDocumentDetails((ManagerDocumentDetailSheet) sheet);
+    }
+    private void bindOverview() {
+        if (currentOverview == null) return;
+        screenModel = coordinator.createScreenModel(currentOverview, managerRepository.isFirebaseBacked());
+        binder.bindScreen(screenModel);
+        updateInteractions();
+    }
+    @Override public void onDocumentDetailsRequested() {
+        if (!screenReady || screenLoading || operationInFlight || getSupportFragmentManager().isStateSaved()
+                || getSupportFragmentManager().findFragmentByTag(ManagerDocumentDetailSheet.TAG) != null) return;
+        new ManagerDocumentDetailSheet().showNow(getSupportFragmentManager(), ManagerDocumentDetailSheet.TAG);
+    }
+    void bindDocumentDetails(ManagerDocumentDetailSheet sheet) {
+        sheet.bind(screenReady ? screenModel : null, screenReady && !screenLoading && !operationInFlight);
     }
 
     private void updateProgressVisibility() {
@@ -441,8 +502,14 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
             @Nullable ManagerDocumentRegistrationViewModel.UiEvent event
     ) {
         if (event == null
+                || !screenReady || currentUser == null
                 || !isActivityUsable()
                 || !getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+            return;
+        }
+        if (!viewModel.isOperationOwner(currentUser.getId())) {
+            event.consume();
+            viewModel.clearCompletionPending();
             return;
         }
         ManagerDocumentRegistrationViewModel.UiEvent consumedEvent = event.consume();
@@ -471,11 +538,7 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
         if (consumedEvent.getType()
                 == ManagerDocumentRegistrationViewModel.EventType.PREVIEW_READY) {
             Uri previewUri = consumedEvent.getPreviewUri();
-            if (previewUri == null || !DocumentPreviewLauncher.open(
-                    this,
-                    previewUri,
-                    consumedEvent.getContentType()
-            )) {
+            if (previewUri == null || !openDocumentPreview(previewUri, consumedEvent.getContentType())) {
                 Toast.makeText(
                         this,
                         R.string.manager_document_preview_open_failed,
@@ -503,6 +566,10 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
         showCompletionDialogIfNeeded();
     }
 
+    protected boolean openDocumentPreview(Uri uri, String contentType) {
+        return DocumentPreviewLauncher.open(this, uri, contentType);
+    }
+
     private void applyLatestProfile(@Nullable ManagerHomeProfile latestProfile) {
         if (latestProfile == null || currentOverview == null) {
             return;
@@ -512,16 +579,12 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
                 latestProfile,
                 currentOverview.getHistoryEntries()
         );
-        binder.bindScreen(
-                coordinator.createScreenModel(
-                        currentOverview,
-                        managerRepository.isFirebaseBacked()
-                )
-        );
+        bindOverview();
     }
 
     private void showCompletionDialogIfNeeded() {
         if (!isActivityUsable()
+                || !screenReady || currentUser == null || !viewModel.isOperationOwner(currentUser.getId())
                 || !getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)
                 || getSupportFragmentManager().isStateSaved()) {
             return;
@@ -604,6 +667,10 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
             @Nullable CharSequence secondaryText,
             @Nullable View.OnClickListener secondaryListener
     ) {
+        screenReady = false;
+        currentOverview = null;
+        screenModel = null;
+        updateInteractions();
         StatePanelHelper.show(
                 statePanel,
                 tone,
@@ -616,15 +683,17 @@ public class ManagerDocumentRegistrationActivity extends AppCompatActivity
                 secondaryListener
         );
         contentContainer.setVisibility(View.GONE);
+        findViewById(R.id.managerDocumentStateScroll).setVisibility(View.VISIBLE);
     }
 
     private void hideBlockingState() {
         StatePanelHelper.hide(statePanel);
+        findViewById(R.id.managerDocumentStateScroll).setVisibility(View.GONE);
         contentContainer.setVisibility(View.VISIBLE);
     }
 
     private void openGeneralHome() {
-        startActivity(new Intent(this, MainActivity.class));
+        startActivity(currentUser == null ? new Intent(this, MainActivity.class) : AuthFlowRouter.createPostAuthIntent(this, currentUser));
         finish();
     }
 

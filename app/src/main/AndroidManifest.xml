@@ -86,6 +86,7 @@
             android:exported="false" />
         <activity
             android:name=".ui.manager.ManagerDocumentRegistrationActivity"
+            android:theme="@style/Theme.Bodeul.FinalAuth"
             android:exported="false" />
         <activity
             android:name=".ui.manager.ManagerProfileActivity"

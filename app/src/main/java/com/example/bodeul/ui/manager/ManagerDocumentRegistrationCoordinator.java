@@ -53,7 +53,8 @@ public final class ManagerDocumentRegistrationCoordinator {
                         : context.getString(R.string.manager_document_registration_review_title),
                 formatter.buildDocumentReviewNote(profile),
                 buildRequestButtonText(status, allRequiredUploaded),
-                canRequestReview(profile)
+                canRequestReview(profile),
+                ManagerDocumentDisplayState.from(profile)
         );
     }
 
@@ -102,7 +103,9 @@ public final class ManagerDocumentRegistrationCoordinator {
         );
         boolean uploaded = hasRequiredFiles(profile);
         boolean replacementRequired = requiresQualificationReplacement(profile);
-        String label = context.getString(R.string.manager_document_registration_document_nursing_or_elderly_care_license);
+        String label = activeMetadata == null
+                ? context.getString(R.string.manager_document_registration_document_nursing_or_elderly_care_license)
+                : getDocumentLabel(activeMetadata.getFileType());
 
         return new ManagerDocumentRegistrationItemModel(
                 null,

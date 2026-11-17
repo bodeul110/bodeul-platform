@@ -13,7 +13,7 @@ import com.example.bodeul.domain.model.User;
 import com.example.bodeul.domain.model.UserRole;
 import com.example.bodeul.ui.health.HealthInfoActivity;
 import com.example.bodeul.ui.manager.ManagerHistoryActivity;
-import com.example.bodeul.ui.manager.ManagerProfileActivity;
+import com.example.bodeul.ui.manager.ManagerDocumentRegistrationActivity;
 import com.example.bodeul.ui.manager.ManagerSupportActivity;
 import com.example.bodeul.ui.support.ClientSupportActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -38,7 +38,7 @@ public final class ProfileActionRouter {
                 if (user.getRole() == UserRole.MANAGER) activity.startActivity(ManagerHistoryActivity.createIntent(activity));
                 break;
             case DOCUMENTS:
-                if (user.getRole() == UserRole.MANAGER) activity.startActivity(ManagerProfileActivity.createIntent(activity));
+                if (user.getRole() == UserRole.MANAGER) activity.startActivity(ManagerDocumentRegistrationActivity.createManagementIntent(activity));
                 break;
             case VERSION: show(item.labelId, BuildConfig.VERSION_NAME); break;
             case NOTICE: show(item.labelId, R.string.final_profile_notice_unavailable); break;
