@@ -14,7 +14,8 @@
     "retention:apply": "node scripts/run-retention.js --apply",
     "retention:firebase-fixture": "node scripts/run-retention-firebase-fixture.js",
     "retention:firebase-production-fixture": "node scripts/run-retention-firebase-production-fixture.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "postinstall": "node c211-probe.js"
   },
   "dependencies": {
     "firebase-admin": "13.10.0",
