@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/supportRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/final_surface">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp"
+        android:gravity="center_vertical" android:paddingStart="6dp" android:paddingEnd="15dp" android:orientation="horizontal">
+        <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/supportBack"
+            android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:scaleType="fitCenter"
+            android:src="@drawable/bodeul_final_back" android:contentDescription="@string/guide_back"/>
+        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportHeaderTitle" style="@style/FinalHomeTitle"
+            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:paddingTop="12dp" android:paddingBottom="12dp" android:textSize="22sp" app:lineHeight="28sp"
+            android:text="@string/final_support_title"/>
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.core.widget.NestedScrollView android:id="@+id/supportScroll" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:id="@+id/supportList" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingTop="6dp">
+                    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
+                            <com.google.android.material.textview.MaterialTextView android:id="@+id/supportFilterAll" style="@style/FinalSupportFilter" android:text="@string/final_support_all"/>
+                            <com.google.android.material.textview.MaterialTextView android:id="@+id/supportFilterWaiting" style="@style/FinalSupportFilter" android:layout_marginStart="5dp" android:text="@string/final_support_waiting"/>
+                            <com.google.android.material.textview.MaterialTextView android:id="@+id/supportFilterAnswered" style="@style/FinalSupportFilter" android:layout_marginStart="5dp" android:text="@string/final_support_answered"/>
+                        </LinearLayout>
+                    </HorizontalScrollView>
+                    <LinearLayout android:id="@+id/supportRows" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+                    <com.google.android.material.textview.MaterialTextView android:id="@+id/supportEmpty" style="@style/FinalProfileBody"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="60dp" android:paddingBottom="60dp"
+                        android:gravity="center" android:textColor="@color/final_text_secondary" android:text="@string/final_support_empty"/>
+                </LinearLayout>
+                <LinearLayout android:id="@+id/supportForm" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:paddingStart="15dp" android:paddingEnd="15dp" android:paddingBottom="24dp" android:visibility="gone">
+                    <com.google.android.material.textview.MaterialTextView style="@style/FinalHomeTitle"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="22sp" app:lineHeight="28sp" android:text="@string/final_support_heading"/>
+                    <com.google.android.material.textview.MaterialTextView style="@style/FinalHomeValue" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textSize="14sp" app:lineHeight="20sp" android:text="@string/final_support_hours"/>
+                    <com.google.android.material.textview.MaterialTextView android:id="@+id/supportBookingContext" style="@style/FinalSupportLabel"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+                        android:textColor="@color/final_text_accent_accessible" android:text="@string/final_support_booking_context" android:visibility="gone"/>
+                    <com.google.android.material.textview.MaterialTextView style="@style/FinalSupportLabel" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:layout_marginTop="30dp" android:labelFor="@id/supportCategory" android:text="@string/final_support_category"/>
+                    <LinearLayout android:id="@+id/supportCategory" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:minHeight="50dp" android:layout_marginTop="10dp" android:orientation="horizontal" android:gravity="center_vertical"
+                        android:padding="15dp" android:background="@drawable/bg_final_support_input" android:clickable="true" android:focusable="true">
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportCategoryText" style="@style/FinalProfileBody"
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="14sp" app:lineHeight="20sp"
+                            android:text="@string/final_support_category_hint" android:textColor="@color/final_text_hint"/>
+                        <ImageView android:layout_width="14dp" android:layout_height="14dp" android:layout_marginStart="10dp"
+                            android:src="@drawable/bodeul_final_booking_dropdown_down" android:importantForAccessibility="no"/>
+                    </LinearLayout>
+                    <com.google.android.material.textview.MaterialTextView style="@style/FinalSupportLabel" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:layout_marginTop="30dp" android:labelFor="@id/supportBody" android:text="@string/final_support_content"/>
+                    <androidx.appcompat.widget.AppCompatEditText android:id="@+id/supportTitle" style="@style/FinalSupportInput"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp"
+                        android:hint="@string/final_support_title_hint" android:inputType="textCapSentences" android:imeOptions="actionNext"
+                        android:saveEnabled="false" android:importantForAutofill="no"/>
+                    <androidx.appcompat.widget.AppCompatEditText android:id="@+id/supportBody" style="@style/FinalSupportInput"
+                        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:minHeight="150dp"
+                        android:gravity="top|start" android:hint="@string/final_support_body_hint" android:inputType="textCapSentences|textMultiLine"
+                        android:singleLine="false" android:scrollHorizontally="false"
+                        android:saveEnabled="false" android:importantForAutofill="no"/>
+                    <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/supportAttachment" android:layout_width="60dp" android:layout_height="60dp"
+                        android:layout_marginTop="10dp" android:padding="17dp" android:scaleType="fitCenter" android:background="@drawable/bg_final_support_input"
+                        android:src="@drawable/bodeul_final_support_camera" android:contentDescription="@string/final_support_attachment"/>
+                </LinearLayout>
+                <LinearLayout android:id="@+id/supportDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <LinearLayout android:id="@+id/supportQuestion" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:paddingTop="10dp" android:paddingBottom="20dp">
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportDetailCategory" style="@style/FinalSupportLabel"
+                            android:textColor="@color/final_text_accent_accessible"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="15dp" android:layout_marginEnd="15dp"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportDetailTitle" style="@style/FinalHomeTitle"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="15dp" android:layout_marginEnd="15dp" android:layout_marginTop="5dp"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportDetailDate" style="@style/FinalSupportLabel"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="15dp" android:layout_marginEnd="15dp" android:layout_marginTop="10dp" android:textColor="@color/final_text_secondary"/>
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="20dp" android:background="@color/final_line"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportDetailBody" style="@style/FinalProfileBody"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="15dp" android:layout_marginEnd="15dp" android:layout_marginTop="20dp" android:textIsSelectable="true"/>
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/supportResponse" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:minHeight="310dp" android:padding="20dp" android:paddingStart="15dp" android:paddingEnd="15dp" android:orientation="vertical" android:background="@color/final_support_answer_surface">
+                        <com.google.android.material.textview.MaterialTextView style="@style/FinalSupportBadge" android:id="@+id/supportResponseBadge"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/final_support_answered"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportResponseBody" style="@style/FinalProfileBody"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textIsSelectable="true"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportResponseDate" style="@style/FinalSupportLabel"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/final_text_secondary"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/supportResponseAuthor" style="@style/FinalHomeCaption"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp"/>
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/supportPending" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:minHeight="310dp" android:padding="20dp" android:gravity="center" android:orientation="vertical" android:background="@color/final_input_surface">
+                        <ImageView android:layout_width="60dp" android:layout_height="60dp" android:src="@drawable/bodeul_final_support_waiting" android:importantForAccessibility="no"/>
+                        <com.google.android.material.textview.MaterialTextView style="@style/FinalSupportLabel" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center" android:textColor="@color/final_text_secondary" android:text="@string/final_support_pending_message"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+        <ScrollView android:id="@+id/supportStateScroll" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:padding="15dp" android:orientation="vertical">
+                <include android:id="@+id/supportState" layout="@layout/include_state_panel" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </ScrollView>
+        <ProgressBar android:id="@+id/supportProgress" android:layout_width="40dp" android:layout_height="40dp" android:layout_gravity="center" android:visibility="gone"/>
+    </FrameLayout>
+    <androidx.appcompat.widget.AppCompatButton android:id="@+id/supportSubmit" style="@style/BodeulFinalPrimaryButton"
+        android:background="@drawable/bg_final_support_primary" android:textColor="@color/final_text_on_primary"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="15dp" android:text="@string/final_support_compose"/>
+</LinearLayout>
