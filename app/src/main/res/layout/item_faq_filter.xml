@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.AppCompatButton xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/FinalSupportFilter" android:minWidth="48dp"
+    android:textAllCaps="false" android:textColor="@color/final_profile_segment_text"
+    android:stateListAnimator="@null" app:backgroundTint="@null" />

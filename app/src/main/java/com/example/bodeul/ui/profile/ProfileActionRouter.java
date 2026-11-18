@@ -16,6 +16,7 @@ import com.example.bodeul.ui.manager.ManagerHistoryActivity;
 import com.example.bodeul.ui.manager.ManagerDocumentRegistrationActivity;
 import com.example.bodeul.ui.manager.ManagerSupportActivity;
 import com.example.bodeul.ui.support.ClientSupportActivity;
+import com.example.bodeul.ui.support.FaqActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 /** 메뉴의 기존 화면 연결과 미연결 계약 안내를 담당하며 서버 역할은 변경하지 않는다. */
@@ -42,7 +43,7 @@ public final class ProfileActionRouter {
                 break;
             case VERSION: show(item.labelId, BuildConfig.VERSION_NAME); break;
             case NOTICE: show(item.labelId, R.string.final_profile_notice_unavailable); break;
-            case FAQ: show(item.labelId, R.string.final_profile_faq_unavailable); break;
+            case FAQ: activity.startActivity(FaqActivity.createIntent(activity)); break;
             case TERMS: show(item.labelId, R.string.final_profile_terms_unavailable); break;
             case PAYMENT: show(item.labelId, R.string.final_profile_payment_unavailable); break;
             case SETTLEMENT: show(item.labelId, R.string.final_profile_settlement_unavailable); break;
