@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="faq_filter_all">전체</string>
+    <string name="faq_filter_matching">매칭</string>
+    <string name="faq_filter_payment">결제</string>
+    <string name="faq_filter_service">서비스</string>
+    <string name="faq_filter_other">기타</string>
+    <string name="faq_service_question">보들은 어떤 서비스인가요?</string>
+    <string name="faq_service_answer">보들은 병원 방문에 동행할 매니저를 연결하는 서비스입니다. 앱에서 동행을 예약하고 이용내역에서 진행 상황을 확인할 수 있습니다.</string>
+    <string name="faq_booking_question">매칭은 어떻게 하나요?</string>
+    <string name="faq_booking_answer">홈에서 ‘동행 예약 시작하기’를 누른 뒤 병원, 일정, 만날 장소를 차례로 입력해 주세요. 예약을 접수하면 이용내역에서 매니저 배정 상태를 확인할 수 있습니다.</string>
+    <string name="faq_manager_question">매칭 시 매니저를 선택할 수 있나요?</string>
+    <string name="faq_manager_answer">특정 매니저를 직접 선택할 수는 없습니다. 예약할 때 희망하는 매니저 성별을 입력할 수 있으며, 배정 결과는 이용내역에서 확인할 수 있습니다.</string>
+    <string name="faq_payment_question">결제는 어떻게 이루어지나요?</string>
+    <string name="faq_payment_answer">예약 마지막 단계에서 결제 수단과 금액을 확인해 주세요. 예약 접수와 결제 완료는 별개이며, 결제 상태는 예약 상세에서 확인할 수 있습니다.</string>
+    <string name="faq_empty">이 분류에는 아직 등록된 질문이 없습니다.</string>
+    <string name="faq_expanded">펼쳐짐</string>
+    <string name="faq_collapsed">접힘</string>
+    <string name="faq_toggle_label">%1$s, %2$s</string>
+</resources>

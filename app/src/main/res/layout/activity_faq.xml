@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/faqRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="60dp" android:orientation="horizontal" android:gravity="center_vertical"
+        android:paddingStart="2dp" android:paddingEnd="@dimen/final_screen_gutter">
+        <ImageButton android:id="@+id/faqBack" style="@style/FinalProfileIconButton"
+            android:padding="9dp" android:paddingStart="13dp" android:paddingEnd="5dp"
+            android:src="@drawable/bodeul_final_back" android:contentDescription="@string/guide_back" />
+        <TextView android:id="@+id/faqTitle" style="@style/FinalHomeTitle"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:textSize="22sp" app:fontFamily="@font/pretendard_bold" app:lineHeight="28sp"
+            android:text="@string/final_profile_faq" />
+    </LinearLayout>
+    <HorizontalScrollView android:id="@+id/faqFilterScroll"
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
+        android:scrollbars="none">
+        <LinearLayout android:id="@+id/faqFilters" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:paddingStart="@dimen/final_screen_gutter"
+            android:paddingEnd="@dimen/final_screen_gutter" />
+    </HorizontalScrollView>
+    <ScrollView android:id="@+id/faqScroll" android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingBottom="20dp">
+            <LinearLayout android:id="@+id/faqRows" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" />
+            <TextView android:id="@+id/faqEmpty" style="@style/FinalProfileBody"
+                android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center"
+                android:paddingStart="@dimen/final_screen_gutter" android:paddingEnd="@dimen/final_screen_gutter"
+                android:paddingTop="40dp" android:paddingBottom="24dp" android:textColor="@color/final_text_secondary"
+                android:accessibilityLiveRegion="polite" android:text="@string/faq_empty" android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

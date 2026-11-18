@@ -121,6 +121,8 @@
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity android:name=".ui.profile.ProfileSettingsActivity"
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
+        <activity android:name=".ui.support.FaqActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity
             android:name=".ui.support.ClientSupportActivity"
             android:theme="@style/Theme.Bodeul.FinalHome"

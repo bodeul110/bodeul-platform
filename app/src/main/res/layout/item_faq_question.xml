@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <LinearLayout android:id="@+id/faqToggle" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/final_screen_gutter" android:layout_marginEnd="@dimen/final_screen_gutter"
+        android:minHeight="80dp" android:paddingTop="20dp" android:paddingBottom="20dp"
+        android:gravity="center_vertical" android:orientation="horizontal" android:clickable="true"
+        android:focusable="true" android:importantForAccessibility="yes" android:background="?attr/selectableItemBackground">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:paddingStart="0dp" android:paddingEnd="8dp" android:orientation="vertical"
+            android:importantForAccessibility="noHideDescendants">
+            <TextView android:id="@+id/faqCategory" style="@style/FinalHomeCaption" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="16sp" android:textColor="@color/final_text_accent_accessible" />
+            <TextView android:id="@+id/faqQuestion" style="@style/FinalHomeValue" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:minHeight="22sp" android:layout_marginTop="2dp"
+                android:textSize="15sp" app:fontFamily="@font/pretendard_semibold" android:textColor="@color/final_text_primary" />
+        </LinearLayout>
+        <ImageView android:id="@+id/faqChevron" android:layout_width="14dp" android:layout_height="14dp"
+            android:src="@drawable/bodeul_final_booking_dropdown_down" android:importantForAccessibility="no" />
+    </LinearLayout>
+    <TextView android:id="@+id/faqAnswer" style="@style/FinalProfileBody"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingStart="@dimen/final_screen_gutter" android:paddingEnd="@dimen/final_screen_gutter"
+        android:paddingTop="15dp" android:paddingBottom="30dp" android:background="@color/final_input_surface"
+        android:textSize="14sp" app:lineHeight="20sp" android:visibility="gone" />
+    <View android:id="@+id/faqDivider" android:layout_width="match_parent" android:layout_height="1dp"
+        android:layout_marginStart="@dimen/final_screen_gutter" android:layout_marginEnd="@dimen/final_screen_gutter"
+        android:background="@color/final_line" android:importantForAccessibility="no" />
+</LinearLayout>

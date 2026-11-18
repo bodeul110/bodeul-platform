@@ -32,6 +32,7 @@ import com.example.bodeul.ui.health.HealthInfoActivity;
 import com.example.bodeul.ui.manager.*;
 import com.example.bodeul.ui.profile.*;
 import com.example.bodeul.ui.support.ClientSupportActivity;
+import com.example.bodeul.ui.support.FaqActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -285,10 +286,28 @@ public class ProfileFigmaTest {
             });
         }
     }
+    @Test public void faqOpensFromEachRoleWithoutPassingAccountData() {
+        for (UserRole role : new UserRole[]{UserRole.PATIENT, UserRole.GUARDIAN, UserRole.MANAGER}) {
+            user = new User("profile", role, "테스트 회원", "profile@example.test", "01000000000");
+            ProfilePreviewDependencies.lastNavigation = null;
+            try (ActivityScenario<ProfileFigmaPreviewActivity> scenario = ActivityScenario.launch(
+                    new Intent(context(), ProfileFigmaPreviewActivity.class).putExtra("openFaq", true)
+                            .putExtra("manager", role == UserRole.MANAGER))) {
+                onView(withId(R.id.profileMenuFaq)).perform(scrollTo(), click());
+                onView(withId(R.id.faqTitle)).check(matches(isDisplayed()));
+                assertTarget(FaqActivity.class);
+                assertNull(ProfilePreviewDependencies.lastNavigation.getExtras());
+                if (role == UserRole.GUARDIAN) androidx.test.espresso.Espresso.pressBack();
+                else onView(withId(R.id.faqBack)).perform(click());
+                onView(withId(R.id.profileMenuFaq)).perform(scrollTo()).check(matches(isDisplayed()));
+            }
+        }
+        assertEquals(0, signsOut);
+    }
     @Test public void unconnectedMenusShowHonestMessagesAndDoNotWriteOrNavigate() {
         try (ActivityScenario<ProfileFigmaPreviewActivity> scenario = home(false)) {
-            int[] ids = {R.id.profileMenuNotice, R.id.profileMenuFaq, R.id.profileMenuTerms};
-            int[] messages = {R.string.final_profile_notice_unavailable, R.string.final_profile_faq_unavailable, R.string.final_profile_terms_unavailable};
+            int[] ids = {R.id.profileMenuNotice, R.id.profileMenuTerms};
+            int[] messages = {R.string.final_profile_notice_unavailable, R.string.final_profile_terms_unavailable};
             for (int i = 0; i < ids.length; i++) {
                 onView(withId(ids[i])).perform(scrollTo(), click());
                 onView(withText(messages[i])).inRoot(isDialog()).check(matches(isDisplayed()));
