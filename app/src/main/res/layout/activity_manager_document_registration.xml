@@ -1,481 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/figma_mvp_background">
-
-    <TextView
-        android:id="@+id/textManagerDocumentMode"
-        android:layout_width="1dp"
-        android:layout_height="1dp"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:id="@+id/managerDocumentHiddenStatusContainer"
-        android:layout_width="1dp"
-        android:layout_height="1dp"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/textManagerDocumentStatusBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/textManagerDocumentStatusTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/textManagerDocumentStatusBody"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/managerDocumentRoot" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/final_surface">
+    <LinearLayout android:id="@+id/layoutManagerDocumentTopBar" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:minHeight="60dp" android:gravity="center_vertical"
+        android:paddingStart="6dp" android:paddingEnd="15dp" android:orientation="horizontal">
+        <androidx.appcompat.widget.AppCompatImageButton android:id="@+id/buttonBackManagerDocument"
+            android:layout_width="48dp" android:layout_height="48dp" android:padding="9dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:scaleType="fitCenter"
+            android:src="@drawable/bodeul_final_back" android:contentDescription="@string/guide_back"/>
+        <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentToolbar"
+            style="@style/FinalHomeTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:paddingTop="12dp" android:paddingBottom="12dp" android:textSize="22sp" app:lineHeight="28sp"
+            android:text="@string/final_documents_title"/>
     </LinearLayout>
-
-    <include
-        android:id="@+id/managerDocumentStatePanel"
-        layout="@layout/include_state_panel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp" />
-
-    <FrameLayout
-        android:id="@+id/managerDocumentContentContainer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <ScrollView
-            android:id="@+id/scrollManagerDocumentRegistration"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:fillViewport="true"
-            android:overScrollMode="never"
-            android:paddingTop="88dp"
-            android:paddingBottom="170dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:paddingTop="8dp"
-                android:paddingEnd="20dp"
-                android:paddingBottom="32dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="@font/pretendard_bold"
-                    android:text="@string/manager_document_registration_heading"
-                    android:textColor="@color/figma_mvp_text_primary"
-                    android:textSize="28sp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:fontFamily="@font/pretendard_medium"
-                    android:lineSpacingExtra="4dp"
-                    android:text="@string/manager_document_registration_screen_subtitle"
-                    android:textColor="@color/figma_mvp_text_tertiary"
-                    android:textSize="15sp" />
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="32dp"
-                    app:cardBackgroundColor="@color/figma_mvp_surface"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="24dp">
-
-                        <FrameLayout
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_manager_qualification_icon_trust">
-
-                            <ImageView
-                                android:layout_width="14dp"
-                                android:layout_height="17dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_figma_manager_qualification_trust" />
-                        </FrameLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:text="@string/manager_document_registration_info_system_title"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="16sp" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:lineSpacingExtra="3dp"
-                                android:text="@string/manager_document_registration_info_system_body"
-                                android:textColor="@color/figma_mvp_text_tertiary"
-                                android:textSize="13sp" />
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <ScrollView android:id="@+id/scrollManagerDocumentRegistration" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:fillViewport="true" android:clipToPadding="false">
+            <LinearLayout android:id="@+id/managerDocumentContentContainer" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" android:paddingStart="15dp"
+                android:paddingEnd="15dp" android:paddingTop="20dp" android:paddingBottom="24dp" android:visibility="gone">
+                <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentHeading"
+                    style="@style/FinalDocumentTitle" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/final_documents_registration_heading"/>
+                <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentSubtitle"
+                    style="@style/FinalDocumentCaption" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp" android:text="@string/final_documents_registration_body"/>
+                <TextView android:id="@+id/textManagerDocumentMode" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:visibility="gone"/>
+                <com.google.android.material.card.MaterialCardView android:id="@+id/cardManagerDocumentSummary"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp"
+                    android:layout_marginTop="30dp" android:layout_marginBottom="10dp"
+                    android:clickable="true" android:focusable="true" android:visibility="gone"
+                    app:cardBackgroundColor="@color/final_surface" app:cardCornerRadius="15dp" app:cardElevation="3dp"
+                    app:strokeColor="@color/final_line" app:strokeWidth="1dp">
+                    <LinearLayout android:id="@+id/managerDocumentSummaryRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="80dp"
+                        android:orientation="horizontal" android:padding="15dp" android:gravity="center_vertical">
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentSummaryTitle"
+                            style="@style/FinalHomeTitle" android:textSize="15sp" app:lineHeight="22sp"
+                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"/>
+                        <LinearLayout android:id="@+id/managerDocumentSummaryStatusRow" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:orientation="horizontal" android:gravity="center_vertical|end">
+                            <ImageView android:id="@+id/imageManagerDocumentSummaryStatus" android:layout_width="14dp"
+                                android:layout_height="14dp" android:layout_marginEnd="2dp" android:importantForAccessibility="no"/>
+                            <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentSummaryStatus"
+                                style="@style/FinalDocumentCaption" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:cardBackgroundColor="@color/figma_manager_qualification_privacy_card"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="24dp">
-
-                        <FrameLayout
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_manager_qualification_icon_privacy">
-
-                            <ImageView
-                                android:layout_width="14dp"
-                                android:layout_height="17dp"
-                                android:layout_gravity="center"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_figma_manager_qualification_privacy" />
-                        </FrameLayout>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="@font/pretendard_bold"
-                                android:text="@string/manager_document_registration_info_privacy_title"
-                                android:textColor="@color/figma_mvp_text_primary"
-                                android:textSize="16sp" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:fontFamily="@font/pretendard_medium"
-                                android:lineSpacingExtra="3dp"
-                                android:text="@string/manager_document_registration_info_privacy_body"
-                                android:textColor="@color/figma_mvp_text_secondary"
-                                android:textSize="13sp" />
-                        </LinearLayout>
+                <com.google.android.material.card.MaterialCardView android:id="@+id/cardManagerDocumentUpload"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="30dp"
+                    app:cardBackgroundColor="@color/final_surface" app:cardCornerRadius="15dp" app:cardElevation="3dp"
+                    app:strokeColor="@color/final_line" app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:paddingStart="15dp" android:paddingEnd="15dp"
+                        android:paddingTop="20dp" android:paddingBottom="25dp">
+                        <com.google.android.material.textview.MaterialTextView style="@style/FinalHomeTitle" android:textSize="18sp"
+                            app:lineHeight="26sp" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:text="@string/final_documents_upload_title"/>
+                        <com.google.android.material.textview.MaterialTextView style="@style/FinalDocumentCaption"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                            android:text="@string/final_documents_privacy"/>
+                        <com.google.android.material.textview.MaterialTextView style="@style/FinalDocumentCaption"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+                            android:textColor="@color/final_text_accent_accessible" android:text="@string/final_documents_required"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentPrimaryTitle"
+                            style="@style/FinalHomeTitle" android:textSize="15sp" app:lineHeight="22sp"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp"/>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/buttonManagerDocumentPrimaryUpload"
+                            style="@style/FinalDocumentFileButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp" android:text="@string/final_documents_upload"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentPrimaryFileName"
+                            style="@style/FinalDocumentCaption" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp" android:textColor="@color/final_text_primary" android:visibility="gone"/>
+                        <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentPrimaryFileMeta"
+                            style="@style/FinalDocumentCaption" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp" android:visibility="gone"/>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/buttonManagerDocumentPrimaryPreview"
+                            style="@style/FinalDocumentButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp" android:minHeight="48dp" android:textColor="@color/final_text_primary"
+                            app:backgroundTint="@color/final_surface" app:strokeColor="@color/final_line" app:strokeWidth="1dp"
+                            android:text="@string/final_documents_preview" android:visibility="gone"/>
+                        <com.google.android.material.textview.MaterialTextView style="@style/FinalDocumentCaption"
+                            android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"
+                            android:text="@string/final_documents_format"/>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:background="@drawable/bg_manager_qualification_upload_card"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical"
-                    android:paddingStart="24dp"
-                    android:paddingTop="32dp"
-                    android:paddingEnd="24dp"
-                    android:paddingBottom="28dp">
-
-                    <FrameLayout
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_manager_qualification_icon_upload">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_figma_manager_qualification_upload" />
-                    </FrameLayout>
-
-                    <TextView
-                        android:id="@+id/textManagerDocumentPrimaryTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="18dp"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:gravity="center"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="18sp" />
-
-                    <TextView
-                        android:id="@+id/textManagerDocumentPrimaryHelper"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:fontFamily="@font/pretendard_medium"
-                        android:gravity="center"
-                        android:lineSpacingExtra="3dp"
-                        android:textColor="@color/figma_mvp_text_tertiary"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/textManagerDocumentPrimaryFileName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:gravity="center"
-                        android:textColor="@color/figma_mvp_text_primary"
-                        android:textSize="13sp"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/textManagerDocumentPrimaryFileMeta"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:gravity="center"
-                        android:textColor="@color/figma_mvp_primary"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_manager_qualification_privacy_badge"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:paddingStart="12dp"
-                        android:paddingTop="7dp"
-                        android:paddingEnd="12dp"
-                        android:paddingBottom="7dp"
-                        android:text="@string/figma_manager_qualification_privacy_badge"
-                        android:textColor="@color/figma_manager_qualification_privacy_badge_text"
-                        android:textSize="11sp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonManagerDocumentPrimaryPreview"
-                        style="@style/BodeulOutlinedButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="18dp"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:text="@string/manager_document_preview_button"
-                        android:textAllCaps="false"
-                        android:visibility="gone" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/buttonManagerDocumentPrimaryUpload"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="@font/pretendard_bold"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:text="@string/manager_document_registration_upload_button"
-                        android:textAllCaps="false"
-                        android:textColor="@color/white"
-                        android:textSize="15sp"
-                        app:backgroundTint="@color/figma_mvp_primary"
-                        app:cornerRadius="28dp" />
+                <LinearLayout android:id="@+id/managerDocumentStatusContainer" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="20dp">
+                    <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentStatusTitle"
+                        style="@style/FinalDocumentCaption" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:textColor="@color/final_text_accent_accessible"/>
+                    <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentStatusBody"
+                        style="@style/FinalDocumentCaption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp"/>
                 </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/managerDocumentRegistrationContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:orientation="vertical" />
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardManagerDocumentReview"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:visibility="gone"
-                    app:cardBackgroundColor="@color/figma_mvp_surface"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/figma_manager_qualification_upload_outline"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:id="@+id/textManagerDocumentReviewTitle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="16sp" />
-
-                        <TextView
-                            android:id="@+id/textManagerDocumentReviewBody"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:fontFamily="@font/pretendard_medium"
-                            android:lineSpacingExtra="4dp"
-                            android:textColor="@color/figma_mvp_text_tertiary"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    app:cardBackgroundColor="@color/figma_mvp_input"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="20dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/pretendard_bold"
-                            android:text="@string/manager_document_registration_guide_title"
-                            android:textColor="@color/figma_mvp_text_primary"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:fontFamily="@font/pretendard_medium"
-                            android:lineSpacingExtra="5dp"
-                            android:text="@string/manager_document_registration_guide_body"
-                            android:textColor="@color/figma_mvp_text_tertiary"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                <LinearLayout android:id="@+id/cardManagerDocumentReview" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:layout_marginTop="15dp" android:orientation="vertical" android:visibility="gone">
+                    <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentReviewTitle"
+                        style="@style/FinalDocumentCaption" android:textColor="@color/final_text_error"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                    <com.google.android.material.textview.MaterialTextView android:id="@+id/textManagerDocumentReviewBody"
+                        style="@style/FinalDocumentCaption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp"/>
+                </LinearLayout>
+                <com.google.android.material.textview.MaterialTextView android:id="@+id/buttonManagerDocumentHistory"
+                    style="@style/BodeulFinalLink" android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp" android:text="@string/final_documents_history"/>
             </LinearLayout>
         </ScrollView>
-
-        <FrameLayout
-            android:id="@+id/layoutManagerDocumentTopBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:background="@color/figma_mvp_background"
-            android:minHeight="88dp"
-            android:paddingTop="24dp">
-
-            <ImageButton
-                android:id="@+id/buttonBackManagerDocument"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="start|center_vertical"
-                android:layout_marginStart="8dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="@string/figma_manager_qualification_back_description"
-                android:padding="16dp"
-                android:src="@drawable/ic_figma_manager_qualification_back" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:fontFamily="@font/pretendard_bold"
-                android:text="@string/figma_manager_qualification_topbar"
-                android:textColor="@color/figma_mvp_text_primary"
-                android:textSize="14sp" />
-
-            <ImageButton
-                android:id="@+id/buttonCloseManagerDocument"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_gravity="end|center_vertical"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_manager_qualification_top_action"
-                android:contentDescription="@string/figma_manager_qualification_close_description"
-                android:padding="17dp"
-                android:src="@drawable/ic_figma_manager_qualification_close" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:id="@+id/layoutManagerDocumentBottomAction"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:background="@color/figma_mvp_background"
-            android:gravity="center_horizontal"
-            android:minHeight="152dp"
-            android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="24dp">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonManagerDocumentRequest"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:fontFamily="@font/pretendard_bold"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:text="@string/manager_document_registration_request_button"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                app:backgroundTint="@color/figma_mvp_primary"
-                app:cornerRadius="28dp" />
-
-            <TextView
-                android:id="@+id/buttonManagerDocumentSkip"
-                android:layout_width="wrap_content"
-                android:layout_height="48dp"
-                android:layout_marginTop="12dp"
-                android:fontFamily="@font/pretendard_bold"
-                android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:text="@string/figma_manager_qualification_skip"
-                android:textColor="@color/figma_mvp_text_hint"
-                android:textSize="13sp" />
-        </LinearLayout>
+        <ScrollView android:id="@+id/managerDocumentStateScroll" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:fillViewport="true" android:visibility="gone">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:gravity="center" android:orientation="vertical" android:padding="15dp">
+                <include android:id="@+id/managerDocumentStatePanel" layout="@layout/include_state_panel"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            </LinearLayout>
+        </ScrollView>
+        <ProgressBar android:id="@+id/progressManagerDocumentRegistration" android:layout_width="40dp"
+            android:layout_height="40dp" android:layout_gravity="center" android:visibility="gone"/>
     </FrameLayout>
-
-    <ProgressBar
-        android:id="@+id/progressManagerDocumentRegistration"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone"
-        app:indicatorColor="@color/figma_mvp_primary" />
-</FrameLayout>
+    <LinearLayout android:id="@+id/layoutManagerDocumentBottomAction" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="vertical" android:padding="15dp">
+        <com.google.android.material.button.MaterialButton android:id="@+id/buttonManagerDocumentRequest"
+            style="@style/FinalDocumentButton" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:enabled="false" android:text="@string/final_documents_submit"/>
+    </LinearLayout>
+</LinearLayout>

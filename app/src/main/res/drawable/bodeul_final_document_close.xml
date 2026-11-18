@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 피그마 Close_circle, 1:12461의 배경과 회전된 원본 경로. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="30dp" android:height="30dp" android:viewportWidth="30" android:viewportHeight="30">
+    <path android:pathData="M15,0 A15,15 0,1 1,15,30 A15,15 0,1 1,15,0" android:fillColor="#EDF1F7"/>
+    <group android:translateX="10" android:translateY="20" android:rotation="-90">
+        <path android:pathData="M0,10 L10,0" android:strokeWidth="1.8" android:strokeColor="#000000" android:strokeLineCap="round"/>
+    </group>
+    <group android:translateX="20" android:translateY="20" android:rotation="180">
+        <path android:pathData="M0,10 L10,0" android:strokeWidth="1.8" android:strokeColor="#000000" android:strokeLineCap="round"/>
+    </group>
+</vector>

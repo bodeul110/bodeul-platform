@@ -26,6 +26,7 @@ import com.example.bodeul.domain.model.ManagerHomeProfile;
  */
 public final class ManagerDocumentRegistrationViewModel extends ViewModel {
     private static final String STATE_OPERATION = "manager_document_registration.operation";
+    private static final String STATE_OPERATION_OWNER = "manager_document_registration.owner";
     private static final String STATE_COMPLETION_PENDING =
             "manager_document_registration.completion_pending";
     private static final String STATE_PENDING_FILE_TYPE =
@@ -293,6 +294,7 @@ public final class ManagerDocumentRegistrationViewModel extends ViewModel {
         if (!beginOperation(Operation.UPLOAD)) {
             return false;
         }
+        savedStateHandle.set(STATE_OPERATION_OWNER, managerUserId);
         storageUploader.uploadDocument(
                 managerUserId,
                 fileType,
@@ -336,10 +338,11 @@ public final class ManagerDocumentRegistrationViewModel extends ViewModel {
         );
     }
 
-    public boolean resolvePreview(ManagerDocumentFileMetadata metadata) {
+    public boolean resolvePreview(String managerUserId, ManagerDocumentFileMetadata metadata) {
         if (!beginOperation(Operation.PREVIEW)) {
             return false;
         }
+        savedStateHandle.set(STATE_OPERATION_OWNER, managerUserId);
         previewResolver.resolvePreviewUri(
                 metadata,
                 new RepositoryCallback<Uri>() {
@@ -365,6 +368,7 @@ public final class ManagerDocumentRegistrationViewModel extends ViewModel {
         if (!beginOperation(Operation.SUBMISSION)) {
             return false;
         }
+        savedStateHandle.set(STATE_OPERATION_OWNER, managerUserId);
         managerRepository.saveManagerDocumentSummary(
                 managerUserId,
                 summary,
@@ -396,6 +400,11 @@ public final class ManagerDocumentRegistrationViewModel extends ViewModel {
             return;
         }
         recoveringSubmission = false;
+        if (!isOperationOwner(managerUserId)) {
+            finishOperation();
+            clearCompletionPending();
+            return;
+        }
         ManagerDocumentStatus status = profile == null
                 ? ManagerDocumentStatus.NOT_SUBMITTED
                 : profile.getDocumentStatus();
@@ -483,6 +492,12 @@ public final class ManagerDocumentRegistrationViewModel extends ViewModel {
 
     public boolean isCompletionPending() {
         return Boolean.TRUE.equals(savedStateHandle.get(STATE_COMPLETION_PENDING));
+    }
+
+    public boolean isOperationOwner(String managerUserId) {
+        String owner = savedStateHandle.get(STATE_OPERATION_OWNER);
+        // 소유자를 확인할 수 없는 이전 복원 상태로 다른 계정의 완료를 표시하지 않는다.
+        return owner != null && !owner.isEmpty() && owner.equals(managerUserId);
     }
 
     public void clearCompletionPending() {

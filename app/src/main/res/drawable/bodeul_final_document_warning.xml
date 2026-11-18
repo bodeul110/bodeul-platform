@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 피그마 WarningCircle, 1:17112의 원본 경로와 위치. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp" android:height="14dp" android:viewportWidth="14" android:viewportHeight="14">
+    <group android:translateX="1.75" android:translateY="1.75">
+        <path android:pathData="M10.5,5.25 C10.5,8.149495 8.149495,10.5 5.25,10.5 C2.350505,10.5 0,8.149495 0,5.25 C0,2.350505 2.350505,0 5.25,0 C8.149495,0 10.5,2.350505 10.5,5.25 Z"
+            android:fillColor="@android:color/transparent" android:strokeColor="#FF4D4D" android:strokeWidth="1.5"/>
+    </group>
+    <group android:translateX="7" android:translateY="4.375">
+        <path android:pathData="M0,2.763184 L0,0" android:strokeColor="#FF4D4D" android:strokeWidth="1.5" android:strokeLineCap="round"/>
+    </group>
+    <group android:translateX="6.176758" android:translateY="8.583008">
+        <path android:pathData="M1.646484,0.823242 C1.646484,1.277906 1.277906,1.646484 0.823242,1.646484 C0.368578,1.646484 0,1.277906 0,0.823242 C0,0.368578 0.368578,0 0.823242,0 C1.277906,0 1.646484,0.368578 1.646484,0.823242 Z" android:fillColor="#FF4D4D"/>
+    </group>
+</vector>

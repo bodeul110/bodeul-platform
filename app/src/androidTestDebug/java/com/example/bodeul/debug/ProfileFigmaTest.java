@@ -133,7 +133,7 @@ public class ProfileFigmaTest {
                 assertFalse(text(a.findViewById(android.R.id.content)).contains("325,000"));
                 assertFalse(text(a.findViewById(android.R.id.content)).contains("36.5"));
                 assertTextFits(a.findViewById(android.R.id.content));
-                a.findViewById(R.id.profileMenuDocuments).performClick(); assertTarget(ManagerProfileActivity.class);
+                a.findViewById(R.id.profileMenuDocuments).performClick(); assertTarget(ManagerDocumentRegistrationActivity.class);
                 a.findViewById(R.id.profileMenuMatching).performClick(); assertTarget(ManagerHistoryActivity.class);
                 a.findViewById(R.id.profileMenuReport).performClick(); assertTarget(ManagerHistoryActivity.class);
             });

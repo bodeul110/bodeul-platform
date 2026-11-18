@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 피그마 Check_blue (14), 1:12524의 원본 경로와 위치. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp" android:height="14dp" android:viewportWidth="14" android:viewportHeight="14">
+    <group android:translateX="2.333533" android:translateY="3.5">
+        <path android:pathData="M9.333333,0 L2.916667,6.416667 L0,3.5"
+            android:fillColor="@android:color/transparent" android:strokeColor="#018DFF"
+            android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round"/>
+    </group>
+</vector>

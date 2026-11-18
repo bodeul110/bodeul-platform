@@ -34,6 +34,7 @@ import static org.junit.Assert.assertTrue;
 public class ManagerDocumentRegistrationViewModelTest {
     private static final String MANAGER_USER_ID = "manager-1";
     private static final String STATE_OPERATION = "manager_document_registration.operation";
+    private static final String STATE_OWNER = "manager_document_registration.owner";
 
     @Rule
     public final InstantTaskExecutorRule instantTaskExecutorRule =
@@ -177,9 +178,36 @@ public class ManagerDocumentRegistrationViewModelTest {
             RepositoryHarness repository,
             FakeRecoveryRetryScheduler scheduler
     ) {
-        SavedStateHandle state = new SavedStateHandle(
-                Collections.singletonMap(STATE_OPERATION, "SUBMISSION")
-        );
+        return createViewModel(repository, scheduler, MANAGER_USER_ID);
+    }
+
+    @Test public void recoveredOtherOwnerDoesNotReportCompletionOrLoadTheirProfile() {
+        assertUnownedRecoveryDoesNotComplete("another-manager");
+    }
+
+    @Test public void recoveredLegacyWithoutOwnerDoesNotGuessCompletion() {
+        assertUnownedRecoveryDoesNotComplete(null);
+    }
+
+    private void assertUnownedRecoveryDoesNotComplete(String owner) {
+        RepositoryHarness repository = new RepositoryHarness();
+        FakeRecoveryRetryScheduler scheduler = new FakeRecoveryRetryScheduler();
+        ManagerDocumentRegistrationViewModel viewModel = createViewModel(repository, scheduler, owner);
+        viewModel.reconcileRecoveredSubmission(MANAGER_USER_ID, profile(ManagerDocumentStatus.APPROVED));
+        assertFalse(viewModel.isOperationOwner(MANAGER_USER_ID));
+        assertFalse(viewModel.isOperationInFlight());
+        assertFalse(viewModel.isCompletionPending());
+        assertEquals(0, repository.overviewLoadCount);
+        assertEquals(0, scheduler.pendingCount());
+        org.junit.Assert.assertNull(viewModel.getUiEvent().getValue());
+    }
+
+    private static ManagerDocumentRegistrationViewModel createViewModel(
+            RepositoryHarness repository, FakeRecoveryRetryScheduler scheduler, String owner
+    ) {
+        SavedStateHandle state = new SavedStateHandle();
+        state.set(STATE_OPERATION, "SUBMISSION");
+        if (owner != null) state.set(STATE_OWNER, owner);
         ManagerDocumentStorageUploader storageUploader =
                 new ManagerDocumentStorageUploader() {
                     @Override
