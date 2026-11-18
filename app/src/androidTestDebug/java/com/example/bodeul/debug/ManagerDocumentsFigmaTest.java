@@ -149,6 +149,13 @@ public class ManagerDocumentsFigmaTest {
         for (ManagerDocumentStatus status : ManagerDocumentStatus.values()) {
             profile = profile(status, file(ManagerDocumentFileType.NURSING_LICENSE));
             try (ActivityScenario<ManagerDocumentsFigmaPreviewActivity> scenario = launch(true)) {
+                int body = switch (status) {
+                    case NOT_SUBMITTED -> R.string.manager_document_registration_status_body_ready;
+                    case PENDING_REVIEW -> R.string.manager_document_registration_status_body_pending;
+                    case APPROVED -> R.string.manager_document_registration_status_body_approved;
+                    case REJECTED -> R.string.manager_document_registration_status_body_rejected_ready;
+                };
+                onView(withId(R.id.textManagerDocumentStatusBody)).check(matches(withText(body)));
                 geometry(scenario); capture("list-" + status.name().toLowerCase(Locale.ROOT));
                 onView(withId(R.id.cardManagerDocumentSummary)).perform(click());
                 onView(withId(R.id.documentDetailTitle)).inRoot(isDialog()).check(matches(withText(R.string.manager_document_registration_document_nursing_license)));
@@ -202,6 +209,26 @@ public class ManagerDocumentsFigmaTest {
             onView(withId(R.id.cardManagerDocumentSummary)).perform(click());
             onView(withId(R.id.documentDetailPreview)).perform(scrollTo(), click());
             assertEquals(1, previews); assertEquals(0, submissions);
+        }
+    }
+    @Test public void invalidFilesOverrideStaleReviewStatusOnBothScreens() {
+        for (ManagerDocumentStatus status : Arrays.asList(ManagerDocumentStatus.APPROVED, ManagerDocumentStatus.PENDING_REVIEW)) {
+            for (boolean management : new boolean[]{false, true}) {
+                assertInvalidFileNotice(management, profile(status), R.string.final_documents_add,
+                        R.string.manager_document_registration_status_body_not_submitted);
+                assertInvalidFileNotice(management, profile(status, file(ManagerDocumentFileType.HEALTH_CERTIFICATE)),
+                        R.string.final_documents_replacement, R.string.manager_document_registration_status_body_replacement);
+                assertInvalidFileNotice(management, profile(status, file(ManagerDocumentFileType.NURSING_LICENSE), file(ManagerDocumentFileType.LICENSE)),
+                        R.string.final_documents_replacement, R.string.manager_document_registration_status_body_replacement);
+            }
+        }
+    }
+    private void assertInvalidFileNotice(boolean management, ManagerHomeProfile invalid, int title, int body) {
+        profile = invalid;
+        try (ActivityScenario<ManagerDocumentsFigmaPreviewActivity> scenario = launch(management)) {
+            onView(withId(R.id.textManagerDocumentStatusTitle)).check(matches(withText(title)));
+            onView(withId(R.id.textManagerDocumentStatusBody)).check(matches(withText(body)));
+            onView(withId(R.id.buttonManagerDocumentRequest)).check(matches(not(isEnabled())));
         }
     }
     @Test public void changedAccountWhilePickingCannotUpload() {

@@ -39,12 +39,13 @@ public final class ManagerDocumentRegistrationCoordinator {
         ManagerHomeProfile profile = overview.getProfile();
         boolean allRequiredUploaded = hasRequiredFiles(profile);
         ManagerDocumentStatus status = profile.getDocumentStatus();
+        ManagerDocumentDisplayState displayState = ManagerDocumentDisplayState.from(profile);
 
         return new ManagerDocumentRegistrationScreenModel(
                 EnvironmentModeBadgeHelper.resolveUserFacingLabel(context, firebaseBacked),
                 context.getString(R.string.manager_document_registration_status_badge),
                 formatter.toDocumentStatusLabel(status),
-                buildStatusBody(profile, allRequiredUploaded),
+                buildStatusBody(displayState),
                 createDocumentItems(profile),
                 ManagerHomePresentationFormatter.shouldShowReviewDecision(status)
                         && !TextUtils.isEmpty(profile.getDocumentReviewNote()),
@@ -54,7 +55,7 @@ public final class ManagerDocumentRegistrationCoordinator {
                 formatter.buildDocumentReviewNote(profile),
                 buildRequestButtonText(status, allRequiredUploaded),
                 canRequestReview(profile),
-                ManagerDocumentDisplayState.from(profile)
+                displayState
         );
     }
 
@@ -141,22 +142,15 @@ public final class ManagerDocumentRegistrationCoordinator {
         );
     }
 
-    private String buildStatusBody(ManagerHomeProfile profile, boolean allRequiredUploaded) {
-        switch (profile.getDocumentStatus()) {
-            case APPROVED:
-                return context.getString(R.string.manager_document_registration_status_body_approved);
-            case PENDING_REVIEW:
-                return context.getString(R.string.manager_document_registration_status_body_pending);
-            case REJECTED:
-                return allRequiredUploaded
-                        ? context.getString(R.string.manager_document_registration_status_body_rejected_ready)
-                        : context.getString(R.string.manager_document_registration_status_body_rejected);
-            case NOT_SUBMITTED:
-            default:
-                return allRequiredUploaded
-                        ? context.getString(R.string.manager_document_registration_status_body_ready)
-                        : context.getString(R.string.manager_document_registration_status_body_not_submitted);
-        }
+    private String buildStatusBody(ManagerDocumentDisplayState state) {
+        return context.getString(switch (state) {
+            case MISSING -> R.string.manager_document_registration_status_body_not_submitted;
+            case REPLACEMENT -> R.string.manager_document_registration_status_body_replacement;
+            case DRAFT -> R.string.manager_document_registration_status_body_ready;
+            case PENDING -> R.string.manager_document_registration_status_body_pending;
+            case APPROVED -> R.string.manager_document_registration_status_body_approved;
+            case REJECTED -> R.string.manager_document_registration_status_body_rejected_ready;
+        });
     }
 
     private String buildRequestButtonText(ManagerDocumentStatus status, boolean allRequiredUploaded) {
