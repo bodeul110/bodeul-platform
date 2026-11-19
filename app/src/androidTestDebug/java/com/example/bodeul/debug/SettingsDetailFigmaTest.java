@@ -154,6 +154,15 @@ public class SettingsDetailFigmaTest {
             }
         }
     }
+    @Test public void socialAccountWithoutRealEmailShowsMissingLabel() {
+        provider = "custom";
+        email = "kakao_example@bodeul.local";
+        user = new User("kakao_example", UserRole.GUARDIAN, "테스트", email, "01000000000");
+        try (ActivityScenario<AccountSettingsPreviewActivity> scenario = accountScreen()) {
+            onView(withId(R.id.accountSettingsEmail)).check(matches(withText(R.string.final_profile_unknown)));
+            onView(withId(R.id.accountProviderName)).check(matches(withText(R.string.final_settings_provider_kakao)));
+        }
+    }
     @Test public void resetCancellationDoesNotSendEmail() {
         try (ActivityScenario<AccountSettingsPreviewActivity> scenario = accountScreen()) {
             onView(withId(R.id.buttonAccountPassword)).perform(scrollTo(), click());
@@ -173,7 +182,7 @@ public class SettingsDetailFigmaTest {
             assertEquals(1, resets);
             scenario.onActivity(a -> resetCallback.onSuccess(null));
             onView(withText(R.string.final_settings_password_sent)).inRoot(isDialog()).check(matches(isDisplayed()));
-            onView(withText(R.string.permission_guide_confirm)).perform(click());
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
             scenario.onActivity(a -> assertTrue(a.findViewById(R.id.buttonAccountPassword).isEnabled()));
             scenario.recreate();
             assertEquals(1, resets);
@@ -184,7 +193,7 @@ public class SettingsDetailFigmaTest {
             confirmReset();
             scenario.onActivity(a -> resetCallback.onError("발송 실패"));
             onView(withText(R.string.final_settings_password_error)).inRoot(isDialog()).check(matches(isDisplayed()));
-            onView(withText(R.string.permission_guide_confirm)).perform(click());
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
             assertEquals(1, resets);
             confirmReset();
             assertEquals(2, resets);
@@ -196,6 +205,47 @@ public class SettingsDetailFigmaTest {
             email = "changed@example.test";
             onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
             onView(withText(R.string.final_settings_password_error)).inRoot(isDialog()).check(matches(isDisplayed()));
+        }
+    }
+    @Test public void unreadResetSuccessSurvivesRecreationAndBackgroundUntilAcknowledged() {
+        checkUnreadResetNotice(true);
+    }
+    @Test public void unreadResetFailureSurvivesRecreationAndBackgroundUntilAcknowledged() {
+        checkUnreadResetNotice(false);
+    }
+    private void checkUnreadResetNotice(boolean success) {
+        int result = success ? R.string.final_settings_password_sent : R.string.final_settings_password_error;
+        try (ActivityScenario<AccountSettingsPreviewActivity> scenario = accountScreen()) {
+            confirmReset();
+            scenario.onActivity(a -> {
+                if (success) resetCallback.onSuccess(null); else resetCallback.onError("발송 실패");
+            });
+            onView(withText(result)).inRoot(isDialog()).check(matches(isDisplayed()));
+            scenario.recreate();
+            onView(withText(result)).inRoot(isDialog()).check(matches(isDisplayed()));
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            onView(withText(result)).inRoot(isDialog()).check(matches(isDisplayed()));
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
+            scenario.recreate();
+            onView(withId(R.id.buttonAccountPassword)).perform(scrollTo(), click());
+            onView(withText(R.string.final_settings_cancel)).inRoot(isDialog()).perform(click());
+            assertEquals(1, resets);
+        }
+    }
+    @Test public void newAccountNeverSeesPreviousUnreadResetNotice() {
+        try (ActivityScenario<AccountSettingsPreviewActivity> scenario = accountScreen()) {
+            confirmReset();
+            scenario.onActivity(a -> resetCallback.onSuccess(null));
+            onView(withText(R.string.final_settings_password_sent)).inRoot(isDialog()).check(matches(isDisplayed()));
+            scenario.moveToState(Lifecycle.State.CREATED);
+            email = "other@example.test";
+            user = new User("other", UserRole.GUARDIAN, "다른 계정", email, "01000000000");
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            onView(withId(R.id.accountSettingsEmail)).check(matches(withText(email)));
+            onView(withId(R.id.buttonAccountPassword)).perform(scrollTo(), click());
+            onView(withText(R.string.final_settings_cancel)).inRoot(isDialog()).perform(click());
+            assertEquals(1, resets);
         }
     }
     @Test public void newAccountDiscardsPreviousResetResult() {

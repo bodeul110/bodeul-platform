@@ -18,6 +18,7 @@ public class AccountSettingsActivity extends SettingsDetailActivity {
     private AccountSettingsBinder binder;
     private AccountSignInInfo account;
     private AccountPasswordResetViewModel reset;
+    private boolean showingResetNotice;
     public static Intent createIntent(Context context) { return new Intent(context, AccountSettingsActivity.class); }
     @Override protected int titleResource() { return R.string.final_settings_account_title; }
     @Override protected void onCreate(@Nullable Bundle state) {
@@ -44,9 +45,9 @@ public class AccountSettingsActivity extends SettingsDetailActivity {
             @Override public void onError(String message) { if (isCurrent(attempt)) showError(); }
         });
     }
-    @Override protected void onPrivateStateCleared() { binder = null; account = null; }
+    @Override protected void onPrivateStateCleared() { binder = null; account = null; showingResetNotice = false; }
     private void confirmPasswordReset() {
-        if (account == null || !account.canResetPassword() || reset.status().getValue() == AccountPasswordResetViewModel.Status.SENDING) return;
+        if (account == null || !account.canResetPassword() || reset.status().getValue() != AccountPasswordResetViewModel.Status.IDLE) return;
         AccountSignInInfo confirmed = account;
         int attempt = currentAttempt();
         dismissDialog();
@@ -62,9 +63,20 @@ public class AccountSettingsActivity extends SettingsDetailActivity {
         AccountPasswordResetViewModel.Status status = reset.status().getValue();
         binder.setSending(status == AccountPasswordResetViewModel.Status.SENDING);
         if (status == AccountPasswordResetViewModel.Status.SENT || status == AccountPasswordResetViewModel.Status.FAILED) {
-            message(R.string.final_settings_password_change, status == AccountPasswordResetViewModel.Status.SENT
-                    ? R.string.final_settings_password_sent : R.string.final_settings_password_error);
-            reset.consumeNotice();
+            if (showingResetNotice) return;
+            int attempt = currentAttempt();
+            dismissDialog();
+            showingResetNotice = true;
+            dialog = new MaterialAlertDialogBuilder(this).setTitle(R.string.final_settings_password_change)
+                    .setMessage(status == AccountPasswordResetViewModel.Status.SENT
+                            ? R.string.final_settings_password_sent : R.string.final_settings_password_error)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.final_settings_confirm, (view, which) -> {
+                        if (isCurrent(attempt)) {
+                            showingResetNotice = false;
+                            reset.acknowledgeNotice();
+                        }
+                    }).show();
         }
     }
     private void explainWithdrawal() {

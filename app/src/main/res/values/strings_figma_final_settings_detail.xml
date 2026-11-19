@@ -3,6 +3,7 @@
     <string name="final_settings_account_title">계정설정</string>
     <string name="final_settings_notifications_title">알림설정</string>
     <string name="final_settings_cancel">취소</string>
+    <string name="final_settings_confirm">확인</string>
     <string name="final_settings_email">이메일</string>
     <string name="final_settings_password">비밀번호</string>
     <string name="final_settings_password_change">비밀번호 변경</string>

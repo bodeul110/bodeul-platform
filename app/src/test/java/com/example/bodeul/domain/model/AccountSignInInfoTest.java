@@ -40,6 +40,45 @@ public class AccountSignInInfoTest {
         assertEquals(Provider.APPLE, info.getPrimaryProvider());
         assertFalse(info.canResetPassword());
     }
+    @Test public void internalSocialEmailsAreNotContactOrResetAddresses() {
+        for (String id : Arrays.asList("kakao_example", "naver_example")) {
+            AccountSignInInfo info = new AccountSignInInfo(id, " " + id + "@BODEUL.LOCAL ",
+                    Collections.singleton("password"), null);
+            assertEquals("", info.getEmail());
+            assertFalse(info.canResetPassword());
+        }
+    }
+    @Test public void similarExternalEmailDomainIsNotHidden() {
+        AccountSignInInfo info = new AccountSignInInfo("u", " User@bodeul.local.example ",
+                Collections.singleton("password"), null);
+        assertEquals("User@bodeul.local.example", info.getEmail());
+        assertTrue(info.canResetPassword());
+    }
+    @Test public void internalAddressFromOwnProfileIsAlsoHidden() {
+        for (String auth : Arrays.asList(null, "naver_example@bodeul.local")) {
+            AccountSignInInfo info = new AccountSignInInfo("naver_example", auth, "naver_example@bodeul.local",
+                    null, "NAVER");
+            assertEquals("", info.getEmail());
+            assertTrue(info.has(Provider.NAVER));
+        }
+    }
+    @Test public void realProfileAddressIsDisplayOnlyWhenAuthAddressIsMissingOrInternal() {
+        for (String auth : Arrays.asList(null, "kakao_example@bodeul.local")) {
+            AccountSignInInfo info = new AccountSignInInfo("kakao_example", auth, "Contact@example.test",
+                    Collections.singleton("password"), "KAKAO");
+            assertEquals("Contact@example.test", info.getEmail());
+            assertFalse(info.canResetPassword());
+            assertFalse(info.matches("kakao_example", "Contact@example.test"));
+        }
+    }
+    @Test public void realAuthAddressTakesPrecedenceOverProfileForDisplayAndReset() {
+        AccountSignInInfo info = new AccountSignInInfo("kakao_example", "Auth@example.test", "Contact@example.test",
+                Collections.singleton("password"), "KAKAO");
+        assertEquals("Auth@example.test", info.getEmail());
+        assertTrue(info.canResetPassword());
+        assertTrue(info.matches("kakao_example", "auth@example.test"));
+        assertFalse(info.matches("kakao_example", "Contact@example.test"));
+    }
     @Test public void resetConfirmationMustMatchBothUidAndEmail() {
         AccountSignInInfo info = new AccountSignInInfo("u", " User@Example.test ", Collections.singleton("password"), null);
         assertTrue(info.matches("u", "user@example.test"));

@@ -22,7 +22,7 @@ public final class AccountPasswordResetViewModel extends ViewModel {
         }
     }
     public void send(AuthRepository auth, AccountSignInInfo info) {
-        if (!userId.equals(info.getUserId()) || !info.canResetPassword() || status.getValue() == Status.SENDING) return;
+        if (!userId.equals(info.getUserId()) || !info.canResetPassword() || status.getValue() != Status.IDLE) return;
         int attempt = ++generation;
         status.setValue(Status.SENDING);
         auth.resetCurrentAccountPassword(info.getUserId(), info.getEmail(), new RepositoryCallback<Void>() {
@@ -30,7 +30,7 @@ public final class AccountPasswordResetViewModel extends ViewModel {
             @Override public void onError(String message) { if (attempt == generation) status.setValue(Status.FAILED); }
         });
     }
-    public void consumeNotice() {
+    public void acknowledgeNotice() {
         if (status.getValue() == Status.SENT || status.getValue() == Status.FAILED) status.setValue(Status.IDLE);
     }
     @Override protected void onCleared() { generation++; }

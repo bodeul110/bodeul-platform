@@ -375,8 +375,7 @@ public class FirebaseAuthRepository implements AuthRepository {
                             callback.onError(appContext.getString(R.string.final_settings_account_changed));
                             return;
                         }
-                        callback.onSuccess(new AccountSignInInfo(expectedUserId,
-                                TextUtils.isEmpty(active.getEmail()) ? document.getString("email") : active.getEmail(),
+                        callback.onSuccess(new AccountSignInInfo(expectedUserId, active.getEmail(), document.getString("email"),
                                 providers, document.getString("provider")));
                     })
                     .addOnFailureListener(error -> callback.onError(appContext.getString(R.string.final_settings_account_read_error)));
