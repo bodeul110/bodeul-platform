@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="batch_version">앱 버전</string>
+    <string name="batch_installed_version">현재 버전 : v%1$s</string>
+    <string name="batch_edit">프로필 편집</string>
+    <string name="batch_edit_action">수정하기</string>
+    <string name="batch_policy_privacy">개인정보처리방침</string>
+    <string name="batch_policy_terms">이용약관</string>
+    <string name="batch_policy_missing">%1$s 원문은 아직 앱에 연결되지 않았습니다.</string>
+    <string name="batch_all">전체</string>
+    <string name="batch_notice">공지</string>
+    <string name="batch_update">업데이트</string>
+    <string name="batch_event">이벤트</string>
+    <string name="batch_other">기타</string>
+    <string name="batch_notice_unavailable">%1$s 게시물을 불러올 수 있는 공지 서비스가 아직 연결되지 않았습니다.</string>
+    <string name="batch_guide">앱 이용 안내</string>
+    <string name="batch_payment_card">카드 등록 안내</string>
+    <string name="batch_payment_methods">결제 수단</string>
+    <string name="batch_payment_card_unavailable">저장된 카드 조회와 카드 등록은 아직 지원하지 않습니다.</string>
+    <string name="batch_payment_history">예약별 결제 상태</string>
+    <string name="batch_payment_none">표시할 예약 결제 내역이 없습니다.</string>
+    <string name="batch_payment_patient_only">예약별 결제 상태는 환자 본인 계정에서 확인할 수 있습니다.</string>
+    <string name="batch_data_error">정보를 불러오지 못했습니다. 다시 확인해 주세요.</string>
+    <string name="batch_reservation">동행 예약</string>
+    <string name="batch_progress">동행 진행</string>
+    <string name="batch_progress_missing">현재 조회할 수 있는 동행 단계가 없습니다.</string>
+    <string name="batch_progress_done">완료</string>
+    <string name="batch_progress_now">진행중</string>
+    <string name="batch_progress_next">예정</string>
+    <string name="batch_progress_stopped">중단</string>
+    <string name="batch_progress_unknown">상태 미확인</string>
+    <string name="batch_chat_title">채팅</string>
+    <item name="batchRoomSearch" type="id" />
+    <string name="batch_chat_active">진행 중</string>
+    <string name="batch_chat_unread">안읽음</string>
+    <string name="batch_chat_search">이름 또는 병원으로 검색하기</string>
+    <string name="batch_chat_no_rooms">표시할 동행방이 없습니다.</string>
+    <string name="batch_chat_no_match">검색 결과가 없습니다.</string>
+    <string name="batch_chat_unread_unavailable">예약 목록에는 읽음 정보가 없습니다. 동행방에서 메시지를 확인해 주세요.</string>
+    <string name="batch_chat_guardian">공유받은 예약 · 채팅 접근은 동행방에서 확인합니다.</string>
+    <string name="batch_chat_matched">진행 전</string>
+    <string name="batch_report">최종 리포트 확인</string>
+</resources>

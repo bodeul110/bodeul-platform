@@ -123,6 +123,10 @@
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity android:name=".ui.profile.AccountSettingsActivity"
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
+        <activity android:name=".ui.profile.ProfileInfoActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
+        <activity android:name=".ui.profile.PaymentInfoActivity"
+            android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity android:name=".ui.profile.NotificationSettingsActivity"
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity android:name=".ui.support.FaqActivity"

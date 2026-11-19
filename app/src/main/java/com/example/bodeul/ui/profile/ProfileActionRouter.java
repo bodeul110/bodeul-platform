@@ -2,7 +2,6 @@ package com.example.bodeul.ui.profile;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.bodeul.BuildConfig;
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.User;
 import com.example.bodeul.domain.model.UserRole;
@@ -36,11 +35,11 @@ public final class ProfileActionRouter {
             case DOCUMENTS:
                 if (user.getRole() == UserRole.MANAGER) activity.startActivity(ManagerDocumentRegistrationActivity.createManagementIntent(activity));
                 break;
-            case VERSION: show(item.labelId, BuildConfig.VERSION_NAME); break;
-            case NOTICE: show(item.labelId, R.string.final_profile_notice_unavailable); break;
+            case VERSION: openInfo(ProfileInfoActivity.Page.VERSION); break;
+            case NOTICE: openInfo(ProfileInfoActivity.Page.NOTICE); break;
             case FAQ: activity.startActivity(FaqActivity.createIntent(activity)); break;
-            case TERMS: show(item.labelId, R.string.final_profile_terms_unavailable); break;
-            case PAYMENT: show(item.labelId, R.string.final_profile_payment_unavailable); break;
+            case TERMS: openInfo(ProfileInfoActivity.Page.TERMS); break;
+            case PAYMENT: activity.startActivity(PaymentInfoActivity.createIntent(activity)); break;
             case SETTLEMENT: show(item.labelId, R.string.final_profile_settlement_unavailable); break;
         }
     }
@@ -48,9 +47,9 @@ public final class ProfileActionRouter {
     public void showAccount(User user, boolean editing) {
         if (user == null) return;
         dismiss();
+        if (editing) { openInfo(ProfileInfoActivity.Page.EDIT); return; }
         String message = activity.getString(R.string.final_profile_account_details,
                 value(user.getName()), value(user.getEmail()), value(user.getPhone()), roleLabel(user));
-        if (editing) message += "\n\n" + activity.getString(R.string.final_profile_edit_unavailable);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.final_profile_account).setMessage(message)
                 .setPositiveButton(R.string.permission_guide_confirm, null);
@@ -82,8 +81,9 @@ public final class ProfileActionRouter {
     private void show(int title, String message) {
         dismiss();
         dialog = new MaterialAlertDialogBuilder(activity)
-                .setTitle(title == R.string.final_profile_version ? activity.getString(title, BuildConfig.VERSION_NAME) : activity.getString(title))
+                .setTitle(title)
                 .setMessage(message).setPositiveButton(R.string.permission_guide_confirm, null).show();
     }
     public void dismiss() { if (dialog != null) { dialog.dismiss(); dialog = null; } }
+    private void openInfo(ProfileInfoActivity.Page page) { activity.startActivity(ProfileInfoActivity.createIntent(activity, page)); }
 }
