@@ -3,6 +3,7 @@ package com.example.bodeul.data;
 import android.app.Activity;
 
 import com.example.bodeul.domain.model.User;
+import com.example.bodeul.domain.model.AccountSignInInfo;
 import com.example.bodeul.domain.model.UserRole;
 
 /**
@@ -42,6 +43,16 @@ public interface AuthRepository {
 
     // 입력한 이메일로 비밀번호 재설정 안내를 보낸다.
     void resetPassword(String email, RepositoryCallback<Void> callback);
+
+    // 설정 진입 시 실제 인증 계정과 로그인 방식을 다시 확인한다. 미지원 저장소는 성공을 가장하지 않는다.
+    default void getAccountSignInInfo(String expectedUserId, RepositoryCallback<AccountSignInInfo> callback) {
+        callback.onError("현재 계정의 로그인 정보를 확인할 수 없습니다.");
+    }
+
+    // 확인창을 연 계정과 발송 시점의 계정이 같을 때만 기존 재설정 메일을 보낸다.
+    default void resetCurrentAccountPassword(String expectedUserId, String expectedEmail, RepositoryCallback<Void> callback) {
+        callback.onError("현재 계정의 비밀번호 재설정을 이용할 수 없습니다.");
+    }
 
     // 현재 세션을 종료하고 다음 진입에서 다시 로그인하도록 만든다.
     void signOut();

@@ -213,12 +213,12 @@ public class ProfileFigmaTest {
             onView(withId(R.id.profileMenuVersion)).perform(scrollTo()).check(matches(isCompletelyDisplayed()));
         }
     }
-    @Test public void settingsAndSystemNotificationRoutesUseExistingDestinations() {
+    @Test public void settingsAndNotificationsOpenTheirDetailDestinations() {
         try (ActivityScenario<ProfileFigmaPreviewActivity> scenario = home(false)) {
             onView(withId(R.id.buttonProfileSettings)).perform(click()); assertTarget(ProfileSettingsActivity.class);
             onView(withId(R.id.buttonProfileNotifications)).perform(click());
-            assertEquals(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS, ProfilePreviewDependencies.lastNavigation.getAction());
-            assertEquals(BuildConfig.APPLICATION_ID, ProfilePreviewDependencies.lastNavigation.getStringExtra(android.provider.Settings.EXTRA_APP_PACKAGE));
+            assertTarget(NotificationSettingsActivity.class);
+            assertNull(ProfilePreviewDependencies.lastNavigation.getExtras());
         }
     }
     @Test public void managerBottomNavigationReturnsToRequestedHomeTab() {

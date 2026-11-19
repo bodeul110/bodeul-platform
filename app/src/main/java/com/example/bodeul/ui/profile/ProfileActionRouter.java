@@ -1,10 +1,5 @@
 package com.example.bodeul.ui.profile;
 
-import android.content.ActivityNotFoundException;
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Build;
-import android.provider.Settings;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.bodeul.BuildConfig;
@@ -32,8 +27,8 @@ public final class ProfileActionRouter {
                 activity.startActivity(user.getRole() == UserRole.MANAGER
                         ? ManagerSupportActivity.createIntent(activity) : ClientSupportActivity.createIntent(activity));
                 break;
-            case ACCOUNT: showAccount(user, false); break;
-            case NOTIFICATIONS: openNotifications(); break;
+            case ACCOUNT: activity.startActivity(AccountSettingsActivity.createIntent(activity)); break;
+            case NOTIFICATIONS: activity.startActivity(NotificationSettingsActivity.createIntent(activity)); break;
             case MATCHING:
             case REPORT:
                 if (user.getRole() == UserRole.MANAGER) activity.startActivity(ManagerHistoryActivity.createIntent(activity));
@@ -75,20 +70,6 @@ public final class ProfileActionRouter {
         dialog = new MaterialAlertDialogBuilder(activity).setTitle(R.string.final_profile_sign_out)
                 .setMessage(R.string.final_profile_sign_out_confirm).setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.final_profile_sign_out, (view, which) -> signOut.run()).show();
-    }
-    private void openNotifications() {
-        Intent intent;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                    .putExtra(Settings.EXTRA_APP_PACKAGE, activity.getPackageName());
-        } else {
-            intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:" + activity.getPackageName()));
-        }
-        try { activity.startActivity(intent); }
-        catch (ActivityNotFoundException exception) {
-            show(R.string.final_profile_notifications, R.string.final_profile_notification_unavailable);
-        }
     }
     private String roleLabel(User user) {
         return activity.getString(user.getRole() == UserRole.MANAGER ? R.string.login_role_manager

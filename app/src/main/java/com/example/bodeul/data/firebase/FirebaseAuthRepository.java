@@ -24,6 +24,7 @@ import com.example.bodeul.data.AuthRepository;
 import com.example.bodeul.data.NotificationTokenRegistrar;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.User;
+import com.example.bodeul.domain.model.AccountSignInInfo;
 import com.example.bodeul.domain.model.UserRole;
 import com.example.bodeul.util.SafeEnumParser;
 import com.example.bodeul.util.UserProfileSanitizer;
@@ -51,6 +52,8 @@ import com.navercorp.nid.NidOAuth;
 import com.navercorp.nid.oauth.util.NidOAuthCallback;
 
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -344,6 +347,56 @@ public class FirebaseAuthRepository implements AuthRepository {
                 })
                 .addOnFailureListener(exception ->
                         callback.onError(resolveRegisterMessage(exception)));
+    }
+
+    @Override
+    public void getAccountSignInInfo(String expectedUserId, RepositoryCallback<AccountSignInInfo> callback) {
+        FirebaseUser current = firebaseAuth.getCurrentUser();
+        if (current == null || !current.getUid().equals(expectedUserId)) {
+            callback.onError(appContext.getString(R.string.final_settings_account_changed));
+            return;
+        }
+        current.reload().addOnSuccessListener(unused -> {
+            FirebaseUser refreshed = firebaseAuth.getCurrentUser();
+            if (refreshed == null || !refreshed.getUid().equals(expectedUserId)) {
+                callback.onError(appContext.getString(R.string.final_settings_account_changed));
+                return;
+            }
+            List<String> providers = new ArrayList<>();
+            for (UserInfo info : refreshed.getProviderData()) providers.add(info.getProviderId());
+            if (!expectedUserId.startsWith("kakao_") && !expectedUserId.startsWith("naver_")) {
+                callback.onSuccess(new AccountSignInInfo(expectedUserId, refreshed.getEmail(), providers, null));
+                return;
+            }
+            firestore.collection("users").document(expectedUserId).get(Source.SERVER)
+                    .addOnSuccessListener(document -> {
+                        FirebaseUser active = firebaseAuth.getCurrentUser();
+                        if (active == null || !active.getUid().equals(expectedUserId) || !document.exists()) {
+                            callback.onError(appContext.getString(R.string.final_settings_account_changed));
+                            return;
+                        }
+                        callback.onSuccess(new AccountSignInInfo(expectedUserId,
+                                TextUtils.isEmpty(active.getEmail()) ? document.getString("email") : active.getEmail(),
+                                providers, document.getString("provider")));
+                    })
+                    .addOnFailureListener(error -> callback.onError(appContext.getString(R.string.final_settings_account_read_error)));
+        }).addOnFailureListener(error -> callback.onError(appContext.getString(R.string.final_settings_account_read_error)));
+    }
+
+    @Override
+    public void resetCurrentAccountPassword(String expectedUserId, String expectedEmail, RepositoryCallback<Void> callback) {
+        getAccountSignInInfo(expectedUserId, new RepositoryCallback<AccountSignInInfo>() {
+            @Override public void onSuccess(AccountSignInInfo info) {
+                FirebaseUser active = firebaseAuth.getCurrentUser();
+                if (active == null || !expectedUserId.equals(active.getUid())
+                        || !info.matches(expectedUserId, expectedEmail) || !info.canResetPassword()) {
+                    callback.onError(appContext.getString(R.string.final_settings_account_changed));
+                    return;
+                }
+                resetPassword(info.getEmail(), callback);
+            }
+            @Override public void onError(String message) { callback.onError(message); }
+        });
     }
 
     @Override
