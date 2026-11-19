@@ -1,7 +1,6 @@
 package com.example.bodeul.ui.manager;
 
 import android.content.Context;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -9,7 +8,6 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -17,6 +15,7 @@ import androidx.core.content.ContextCompat;
 
 import com.example.bodeul.R;
 import com.example.bodeul.domain.model.ManagerDashboard;
+import com.example.bodeul.ui.common.GuideTimelineMarker;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 
@@ -26,14 +25,6 @@ import java.util.List;
 final class ManagerGuideFinalBinder {
     private static final String STATE_KEY = "guide.final.routeKey";
     private static final String STATE_DETAILS = "guide.final.details";
-    private static final int[] TITLES = {
-            R.string.final_guide_title, R.string.final_guide_group_1,
-            R.string.final_guide_group_2, R.string.final_guide_group_3,
-            R.string.final_guide_group_4, R.string.final_guide_group_5,
-            R.string.final_guide_group_6, R.string.final_guide_group_7,
-            R.string.final_guide_group_8, R.string.final_guide_group_9,
-            R.string.final_guide_journal
-    };
     private final View root;
     private final Context context;
     private final View detailsScroll;
@@ -100,28 +91,9 @@ final class ManagerGuideFinalBinder {
         View row = LayoutInflater.from(context).inflate(R.layout.item_final_guide_timeline, timeline, false);
         boolean active = item.state() == ManagerGuideStageState.ACTIVE;
         boolean done = item.state() == ManagerGuideStageState.COMPLETED;
-        String title = item.group > 0 ? context.getString(TITLES[item.group]) : item.fallbackTitle;
-        TextView number = row.findViewById(R.id.finalGuideTimelineNumber);
-        int markerSize = Math.max(dp(20), Math.round(number.getTextSize() + dp(8)));
-        FrameLayout.LayoutParams markerParams = (FrameLayout.LayoutParams) number.getLayoutParams();
-        markerParams.width = markerSize;
-        markerParams.height = markerSize;
-        number.setLayoutParams(markerParams);
-        number.setText(done ? "" : String.valueOf(item.group > 0 ? item.group : timeline.getChildCount() + 1));
-        number.setBackground(shape(done || active ? R.color.final_brand_primary : R.color.final_input_surface, 20));
-        number.setTextColor(color(active ? R.color.final_text_on_primary : R.color.final_text_secondary));
-        row.findViewById(R.id.finalGuideTimelineCheck).setVisibility(done ? View.VISIBLE : View.GONE);
-        View line = row.findViewById(R.id.finalGuideTimelineLine);
-        FrameLayout.LayoutParams lineParams = (FrameLayout.LayoutParams) line.getLayoutParams();
-        lineParams.setMarginStart(markerSize / 2 - dp(1));
-        line.setLayoutParams(lineParams);
-        View check = row.findViewById(R.id.finalGuideTimelineCheck);
-        FrameLayout.LayoutParams checkParams = (FrameLayout.LayoutParams) check.getLayoutParams();
-        checkParams.setMarginStart((markerSize - checkParams.width) / 2);
-        checkParams.topMargin = dp(14) + (markerSize - checkParams.height) / 2;
-        check.setLayoutParams(checkParams);
-        line.setVisibility(last ? View.INVISIBLE : View.VISIBLE);
-        line.setBackgroundColor(color(done ? R.color.final_brand_primary : R.color.final_line));
+        String title = item.group > 0 ? context.getString(GuideDisplayGroups.title(item.group)) : item.fallbackTitle;
+        GuideTimelineMarker.bind(row,
+                item.group > 0 ? item.group : timeline.getChildCount() + 1, active, done, last);
         TextView label = row.findViewById(R.id.finalGuideTimelineTitle);
         label.setText(title);
         label.setTextColor(color(done || active ? R.color.final_text_primary : R.color.final_text_secondary));
@@ -227,7 +199,7 @@ final class ManagerGuideFinalBinder {
         timelineScroll.setVisibility(details ? View.GONE : View.VISIBLE);
         timelineFooter.setVisibility(details ? View.GONE : View.VISIBLE);
         int group = ManagerGuideTimelinePolicy.groupOf(model.getCurrentStepCode());
-        toolbarTitle.setText(details ? (group == 0 ? model.getTitle() : context.getString(TITLES[group]))
+        toolbarTitle.setText(details ? (group == 0 ? model.getTitle() : context.getString(GuideDisplayGroups.title(group)))
                 : context.getString(R.string.final_guide_title));
         toolbarTitle.setTextSize(details ? 14 : 22);
         toolbarTitle.setGravity(details ? Gravity.CENTER : Gravity.START | Gravity.CENTER_VERTICAL);
@@ -268,10 +240,4 @@ final class ManagerGuideFinalBinder {
 
     private int color(int resource) { return ContextCompat.getColor(context, resource); }
     private int dp(int value) { return Math.round(value * context.getResources().getDisplayMetrics().density); }
-    private GradientDrawable shape(int colorResource, int radius) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setColor(color(colorResource));
-        shape.setCornerRadius(dp(radius));
-        return shape;
-    }
 }

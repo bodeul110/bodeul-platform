@@ -125,6 +125,7 @@
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
         <activity android:name=".ui.profile.ProfileInfoActivity"
             android:theme="@style/Theme.Bodeul.FinalHome" android:exported="false" />
+        <activity android:name=".ui.booking.ClientProgressActivity" android:exported="false" android:theme="@style/Theme.Bodeul.FinalHome" />
         <activity android:name=".ui.chat.ChatRoomsActivity" android:exported="false" android:theme="@style/Theme.Bodeul.FinalHome"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
         <activity android:name=".ui.profile.PaymentInfoActivity"
