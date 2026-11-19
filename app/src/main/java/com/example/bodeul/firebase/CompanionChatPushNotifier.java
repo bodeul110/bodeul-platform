@@ -19,7 +19,7 @@ import com.example.bodeul.util.NotificationPermissionSupport;
  * 안심 채팅 새 메시지를 시스템 알림으로 노출한다.
  */
 public final class CompanionChatPushNotifier {
-    private static final String CHANNEL_ID = "companionChatUpdates";
+    public static final String CHANNEL_ID = "companionChatUpdates";
 
     private CompanionChatPushNotifier() {}
 
@@ -75,7 +75,7 @@ public final class CompanionChatPushNotifier {
         return context.getString(R.string.companion_chat_push_body_fallback);
     }
 
-    private static void createChannelIfNeeded(@NonNull Context context) {
+    public static void createChannelIfNeeded(@NonNull Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return;
         }

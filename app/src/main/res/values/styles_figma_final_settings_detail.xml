@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="FinalSettingsLabel" parent="FinalProfileBody">
+        <item name="android:textSize">13sp</item>
+        <item name="lineHeight">18sp</item>
+    </style>
+    <style name="FinalSettingsValue" parent="FinalProfileBody">
+        <item name="android:textSize">14sp</item>
+        <item name="lineHeight">20sp</item>
+    </style>
+    <style name="FinalSettingsSection" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">30dp</item>
+        <item name="android:orientation">vertical</item>
+    </style>
+    <style name="FinalSettingsAction" parent="FinalProfileBody">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="drawableEndCompat">@drawable/final_settings_arrow_next_gray</item>
+        <item name="android:drawablePadding">10dp</item>
+    </style>
+</resources>

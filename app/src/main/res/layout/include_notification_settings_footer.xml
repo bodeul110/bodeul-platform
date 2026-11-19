@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="10dp">
+    <TextView android:id="@+id/buttonSystemNotifications" style="@style/FinalSettingsAction"
+        android:text="@string/final_settings_system_notifications" />
+    <TextView style="@style/FinalSettingsLabel" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="6dp" android:textColor="@color/final_text_secondary" android:text="@string/final_settings_system_notifications_note" />
+</LinearLayout>

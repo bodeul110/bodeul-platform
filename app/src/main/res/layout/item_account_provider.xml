@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="48dp"
+    android:orientation="horizontal" android:gravity="center_vertical" android:paddingTop="4dp" android:paddingBottom="4dp"
+    android:clickable="true" android:focusable="true" android:foreground="?attr/selectableItemBackground">
+    <ImageView android:id="@+id/providerRowIcon" android:layout_width="30dp" android:layout_height="30dp"
+        android:scaleType="fitCenter" android:importantForAccessibility="no" />
+    <TextView android:id="@+id/providerRowName" style="@style/FinalSettingsLabel" android:layout_width="0dp"
+        android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:layout_marginEnd="10dp" />
+    <TextView android:id="@+id/providerRowState" style="@style/FinalSettingsLabel" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:maxWidth="100dp" android:textColor="@color/final_text_secondary" />
+</LinearLayout>
