@@ -270,6 +270,10 @@ public class FinalDetailBatchTest {
         user = account("g",UserRole.GUARDIAN);
         try (ActivityScenario<BatchPreviewActivities.Info> s = info(ProfileInfoActivity.Page.EDIT)) {
             screenshot("profile");
+            onView(withId(R.id.batchEditPhoto)).perform(click());
+            onView(withText(R.string.final_profile_edit_unavailable)).inRoot(isDialog()).check(matches(isDisplayed()));
+            onView(withText(R.string.permission_guide_confirm)).inRoot(isDialog()).perform(click());
+            onView(withId(R.id.batchEditName)).check(matches(withText(user.getName())));
             onView(withText(R.string.batch_edit_action)).perform(click());
             onView(withText(R.string.final_profile_edit_unavailable)).inRoot(isDialog()).check(matches(isDisplayed()));
             onView(withText(R.string.permission_guide_confirm)).inRoot(isDialog()).perform(click());

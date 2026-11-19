@@ -4,6 +4,8 @@
     <string name="batch_installed_version">현재 버전 : v%1$s</string>
     <string name="batch_edit">프로필 편집</string>
     <string name="batch_edit_action">수정하기</string>
+    <string name="batch_edit_short">수정</string>
+    <string name="batch_edit_photo">프로필 사진 수정 안내</string>
     <string name="batch_policy_privacy">개인정보처리방침</string>
     <string name="batch_policy_terms">이용약관</string>
     <string name="batch_policy_missing">%1$s 원문은 아직 앱에 연결되지 않았습니다.</string>

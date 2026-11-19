@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
@@ -46,24 +48,16 @@ public class ProfileInfoActivity extends SettingsDetailActivity {
     @Override protected void showUser(User current, int attempt) {
         if (page == null) return;
         ready();
-        if (page == Page.VERSION || page == Page.EDIT) {
-            boolean edit = page == Page.EDIT;
-            content.setGravity(edit ? Gravity.TOP | Gravity.CENTER_HORIZONTAL : Gravity.CENTER);
-            DetailViews.image(content, edit ? R.drawable.bodeul_final_profile_avatar : R.drawable.bodeul_final_version_mark, edit ? 100 : 60);
-            String name = current.getName() == null || current.getName().trim().isEmpty()
-                    ? getString(R.string.final_profile_unknown) : current.getName();
-            TextView label = DetailViews.text(content, edit ? name : getString(R.string.batch_installed_version, BuildConfig.VERSION_NAME),
-                    edit ? R.style.FinalHomeTitle : R.style.FinalSettingsLabel);
+        if (page == Page.EDIT) {
+            showProfile(current);
+            return;
+        }
+        if (page == Page.VERSION) {
+            content.setGravity(Gravity.CENTER);
+            DetailViews.image(content, R.drawable.bodeul_final_version_mark, 60);
+            TextView label = DetailViews.text(content, getString(R.string.batch_installed_version, BuildConfig.VERSION_NAME),
+                    R.style.FinalSettingsLabel);
             label.setGravity(Gravity.CENTER);
-            if (edit) {
-                DetailViews.space(content, 24);
-                DetailViews.action(content, R.string.batch_edit_action, () -> message(R.string.batch_edit, R.string.final_profile_edit_unavailable));
-                accountActions = new ProfileActionRouter(this);
-                DetailViews.action(content, R.string.final_profile_account, () -> accountActions.showAccount(current,false));
-                if (current.getRole() != UserRole.MANAGER) {
-                    DetailViews.action(content, R.string.final_profile_health, () -> startActivity(HealthInfoActivity.createIntent(this)));
-                }
-            }
             return;
         }
         int[] options = page == Page.NOTICE ? NOTICES : TERMS;
@@ -74,6 +68,28 @@ public class ProfileInfoActivity extends SettingsDetailActivity {
         DetailViews.space(content, 20);
         content.addView(body, -1, -2);
         renderPage(body, options, current);
+    }
+    private void showProfile(User current) {
+        getLayoutInflater().inflate(R.layout.content_final_profile_edit, content, true);
+        TextView name = content.findViewById(R.id.batchEditName);
+        name.setText(current.getName() == null || current.getName().trim().isEmpty()
+                ? getString(R.string.final_profile_unknown) : current.getName());
+        View.OnClickListener explainEdit = v -> message(R.string.batch_edit, R.string.final_profile_edit_unavailable);
+        name.setOnClickListener(explainEdit);
+        content.findViewById(R.id.batchEditPhoto).setOnClickListener(explainEdit);
+        content.findViewById(R.id.batchEditAction).setOnClickListener(explainEdit);
+        accountActions = new ProfileActionRouter(this);
+        bindLink(content.findViewById(R.id.batchEditAccount), R.string.final_profile_account,
+                R.drawable.bodeul_final_profile_account, () -> accountActions.showAccount(current, false));
+        View health = content.findViewById(R.id.batchEditHealth);
+        if (current.getRole() == UserRole.MANAGER) health.setVisibility(View.GONE);
+        else bindLink(health, R.string.final_profile_health, R.drawable.bodeul_final_profile_report,
+                () -> startActivity(HealthInfoActivity.createIntent(this)));
+    }
+    private static void bindLink(View row, int title, int icon, Runnable action) {
+        ((TextView) row.findViewById(R.id.textProfileMenuLabel)).setText(title);
+        ((ImageView) row.findViewById(R.id.imageProfileMenuIcon)).setImageResource(icon);
+        row.setOnClickListener(v -> action.run());
     }
     private void renderPage(LinearLayout body, int[] options, User current) {
         body.removeAllViews();

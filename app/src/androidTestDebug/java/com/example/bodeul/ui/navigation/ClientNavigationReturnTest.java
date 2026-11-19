@@ -349,7 +349,8 @@ public class ClientNavigationReturnTest {
                         .show(WindowInsetsCompat.Type.ime());
             });
             awaitIme(health, true);
-            onView(withId(R.id.inputBookingHealthProfileCondition)).check(matches(isCompletelyDisplayed()));
+            // 키보드로 줄어든 영역에서도 사용자가 질환 입력란 전체까지 스크롤할 수 있어야 한다.
+            onView(withId(R.id.inputBookingHealthProfileCondition)).perform(scrollTo()).check(matches(isCompletelyDisplayed()));
             onView(withId(R.id.inputBookingHealthProfileCondition)).perform(closeSoftKeyboard());
             awaitIme(health, false);
             click(health, R.id.buttonBookingHealthProfileComplete);
