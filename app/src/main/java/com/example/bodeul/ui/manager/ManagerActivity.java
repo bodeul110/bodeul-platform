@@ -26,7 +26,7 @@ import com.example.bodeul.domain.model.UserRole;
 import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
-import com.example.bodeul.ui.chat.CompanionChatActivity;
+import com.example.bodeul.ui.chat.ChatRoomsActivity;
 import com.example.bodeul.ui.home.ClientHomeInsets;
 import com.example.bodeul.util.EnvironmentModeBadgeHelper;
 import com.example.bodeul.util.StatePanelHelper;
@@ -119,7 +119,7 @@ public class ManagerActivity extends AppCompatActivity {
         navigation.setOnItemSelectedListener(item -> {
             if (currentUser == null) return false;
             if (item.getItemId() == R.id.navManagerChat) {
-                startActivity(CompanionChatActivity.createIntent(this));
+                startActivity(ChatRoomsActivity.createIntent(this));
                 return false;
             }
             if (item.getItemId() == R.id.navManagerProfile) {

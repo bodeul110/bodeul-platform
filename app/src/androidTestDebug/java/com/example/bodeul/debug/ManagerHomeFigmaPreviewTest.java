@@ -28,7 +28,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.example.bodeul.R;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.AppointmentRequest;
-import com.example.bodeul.ui.chat.CompanionChatActivity;
+import com.example.bodeul.ui.chat.ChatRoomsActivity;
 import com.example.bodeul.ui.manager.*;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import java.io.File;
@@ -166,7 +166,7 @@ public class ManagerHomeFigmaPreviewTest {
             int[] views = {R.id.buttonManagerDocuments, R.id.buttonManagerProfile, R.id.buttonManagerSupport,
                     R.id.navManagerChat, R.id.navManagerProfile, R.id.buttonManagerHistory, R.id.buttonManagerFooterSupport};
             Class<?>[] targets = {ManagerDocumentRegistrationActivity.class, com.example.bodeul.ui.profile.ManagerMyPageActivity.class, ManagerSupportActivity.class,
-                    CompanionChatActivity.class, com.example.bodeul.ui.profile.ManagerMyPageActivity.class, ManagerHistoryActivity.class, ManagerSupportActivity.class};
+                    ChatRoomsActivity.class, com.example.bodeul.ui.profile.ManagerMyPageActivity.class, ManagerHistoryActivity.class, ManagerSupportActivity.class};
             for (int i = 0; i < views.length; i++) {
                 int id = views[i];
                 Class<?> target = targets[i];

@@ -28,7 +28,6 @@ import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.User;
 import com.example.bodeul.domain.model.UserRole;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
-import com.example.bodeul.ui.health.HealthInfoActivity;
 import com.example.bodeul.ui.manager.*;
 import com.example.bodeul.ui.profile.*;
 import com.example.bodeul.ui.support.ClientSupportActivity;
@@ -98,18 +97,18 @@ public class ProfileFigmaTest {
                 assertEquals(a.getString(R.string.client_profile_value_missing), ((TextView) a.findViewById(R.id.textClientProfileEmail)).getText().toString());
             });
             onView(withId(R.id.buttonProfileEdit)).perform(click());
-            onView(withText(R.string.final_profile_health)).inRoot(isDialog()).perform(click());
-            assertTarget(HealthInfoActivity.class);
+            assertTarget(com.example.bodeul.ui.profile.ProfileInfoActivity.class);
+            assertEquals("EDIT", ProfilePreviewDependencies.lastNavigation.getStringExtra("profile_info_page"));
             assertEquals(0, signsOut);
         }
     }
     @Test public void profileEditDoesNotBypassIdentityVerification() {
         try (ActivityScenario<ProfileFigmaPreviewActivity> scenario = home(false)) {
             onView(withId(R.id.buttonProfileEdit)).perform(click());
-            onView(withId(android.R.id.message)).check(matches(withText(org.hamcrest.Matchers.containsString(
-                    InstrumentationRegistry.getInstrumentation().getTargetContext().getString(R.string.final_profile_edit_unavailable)))));
+            assertTarget(com.example.bodeul.ui.profile.ProfileInfoActivity.class);
+            assertEquals("EDIT", ProfilePreviewDependencies.lastNavigation.getStringExtra("profile_info_page"));
             assertEquals(1, loads);
-            assertNull(ProfilePreviewDependencies.lastNavigation);
+            assertEquals(0, signsOut);
         }
     }
     @Test public void supportRoutesByAuthenticatedRoleAndDoesNotMutateAccount() {
@@ -226,7 +225,7 @@ public class ProfileFigmaTest {
         for (int tab : new int[]{R.id.navManagerHome, R.id.navManagerCalendar, R.id.navManagerMatching, R.id.navManagerChat}) {
             try (ActivityScenario<ProfileFigmaPreviewActivity> scenario = home(true)) {
                 onView(withId(tab)).perform(click());
-                assertTarget(tab == R.id.navManagerChat ? com.example.bodeul.ui.chat.CompanionChatActivity.class : ManagerActivity.class);
+                assertTarget(tab == R.id.navManagerChat ? com.example.bodeul.ui.chat.ChatRoomsActivity.class : ManagerActivity.class);
                 if (tab != R.id.navManagerChat) {
                     Intent expected = ManagerActivity.createTabIntent(context(), tab);
                     for (String key : expected.getExtras().keySet()) {
@@ -304,16 +303,15 @@ public class ProfileFigmaTest {
         }
         assertEquals(0, signsOut);
     }
-    @Test public void unconnectedMenusShowHonestMessagesAndDoNotWriteOrNavigate() {
+    @Test public void policyAndNoticeOpenTheirDetailWithoutAccountWrites() {
         try (ActivityScenario<ProfileFigmaPreviewActivity> scenario = home(false)) {
             int[] ids = {R.id.profileMenuNotice, R.id.profileMenuTerms};
-            int[] messages = {R.string.final_profile_notice_unavailable, R.string.final_profile_terms_unavailable};
+            String[] pages = {"NOTICE", "TERMS"};
             for (int i = 0; i < ids.length; i++) {
                 onView(withId(ids[i])).perform(scrollTo(), click());
-                onView(withText(messages[i])).inRoot(isDialog()).check(matches(isDisplayed()));
-                onView(withText(R.string.permission_guide_confirm)).inRoot(isDialog()).perform(click());
+                assertTarget(com.example.bodeul.ui.profile.ProfileInfoActivity.class);
+                assertEquals(pages[i], ProfilePreviewDependencies.lastNavigation.getStringExtra("profile_info_page"));
             }
-            assertNull(ProfilePreviewDependencies.lastNavigation);
             assertEquals(0, signsOut);
         }
     }

@@ -29,7 +29,7 @@ import com.example.bodeul.R;
 import com.example.bodeul.data.RepositoryCallback;
 import com.example.bodeul.domain.model.AppointmentStatus;
 import com.example.bodeul.ui.booking.*;
-import com.example.bodeul.ui.chat.CompanionChatActivity;
+import com.example.bodeul.ui.chat.ChatRoomsActivity;
 import com.example.bodeul.ui.health.HealthInfoActivity;
 import com.example.bodeul.ui.home.ClientHomeDashboard;
 import com.example.bodeul.ui.profile.ClientProfileActivity;
@@ -138,7 +138,7 @@ public class ClientHomeFigmaPreviewTest {
     @Test public void fiveTabsKeepSourceSelectionAndExistingDestinations() {
         try (ActivityScenario<ClientHomeFigmaPreviewActivity> scenario = launch("empty")) {
             int[] ids = {R.id.clientNavCalendar, R.id.clientNavScheduleHistory, R.id.clientNavCompanionRoom, R.id.clientNavProfile};
-            Class<?>[] targets = {ClientCalendarActivity.class, ClientBookingHistoryActivity.class, CompanionChatActivity.class, ClientProfileActivity.class};
+            Class<?>[] targets = {ClientCalendarActivity.class, ClientBookingHistoryActivity.class, ChatRoomsActivity.class, ClientProfileActivity.class};
             for (int i = 0; i < ids.length; i++) {
                 onView(withId(ids[i])).perform(click());
                 Class<?> expected = targets[i];
