@@ -76,7 +76,9 @@ public class ProfileInfoActivity extends SettingsDetailActivity {
                 ? getString(R.string.final_profile_unknown) : current.getName());
         View.OnClickListener explainEdit = v -> message(R.string.batch_edit, R.string.final_profile_edit_unavailable);
         name.setOnClickListener(explainEdit);
-        content.findViewById(R.id.batchEditPhoto).setOnClickListener(explainEdit);
+        View photo = content.findViewById(R.id.batchEditPhoto);
+        photo.setClipToOutline(true);
+        photo.setOnClickListener(explainEdit);
         content.findViewById(R.id.batchEditAction).setOnClickListener(explainEdit);
         accountActions = new ProfileActionRouter(this);
         bindLink(content.findViewById(R.id.batchEditAccount), R.string.final_profile_account,

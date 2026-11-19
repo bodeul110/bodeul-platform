@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge xmlns:android="http://schemas.android.com/apk/res/android">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <FrameLayout android:id="@+id/batchEditPhoto" android:layout_width="100dp" android:layout_height="100dp"
         android:layout_gravity="center_horizontal" android:layout_marginTop="22dp"
-        android:background="@drawable/bg_batch_profile_circle" android:clipToOutline="true"
+        android:background="@drawable/bg_batch_profile_circle"
         android:clickable="true" android:focusable="true" android:contentDescription="@string/batch_edit_photo">
         <ImageView android:layout_width="match_parent" android:layout_height="match_parent"
             android:padding="18dp" android:src="@drawable/bodeul_final_profile_avatar" android:importantForAccessibility="no" />
@@ -11,10 +12,10 @@
             android:background="@color/final_text_secondary" android:textColor="@android:color/white"
             android:text="@string/batch_edit_short" android:importantForAccessibility="no" />
     </FrameLayout>
-    <TextView android:id="@+id/batchEditName" style="@style/FinalHomeTitle"
+    <androidx.appcompat.widget.AppCompatTextView android:id="@+id/batchEditName" style="@style/FinalHomeTitle"
         android:layout_width="wrap_content" android:layout_height="wrap_content" android:minHeight="48dp"
         android:layout_gravity="center_horizontal" android:layout_marginTop="4dp" android:gravity="center"
-        android:textSize="22sp" android:drawableEnd="@drawable/bodeul_final_profile_edit" android:drawablePadding="6dp"
+        android:textSize="22sp" app:drawableEndCompat="@drawable/bodeul_final_profile_edit" android:drawablePadding="6dp"
         android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground" />
     <include android:id="@+id/batchEditAccount" layout="@layout/item_final_profile_menu"
         android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" />
