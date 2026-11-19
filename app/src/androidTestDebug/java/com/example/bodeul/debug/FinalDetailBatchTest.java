@@ -292,7 +292,7 @@ public class FinalDetailBatchTest {
         try { i.getUiAutomation().waitForIdle(220,4000); } catch (java.util.concurrent.TimeoutException e) { throw new AssertionError(e); }
         Bitmap b = i.getUiAutomation().takeScreenshot();
         assertNotNull(b);
-        File dir = new File(context().getExternalFilesDir(null),"detail-batch");
+        File dir = new File(context().getFilesDir(),"detail-batch");
         assertTrue(dir.isDirectory() || dir.mkdirs());
         try (FileOutputStream out = new FileOutputStream(new File(dir,prefix+"-"+name+".png"))) {
             assertTrue(b.compress(Bitmap.CompressFormat.PNG,100,out));
