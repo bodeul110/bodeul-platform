@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,6 +86,23 @@ public class BookingStatusFigmaTest {
                     assertTextFits(a.findViewById(R.id.bookingStatusRoot));
                 });
                 capture("status-" + status.name().toLowerCase());
+            }
+        }
+    }
+    @Test public void timelineEntryNeedsSessionAndPassesOnlySelectedRequest() {
+        for (AppointmentStatus status : Arrays.asList(AppointmentStatus.REQUESTED,AppointmentStatus.IN_PROGRESS)) {
+            fixture.detail = detail(status,"PENDING",false);
+            try (ActivityScenario<BookingStatusPreviewActivity> scenario = launch()) {
+                scenario.onActivity(a -> {
+                    a.findViewById(R.id.buttonBookingStatusProgress).performClick();
+                    View link = a.findViewById(R.id.buttonBookingStatusTimeline);
+                    assertEquals(status == AppointmentStatus.IN_PROGRESS ? View.VISIBLE : View.GONE,link.getVisibility());
+                    if (status == AppointmentStatus.IN_PROGRESS) {
+                        link.performClick();
+                        assertRoute(a,com.example.bodeul.ui.booking.ClientProgressActivity.class,"requestId");
+                        assertEquals(1,a.lastStartedIntent.getExtras().size());
+                    }
+                });
             }
         }
     }

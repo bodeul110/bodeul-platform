@@ -14,7 +14,7 @@ import com.example.bodeul.ui.profile.SettingsDetailActivity;
 import com.example.bodeul.ui.report.FinalReportActivity;
 
 public class ClientProgressActivity extends SettingsDetailActivity {
-    private static final String EXTRA = "progress_request_id";
+    private static final String EXTRA = "requestId";
     private Runnable detach;
     public static Intent createIntent(Context c,String id) { return new Intent(c,ClientProgressActivity.class).putExtra(EXTRA,id); }
     protected BookingRepository bookings() { return ServiceLocator.provideBookingRepository(this); }
