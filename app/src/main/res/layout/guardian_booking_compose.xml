@@ -40,6 +40,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="36"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="textVisiblePassword|textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
@@ -53,6 +54,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="100"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="textPersonName|textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
@@ -66,6 +68,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="24"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="phone" />
             </com.google.android.material.textfield.TextInputLayout>
             <TextView
@@ -100,6 +103,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="300"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
@@ -113,6 +117,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="2000"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="textMultiLine|textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
@@ -126,6 +131,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="2000"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="textMultiLine|textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.textfield.TextInputLayout
@@ -139,6 +145,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:maxLength="2000"
+                    android:imeOptions="flagNoPersonalizedLearning"
                     android:inputType="textMultiLine|textNoSuggestions" />
             </com.google.android.material.textfield.TextInputLayout>
             <TextView

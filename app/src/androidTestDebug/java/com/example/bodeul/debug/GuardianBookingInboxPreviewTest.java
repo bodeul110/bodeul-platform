@@ -13,6 +13,9 @@ import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -35,6 +38,28 @@ public class GuardianBookingInboxPreviewTest {
         assertFalse(context.getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled));
         assertFalse(context.getPackageManager().getActivityInfo(
                 new ComponentName(context, GuardianBookingInboxActivity.class), 0).exported);
+    }
+
+    @Test public void composeLayoutRequestsNoPersonalizedLearningForEveryTextField() {
+        try (var scenario = launch("guardian")) {
+            scenario.onActivity(activity -> assertEquals(7,
+                    assertPrivateKeyboardOptions(activity.findViewById(R.id.guardianComposeRoot))));
+        }
+    }
+
+    private static int assertPrivateKeyboardOptions(View view) {
+        if (view instanceof EditText field) {
+            assertTrue("키보드 학습 제외 누락: " + field.getResources().getResourceEntryName(field.getId()),
+                    (field.getImeOptions() & EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0);
+            return 1;
+        }
+        int fields = 0;
+        if (view instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                fields += assertPrivateKeyboardOptions(group.getChildAt(i));
+            }
+        }
+        return fields;
     }
 
     @Test public void listLoadsMaskedParticipantsAndFullBody_thenGrantsAndRevokes() {
