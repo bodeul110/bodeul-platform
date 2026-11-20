@@ -39,6 +39,36 @@ public final class CoreApiGuardianBookingDraftRepository implements GuardianBook
     }
 
     @Override
+    public void loadIdentity(RepositoryCallback<Identity> callback) {
+        execute((sender, arrays) -> {
+            Actor self = actor(sender);
+            return new Identity(self.id, self.patient);
+        }, callback);
+    }
+
+    @Override
+    public void listReceipts(UUID requestId, RepositoryCallback<List<ReceiptRow>> callback) {
+        execute((sender, arrays) -> receiptListRequest(requestId, sender, arrays), callback);
+    }
+
+    static List<ReceiptRow> receiptListRequest(UUID requested, Sender sender, ArrayReader arrays) throws Exception {
+        if (actor(sender).patient) throw new CoreApiAuthenticatedClient.ApiException(403, FAILURE);
+        JSONArray rows = arrays.get(ROOT + "/receipts" + (requested == null ? "" : "?clientRequestId=" + requested));
+        if (rows.length() > (requested == null ? 50 : 1)) throw new JSONException("접수증 목록 범위를 확인해 주세요.");
+        List<ReceiptRow> result = new ArrayList<>();
+        HashSet<UUID> seen = new HashSet<>();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.getJSONObject(i);
+            UUID requestId = uuid(row, "clientRequestId");
+            if (requested != null && !requested.equals(requestId)) throw new JSONException("다른 요청의 접수증입니다.");
+            if (!seen.add(requestId)) throw new JSONException("중복된 접수 요청입니다.");
+            result.add(new ReceiptRow(requestId, new GuardianBookingReceipt(uuid(row, "appointmentId"),
+                    text(row, "publicCode"))));
+        }
+        return List.copyOf(result);
+    }
+
+    @Override
     public void submitDraft(GuardianBookingRequest request, RepositoryCallback<Summary> callback) {
         execute((sender, arrays) -> submitRequest(request, sender), callback);
     }

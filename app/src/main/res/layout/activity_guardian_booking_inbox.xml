@@ -59,12 +59,54 @@
         android:layout_weight="1"
         android:fillViewport="true">
         <LinearLayout
-            android:id="@+id/layoutGuardianBookingInboxRows"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp" />
+            android:paddingHorizontal="20dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuardianBookingCompose"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_compose"
+                android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuardianBookingOwnCode"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_patient_show"
+                android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/buttonGuardianBookingReceipts"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_receipts_title"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/textGuardianBookingOwnCode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textIsSelectable="true"
+                android:textColor="@color/bodeul_text_primary"
+                android:visibility="gone" />
+            <LinearLayout
+                android:id="@+id/layoutGuardianBookingInboxRows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
     </ScrollView>
+    <include
+        layout="@layout/guardian_booking_compose"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
     <include
         layout="@layout/guardian_booking_review"
         android:layout_width="match_parent"

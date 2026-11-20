@@ -14,6 +14,10 @@ interface GuardianBookingDraftRepository {
     long countActive(UUID guardianId, Instant now);
     void insert(StoredDraft draft);
     List<DraftSummary> listActive(AppUser actor, Instant now);
+    List<ReceiptCandidate> recentReceipts(UUID guardianId, UUID requestId);
+
+    record ReceiptSummary(UUID clientRequestId, UUID appointmentId, String publicCode) { }
+    record ReceiptCandidate(UUID patientId, ReceiptSummary receipt) { }
 
     record StoredDraft(UUID patientUserId, UUID guardianUserId, CreateAppointmentCommand appointment,
                        String fingerprint, Instant createdAt, Instant expiresAt) {

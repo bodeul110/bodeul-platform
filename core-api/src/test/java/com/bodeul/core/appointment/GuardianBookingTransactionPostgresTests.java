@@ -271,6 +271,14 @@ class GuardianBookingTransactionPostgresTests {
         assertThat(owner.queryForObject("select appointment_body is null and purged_at is not null from bodeul.guardian_booking_drafts where guardian_user_id = ? and client_request_id = ?",
                 Boolean.class, GUARDIAN.id(), command.clientRequestId())).isTrue();
         assertThat(drafts.list(PATIENT)).containsExactly(active);
+        var expected = new GuardianBookingDraftRepository.ReceiptSummary(command.clientRequestId(), receipt.appointmentId(), receipt.publicCode());
+        assertThat(drafts.recentReceipts(GUARDIAN, null)).containsExactly(expected);
+        assertThat(drafts.recentReceipts(GUARDIAN, command.clientRequestId())).containsExactly(expected);
+        assertThat(drafts.recentReceipts(GUARDIAN, UUID.randomUUID())).isEmpty();
+        assertThat(drafts.recentReceipts(new AppUser(UUID.randomUUID(), "other-guardian", AppUserRole.GUARDIAN), command.clientRequestId())).isEmpty();
+        inactiveAccounts.add(PATIENT.firebaseUid());
+        assertThat(drafts.recentReceipts(GUARDIAN, command.clientRequestId())).isEmpty();
+        inactiveAccounts.remove(PATIENT.firebaseUid());
         assertThat(drafts.create(GUARDIAN, GUARDIAN.id(), command.clientRequestId(), null, -1)).isEqualTo(receipt);
         assertThat(eventCount()).isEqualTo(1);
         assertThat(bookingCount()).isEqualTo(1);

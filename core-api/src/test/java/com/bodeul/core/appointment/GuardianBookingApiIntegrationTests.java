@@ -71,6 +71,7 @@ class GuardianBookingApiIntegrationTests {
         }
         mvc.perform(get(metadataPath())).andExpect(status().isUnauthorized());
         mvc.perform(get(BASE + "/drafts")).andExpect(status().isUnauthorized());
+        mvc.perform(get(BASE + "/receipts")).andExpect(status().isUnauthorized());
         mvc.perform(get(draftPath())).andExpect(status().isUnauthorized());
         for (String path : new String[]{BASE + "/drafts", draftPath() + "/approvals", draftPath() + "/create"}) {
             mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(body().toString()))
@@ -103,6 +104,22 @@ class GuardianBookingApiIntegrationTests {
                 .andExpect(jsonPath("$.guardian.email").doesNotExist())
                 .andExpect(jsonPath("$.guardian.phone").doesNotExist());
         verify(drafts).submit(eq(GUARDIAN), eq(PATIENT.id()), any());
+    }
+
+    @Test
+    void receiptListIsPrivateReadOnlyAndContainsOnlyThreeIdentifiers() throws Exception {
+        var receipt = new GuardianBookingDraftRepository.ReceiptSummary(REQUEST, UUID.randomUUID(), "TEST-419");
+        when(drafts.recentReceipts(GUARDIAN, REQUEST)).thenReturn(java.util.List.of(receipt));
+        String json = mvc.perform(get(BASE + "/receipts").queryParam("clientRequestId", REQUEST.toString()).header("Authorization", "Bearer guardian"))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$[0].clientRequestId").value(REQUEST.toString()))
+                .andExpect(jsonPath("$[0].appointmentId").value(receipt.appointmentId().toString()))
+                .andExpect(jsonPath("$[0].publicCode").value("TEST-419"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(mapper.readTree(json).get(0).size()).isEqualTo(3);
+        verify(drafts).recentReceipts(GUARDIAN, REQUEST);
+        verifyNoMoreInteractions(drafts);
+        verifyNoInteractions(service, approvals);
     }
 
     @Test

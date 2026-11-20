@@ -11,6 +11,8 @@ import com.example.bodeul.domain.model.GuardianBookingApproval;
 import com.example.bodeul.domain.model.GuardianBookingDraftReference;
 import com.example.bodeul.domain.model.GuardianBookingRequest;
 import com.example.bodeul.domain.model.GuardianBookingStoredDraft;
+import com.example.bodeul.domain.model.BookingHospitalSelection;
+import com.example.bodeul.domain.model.GuardianBookingReceipt;
 import com.example.bodeul.domain.model.GuardianBookingStoredDraft.Participant;
 import com.example.bodeul.domain.model.GuardianBookingStoredDraft.Summary;
 import com.example.bodeul.ui.booking.GuardianBookingInboxCoordinator.Phase;
@@ -316,6 +318,115 @@ public class GuardianBookingInboxCoordinatorTest {
         coordinator.select(repository.reference);
     }
 
+    private void compose(boolean patient) {
+        repository.patient = patient;
+        coordinator.refreshList();
+        coordinator.startCompose(new BookingHospitalSelection("합성 병원", "내과", 37.5, 127));
+    }
+
+    @Test public void optionalFeatureRequiresFlagAndSupportedRuntime() {
+        assertFalse(GuardianBookingAvailability.supports(24, true));
+        assertFalse(GuardianBookingAvailability.supports(25, true));
+        assertFalse(GuardianBookingAvailability.supports(35, false));
+        assertTrue(GuardianBookingAvailability.supports(26, true));
+    }
+
+    @Test public void ownPatientCanSeeOwnCodeButCannotWriteOrLookUpGuardianReceipts() {
+        compose(true);
+        coordinator.refreshReceipts();
+        coordinator.review(PATIENT.toString(), request().getDraft());
+        coordinator.sendDraft();
+        assertEquals(PATIENT, coordinator.state().identity.id);
+        assertEquals(Phase.LIST, coordinator.state().phase);
+        assertEquals(0, repository.receiptReads);
+        assertTrue(repository.sent.isEmpty());
+    }
+
+    @Test public void invalidPatientOrScheduleNeverSendsAnApprovalRequest() {
+        compose(false);
+        for (String code : List.of("firebase-uid", "1-1-1-1-1", GUARDIAN.toString())) {
+            coordinator.review(code, request().getDraft());
+            assertEquals(R.string.guardian_booking_invalid_patient_code, coordinator.state().message);
+        }
+        for (var broken : List.of(request().getDraft().toBuilder().appointmentAt("2026-02-30 09:00").build(),
+                request().getDraft().toBuilder().appointmentAt("2026-10-28 09:00").build(),
+                request().getDraft().toBuilder().hospitalName("다른 병원").build(),
+                request().getDraft().toBuilder().patientConditionSummary("").build())) {
+            coordinator.review(PATIENT.toString(), broken);
+            assertEquals(R.string.guardian_booking_invalid_fields, coordinator.state().message);
+        }
+        assertEquals(Phase.EDITING, coordinator.state().phase);
+        assertTrue(repository.sent.isEmpty());
+    }
+
+    @Test public void reviewedDraftIsImmutableAcrossLossAndRetryAndIsNotAnAppointment() {
+        compose(false);
+        coordinator.review(PATIENT.toString(), request().getDraft());
+        assertEquals(Phase.CONFIRMING, coordinator.state().phase);
+        assertTrue(repository.sent.isEmpty());
+        var original = coordinator.state().pending;
+        coordinator.sendDraft();
+        coordinator.sendDraft();
+        coordinator.refreshList();
+        assertEquals(1, repository.sent.size());
+        repository.pendingSubmit.onError("원문 저장 뒤 응답 유실");
+        coordinator.edit();
+        assertEquals(Phase.UNCERTAIN_DRAFT, coordinator.state().phase);
+        coordinator.sendDraft();
+        assertEquals(List.of(original, original), repository.sent);
+        repository.pendingSubmit.onSuccess(new Summary(GuardianBookingDraftReference.from(original), NOW, NOW.plusSeconds(30)));
+        assertEquals(Phase.DRAFT_SENT, coordinator.state().phase);
+        assertNull(coordinator.state().pending);
+        assertNull(coordinator.state().hospital);
+        assertEquals(0, repository.creates);
+    }
+
+    @Test public void createNeedsCurrentApprovalAndUnknownCanRecoverWithoutPostOrOriginal() {
+        repository.patient = false;
+        open();
+        coordinator.create();
+        assertEquals(0, repository.creates);
+        repository.approval = active(1);
+        coordinator.refreshDetail();
+        assertTrue(coordinator.state().canCreate);
+        coordinator.create();
+        coordinator.create();
+        assertEquals(1, repository.creates);
+        repository.pendingCreate.onError("접수 후 응답 유실");
+        assertEquals(R.string.guardian_booking_create_uncertain, coordinator.state().message);
+        coordinator.refreshReceipts();
+        assertEquals(REQUEST, repository.receiptRequest);
+        assertEquals(R.string.guardian_booking_receipts_empty, coordinator.state().message);
+        coordinator.dispose();
+        repository.rows = List.of();
+        repository.savedReceipts = List.of(new GuardianBookingDraftRepository.ReceiptRow(REQUEST,
+                new GuardianBookingReceipt(UUID.randomUUID(), "TEST-419")));
+        var next = create();
+        next.refreshList();
+        next.refreshReceipts();
+        assertEquals(Phase.RECEIPTS, next.state().phase);
+        assertEquals("TEST-419", next.state().receipts.get(0).receipt.getPublicCode());
+        assertEquals(1, repository.creates);
+        assertEquals(2, repository.receiptReads);
+        assertNull(repository.receiptRequest);
+        assertNull(next.state().detail);
+        next.dispose();
+        assertTrue(next.state().receipts.isEmpty());
+    }
+
+    @Test public void accountChangeWhileSendingDropsBodyAndLateSuccess() {
+        compose(false);
+        coordinator.review(PATIENT.toString(), request().getDraft());
+        var original = coordinator.state().pending;
+        coordinator.sendDraft();
+        account.set("another");
+        repository.pendingSubmit.onSuccess(new Summary(GuardianBookingDraftReference.from(original), NOW, NOW.plusSeconds(30)));
+        assertEquals(Phase.CLOSED, coordinator.state().phase);
+        assertNull(coordinator.state().identity);
+        assertNull(coordinator.state().pending);
+        assertTrue(coordinator.state().rows.isEmpty());
+    }
+
     private static final class FakeRepository implements GuardianBookingDraftRepository {
         final GuardianBookingDraftReference reference = GuardianBookingDraftReference.from(request());
         final Summary summary = new Summary(reference, NOW, NOW.plusSeconds(3600));
@@ -329,6 +440,21 @@ public class GuardianBookingInboxCoordinatorTest {
         long sentVersion;
         RepositoryCallback<GuardianBookingStoredDraft> pendingDetail;
         RepositoryCallback<GuardianBookingApproval> pendingGrant;
+        int creates, receiptReads;
+        List<ReceiptRow> savedReceipts = List.of();
+        List<GuardianBookingRequest> sent = new ArrayList<>();
+        RepositoryCallback<Summary> pendingSubmit;
+        RepositoryCallback<CreateResult> pendingCreate;
+
+        @Override public void loadIdentity(RepositoryCallback<Identity> cb) {
+            cb.onSuccess(new Identity(patient ? PATIENT : GUARDIAN, patient));
+        }
+        UUID receiptRequest;
+        @Override public void listReceipts(UUID requestId, RepositoryCallback<List<ReceiptRow>> cb) {
+            receiptReads++;
+            receiptRequest = requestId;
+            cb.onSuccess(savedReceipts);
+        }
 
         @Override public void listDrafts(RepositoryCallback<List<Summary>> callback) {
             listLoads++;
@@ -368,11 +494,13 @@ public class GuardianBookingInboxCoordinatorTest {
             callback.onSuccess(approval);
         }
         @Override public void submitDraft(GuardianBookingRequest request, RepositoryCallback<Summary> callback) {
-            throw new AssertionError("수신함에서 원문을 새로 만들면 안 됩니다.");
+            sent.add(request);
+            pendingSubmit = callback;
         }
         @Override public void createDraft(GuardianBookingDraftReference ref, GuardianBookingApproval approval,
                 RepositoryCallback<CreateResult> callback) {
-            throw new AssertionError("수신함에서 예약을 접수하면 안 됩니다.");
+            creates++;
+            pendingCreate = callback;
         }
     }
 }

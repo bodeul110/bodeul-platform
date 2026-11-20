@@ -177,6 +177,8 @@
             android:exported="false" />
         <activity
             android:name=".ui.booking.GuardianBookingInboxActivity"
+            android:enabled="@bool/guardian_booking_runtime_supported"
+            tools:targetApi="26"
             android:exported="false" />
         <activity
             android:name=".ui.booking.BookingActivity"

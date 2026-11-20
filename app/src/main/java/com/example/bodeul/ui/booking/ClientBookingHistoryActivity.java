@@ -120,7 +120,7 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
 
         findViewById(R.id.buttonOpenGuardianBookingInbox).setOnClickListener(view -> {
             if (authRepository.isFirebaseBacked()
-                    && getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled)) {
+                    && GuardianBookingAvailability.enabled(this)) {
                 startActivity(new Intent(this, GuardianBookingInboxActivity.class));
             }
         });
@@ -239,7 +239,7 @@ public class ClientBookingHistoryActivity extends AppCompatActivity {
                 bottomNavigation.setVisibility(View.VISIBLE);
                 findViewById(R.id.buttonOpenGuardianBookingInbox).setVisibility(
                         authRepository.isFirebaseBacked()
-                                && getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled)
+                                && GuardianBookingAvailability.enabled(ClientBookingHistoryActivity.this)
                                 ? View.VISIBLE : View.GONE);
                 loadRequests(result, generation);
             }

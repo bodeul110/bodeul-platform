@@ -142,7 +142,31 @@ public class GuardianBookingInboxPreviewTest {
         }
     }
 
-    private static void openFirst() { onView(withId(R.id.textGuardianBookingInboxRowTitle)).perform(click()); }
+    @Test public void patientCodeIsOptInAndClearedOnBackground() {
+        try (var scenario = launch("empty")) {
+            onView(withId(R.id.buttonGuardianBookingCompose)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+            onView(withId(R.id.textGuardianBookingOwnCode)).check(matches(withText("")));
+            onView(withId(R.id.buttonGuardianBookingOwnCode)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingOwnCode)).check(matches(withText(containsString("10000000-"))));
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.onActivity(a -> assertEquals("", ((TextView)a.findViewById(R.id.textGuardianBookingOwnCode)).getText().toString()));
+        }
+    }
+
+    @Test public void approvedGuardianCreatesThenReadsReceiptWithNoDetailOrPatientButtons() {
+        try (var scenario = launch("guardian-approved")) {
+            openFirst();
+            onView(withId(R.id.buttonGuardianBookingCreate)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingInboxRowTitle)).check(matches(withText(containsString("TEST-419"))));
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            onView(withId(R.id.buttonGuardianBookingReceipts)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingInboxRowTitle)).check(matches(withText(containsString("TEST-419"))));
+            onView(withId(R.id.guardianBookingReviewRoot)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+        }
+    }
+
+    private static void openFirst() { onView(withId(R.id.textGuardianBookingInboxRowTitle)).perform(scrollTo(), click()); }
     private static ActivityScenario<GuardianBookingInboxPreviewActivity> launch(String scenario) {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         return ActivityScenario.launch(new Intent(context, GuardianBookingInboxPreviewActivity.class).putExtra("scenario", scenario));

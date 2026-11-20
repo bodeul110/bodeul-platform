@@ -234,7 +234,13 @@ public class BookingActivity extends AppCompatActivity {
             if (currentUser != null && currentUser.getRole() == UserRole.PATIENT) wizard.selectPatient();
             else showGuardianMutationBlockedDialog();
         });
-        findViewById(R.id.buttonBookingGuardian).setOnClickListener(view -> showGuardianMutationBlockedDialog());
+        findViewById(R.id.buttonBookingGuardian).setOnClickListener(view -> {
+            if (contentReady && currentUser != null && editingRequest == null
+                    && supportsBookingRole(currentUser.getRole()) && authRepository.isFirebaseBacked()
+                    && GuardianBookingAvailability.enabled(this)) {
+                startActivity(new Intent(this, GuardianBookingInboxActivity.class));
+            } else showGuardianMutationBlockedDialog();
+        });
         findViewById(R.id.buttonBookingNext).setOnClickListener(view -> {
             if (!contentReady || loading || !wizard.hasParticipant()) return;
             if (formBinder.validateStep(wizard.step())) wizard.showStep(wizard.step().next());

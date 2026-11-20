@@ -1,11 +1,14 @@
 package com.example.bodeul.ui.booking;
 
 import android.os.Bundle;
+import android.content.Intent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -16,16 +19,21 @@ import com.example.bodeul.data.GuardianBookingAccountSession;
 import com.example.bodeul.data.GuardianBookingDraftRepository;
 import com.example.bodeul.data.coreapi.CoreApiGuardianBookingDraftRepository;
 import com.example.bodeul.data.firebase.FirebaseGuardianBookingAccountSession;
+import com.example.bodeul.domain.model.BookingHospitalSelection;
 
 import java.time.Clock;
 import java.util.Objects;
 
 /** Intent·Bundle에는 원문·참여자·승인 정보를 넣지 않고 재진입마다 서버에서 읽는다. */
+@androidx.annotation.RequiresApi(26)
 public class GuardianBookingInboxActivity extends AppCompatActivity {
     private GuardianBookingAccountSession session;
     private GuardianBookingInboxCoordinator coordinator;
     private GuardianBookingInboxBinder binder;
     private String initialAccount;
+    private boolean awaitingPicker;
+    private BookingHospitalSelection returnedHospital;
+    private ActivityResultLauncher<Intent> hospitalPicker;
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +47,7 @@ public class GuardianBookingInboxActivity extends AppCompatActivity {
         View root = findViewById(R.id.guardianBookingInboxRoot);
         // 자식 뷰의 텍스트와 체크 상태도 Activity의 자동 상태 저장에서 제외한다.
         root.setSaveFromParentEnabled(false);
+        root.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
         ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
@@ -49,6 +58,38 @@ public class GuardianBookingInboxActivity extends AppCompatActivity {
         binder = new GuardianBookingInboxBinder(root);
         session = createAccountSession();
         initialAccount = session.currentAccountId();
+        hospitalPicker = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (!awaitingPicker) return;
+            awaitingPicker = false;
+            if (result.getResultCode() == RESULT_OK) acceptHospital(BookingHospitalSelectorActivity.parseResult(result.getData()));
+        });
+        findViewById(R.id.buttonGuardianBookingCompose).setOnClickListener(view -> {
+            if (coordinator == null || awaitingPicker) return;
+            coordinator.accountChanged();
+            var state = coordinator.state();
+            if (state.phase != GuardianBookingInboxCoordinator.Phase.LIST || state.identity == null || state.identity.patient) return;
+            awaitingPicker = true;
+            hospitalPicker.launch(hospitalPickerIntent());
+        });
+    }
+
+    protected Intent hospitalPickerIntent() {
+        return BookingHospitalSelectorActivity.createIntent(this, new BookingHospitalSelection("", ""));
+    }
+
+    private void acceptHospital(BookingHospitalSelection choice) {
+        if (choice != null && choice.isComplete() && initialAccount != null && initialAccount.equals(session.currentAccountId())) {
+            returnedHospital = choice;
+            openReturnedHospital();
+        }
+    }
+
+    private void openReturnedHospital() {
+        if (returnedHospital == null || coordinator == null
+                || coordinator.state().phase != GuardianBookingInboxCoordinator.Phase.LIST) return;
+        BookingHospitalSelection selection = returnedHospital;
+        returnedHospital = null;
+        coordinator.startCompose(selection);
     }
 
     @Override protected void onStart() {
@@ -61,6 +102,7 @@ public class GuardianBookingInboxActivity extends AppCompatActivity {
         coordinator = new GuardianBookingInboxCoordinator(createRepository(), session::currentAccountId,
                 Clock.systemUTC(), state -> {
                     binder.render(state);
+                    if (state.phase == GuardianBookingInboxCoordinator.Phase.LIST) openReturnedHospital();
                     if (state.phase == GuardianBookingInboxCoordinator.Phase.CLOSED && state.message != 0) {
                         closeForAccountChange();
                     }
@@ -71,6 +113,7 @@ public class GuardianBookingInboxActivity extends AppCompatActivity {
     }
 
     @Override protected void onStop() {
+        returnedHospital = null;
         if (session != null) session.stopObserving();
         if (coordinator != null) coordinator.dispose();
         coordinator = null;

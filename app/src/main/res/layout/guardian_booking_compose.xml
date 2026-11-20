@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/guardianComposeRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="24dp">
+        <TextView
+            android:id="@+id/guardianComposeMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityLiveRegion="polite"
+            android:textColor="@color/bodeul_text_primary" />
+        <LinearLayout
+            android:id="@+id/guardianComposeFields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="18sp"
+                android:text="@string/guardian_booking_form_patient"
+                android:textStyle="bold" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_code">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="36"
+                    android:inputType="textVisiblePassword|textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_name">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="100"
+                    android:inputType="textPersonName|textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_phone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormPhone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="24"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="18sp"
+                android:text="@string/guardian_booking_form_schedule"
+                android:textStyle="bold" />
+            <TextView android:id="@+id/guardianFormHospital"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/guardianFormWhen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_form_when" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_meeting">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormMeeting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="300"
+                    android:inputType="textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_condition">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormCondition"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="2000"
+                    android:inputType="textMultiLine|textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_medication">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormMedication"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="2000"
+                    android:inputType="textMultiLine|textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:hint="@string/guardian_booking_form_notes">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/guardianFormNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLength="2000"
+                    android:inputType="textMultiLine|textNoSuggestions" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:labelFor="@+id/guardianFormMobility"
+                android:textColor="@color/bodeul_text_primary"
+                android:text="@string/guardian_booking_form_mobility" />
+            <Spinner
+                android:id="@id/guardianFormMobility"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:entries="@array/guardian_booking_mobility_options"
+                android:prompt="@string/guardian_booking_form_mobility" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:labelFor="@+id/guardianFormTrip"
+                android:textColor="@color/bodeul_text_primary"
+                android:text="@string/guardian_booking_form_trip" />
+            <Spinner
+                android:id="@id/guardianFormTrip"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:entries="@array/guardian_booking_trip_options"
+                android:prompt="@string/guardian_booking_form_trip" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:labelFor="@+id/guardianFormGender"
+                android:textColor="@color/bodeul_text_primary"
+                android:text="@string/guardian_booking_form_gender" />
+            <Spinner
+                android:id="@id/guardianFormGender"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:entries="@array/guardian_booking_gender_options"
+                android:prompt="@string/guardian_booking_form_gender" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:labelFor="@+id/guardianFormPayment"
+                android:textColor="@color/bodeul_text_primary"
+                android:text="@string/guardian_booking_form_payment" />
+            <Spinner
+                android:id="@id/guardianFormPayment"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:entries="@array/guardian_booking_payment_options"
+                android:prompt="@string/guardian_booking_form_payment" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/guardianFormReview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_review" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/guardianComposeConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="18sp"
+                android:text="@string/guardian_booking_confirm_title"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/guardianComposeSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="3dp"
+                android:paddingVertical="12dp"
+                android:textColor="@color/bodeul_text_primary"
+                android:textSize="16sp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/guardianFormEdit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_edit" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/guardianFormSend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/guardian_booking_draft_send" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
