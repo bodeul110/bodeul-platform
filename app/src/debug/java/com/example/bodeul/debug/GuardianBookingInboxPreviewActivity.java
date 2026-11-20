@@ -23,9 +23,10 @@ import java.util.List;
 import java.util.UUID;
 
 /** 합성 메모리 저장소만 사용한다. 실제 로그인·원문·네트워크에는 접근하지 않는다. */
+@androidx.annotation.RequiresApi(26)
 public final class GuardianBookingInboxPreviewActivity extends GuardianBookingInboxActivity {
     private final LocalSession session = new LocalSession();
-    private final LocalRepository repository = new LocalRepository();
+    private LocalRepository repository;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -36,6 +37,7 @@ public final class GuardianBookingInboxPreviewActivity extends GuardianBookingIn
     @Override protected boolean isInboxEnabled() { return true; }
     @Override protected GuardianBookingAccountSession createAccountSession() { return session; }
     @Override protected GuardianBookingDraftRepository createRepository() {
+        if (repository == null) repository = new LocalRepository();
         repository.scenario = getIntent().getStringExtra("scenario");
         return repository;
     }
@@ -43,6 +45,10 @@ public final class GuardianBookingInboxPreviewActivity extends GuardianBookingIn
     public void simulateAccountChange() {
         session.id = "different-synthetic-account";
         if (session.changed != null) session.changed.run();
+    }
+
+    @Override protected android.content.Intent hospitalPickerIntent() {
+        return new android.content.Intent(this, BookingHospitalFigmaPreviewActivity.class);
     }
 
     private static final class LocalSession implements GuardianBookingAccountSession {
@@ -55,7 +61,7 @@ public final class GuardianBookingInboxPreviewActivity extends GuardianBookingIn
 
     private static final class LocalRepository implements GuardianBookingDraftRepository {
         final Instant now = Instant.now();
-        final GuardianBookingRequest request = new GuardianBookingRequest(
+        GuardianBookingRequest request = new GuardianBookingRequest(
                 UUID.fromString("10000000-0000-0000-0000-000000000001"),
                 UUID.fromString("20000000-0000-0000-0000-000000000002"),
                 UUID.fromString("30000000-0000-0000-0000-000000000003"),
@@ -67,10 +73,19 @@ public final class GuardianBookingInboxPreviewActivity extends GuardianBookingIn
                         .medicationSummary("합성 복약 기록").specialNotes("합성 화면 검증용 요청")
                         .paymentMethod(BookingPaymentMethod.BANK_TRANSFER)
                         .priceSummary(new BookingPriceSummary(40_000, 0, 0, 40_000)).build());
-        final GuardianBookingDraftReference reference = GuardianBookingDraftReference.from(request);
-        final Summary summary = new Summary(reference, now, now.plusSeconds(3600));
+        GuardianBookingDraftReference reference = GuardianBookingDraftReference.from(request);
+        Summary summary = new Summary(reference, now, now.plusSeconds(3600));
         GuardianBookingApproval approval = new GuardianBookingApproval(null, 0, null, null, null, false);
         String scenario;
+        ReceiptRow receipt;
+
+        boolean isGuardian() { return "guardian".equals(scenario) || "guardian-approved".equals(scenario); }
+        @Override public void loadIdentity(RepositoryCallback<Identity> cb) {
+            cb.onSuccess(new Identity(isGuardian() ? reference.getGuardianId() : reference.getPatientId(), !isGuardian()));
+        }
+        @Override public void listReceipts(UUID requestId, RepositoryCallback<List<ReceiptRow>> cb) {
+            cb.onSuccess(receipt == null || requestId != null && !requestId.equals(receipt.requestId) ? List.of() : List.of(receipt));
+        }
 
         @Override public void listDrafts(RepositoryCallback<List<Summary>> callback) {
             if ("error".equals(scenario)) { callback.onError("합성 조회 실패"); return; }
@@ -83,14 +98,14 @@ public final class GuardianBookingInboxPreviewActivity extends GuardianBookingIn
         }
         @Override public void loadApproval(GuardianBookingDraftReference reference, RepositoryCallback<ApprovalStatus> callback) {
             boolean revocationOnly = "revoke-only".equals(scenario);
-            if (revocationOnly && approval.getGrantId() == null) {
+            if ((revocationOnly || "guardian-approved".equals(scenario)) && approval.getGrantId() == null) {
                 approval = new GuardianBookingApproval(UUID.randomUUID(), 1, now, now.plusSeconds(3600), null, true);
             }
-            callback.onSuccess(new ApprovalStatus(approval, !"guardian".equals(scenario), revocationOnly));
+            callback.onSuccess(new ApprovalStatus(approval, !isGuardian(), revocationOnly));
         }
         @Override public void grantDraft(GuardianBookingDraftReference reference, long version, boolean confirmed,
                 RepositoryCallback<GuardianBookingApproval> callback) {
-            if (!confirmed || version != approval.getVersion() || "guardian".equals(scenario)) {
+            if (!confirmed || version != approval.getVersion() || isGuardian()) {
                 callback.onError("합성 승인 조건 불일치"); return;
             }
             approval = new GuardianBookingApproval(UUID.randomUUID(), version + 1, now, now.plusSeconds(3600), null, true);
@@ -104,11 +119,22 @@ public final class GuardianBookingInboxPreviewActivity extends GuardianBookingIn
             callback.onSuccess(approval);
         }
         @Override public void submitDraft(GuardianBookingRequest request, RepositoryCallback<Summary> callback) {
-            callback.onError("수신함에서는 원문을 만들지 않습니다.");
+            if (!isGuardian() || !reference.getPatientId().equals(request.getPatientId())
+                    || !reference.getGuardianId().equals(request.getGuardianId())) {
+                callback.onError("합성 참여자 정보를 확인해 주세요.");
+                return;
+            }
+            this.request = request;
+            reference = GuardianBookingDraftReference.from(request);
+            summary = new Summary(reference, now, now.plusSeconds(3600));
+            callback.onSuccess(summary);
         }
         @Override public void createDraft(GuardianBookingDraftReference reference, GuardianBookingApproval approval,
                 RepositoryCallback<CreateResult> callback) {
-            callback.onError("수신함에서는 예약을 접수하지 않습니다.");
+            if (!isGuardian() || !approval.canCreateAt(Instant.now())) { callback.onError("합성 승인이 없습니다."); return; }
+            if (receipt == null) receipt = new ReceiptRow(reference.getRequestId(),
+                    new com.example.bodeul.domain.model.GuardianBookingReceipt(UUID.randomUUID(), "TEST-419"));
+            callback.onSuccess(CreateResult.accepted(receipt.receipt));
         }
     }
 }

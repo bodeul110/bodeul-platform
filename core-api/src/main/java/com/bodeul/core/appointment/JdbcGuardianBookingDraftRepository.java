@@ -93,6 +93,21 @@ class JdbcGuardianBookingDraftRepository implements GuardianBookingDraftReposito
                         row.getTimestamp("expires_at").toInstant())).list();
     }
 
+    @Override
+    public List<ReceiptCandidate> recentReceipts(UUID guardianId, UUID requestId) {
+        return jdbc.sql("""
+                select patient_user_id, client_request_id, id, public_code
+                from bodeul.appointment_requests
+                where guardian_user_id = :guardian and requester_user_id = :guardian
+                  and requester_role = 'GUARDIAN' and client_request_id is not null
+                  and (cast(:request as uuid) is null or client_request_id = cast(:request as uuid))
+                order by created_at desc, id desc limit 50
+                """).param("guardian", guardianId).param("request", requestId).query((row, index) -> new ReceiptCandidate(
+                        row.getObject("patient_user_id", UUID.class), new ReceiptSummary(
+                                row.getObject("client_request_id", UUID.class),
+                                row.getObject("id", UUID.class), row.getString("public_code")))).list();
+    }
+
     private StoredDraft storedDraft(ResultSet row, int index) throws SQLException {
         try {
             String body = row.getString("appointment_body");

@@ -46,6 +46,8 @@
   - 원본 자산·색상·입력창·3개 소셜 버튼, 기존 인증 경로와 시스템 영역 처리
 - [보호자 예약 수신함](guardian-booking-inbox.md)
   - 서버 원문 목록·상세·환자 승인/철회, 계정 수명주기와 기본 비활성 경계
+- [보호자 대리예약 작성과 접수 확인](guardian-booking-compose-receipts.md)
+  - 환자 코드 전달, 병원 선택과 승인 요청 작성, 접수 응답을 잃은 경우의 확인 절차
 - [브랜드 스플래시](figma-brand-splash-implementation-2026-09-19.md)
 - [환자 홈](figma-patient-home-implementation-2026-09-12.md)
 - [환자 예약 메인](figma-patient-booking-main-implementation-2026-09-27.md)

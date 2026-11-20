@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -49,6 +50,12 @@ class GuardianBookingController {
     ResponseEntity<GuardianBookingDraftService.DraftView> getDraft(@AuthenticationPrincipal AppUser actor,
             @PathVariable UUID guardianId, @PathVariable UUID requestId) {
         return noStore(drafts.get(actor, guardianId, requestId));
+    }
+
+    @GetMapping("/receipts")
+    ResponseEntity<List<GuardianBookingDraftRepository.ReceiptSummary>> recentReceipts(
+            @AuthenticationPrincipal AppUser actor, @RequestParam(required = false) UUID clientRequestId) {
+        return noStore(drafts.recentReceipts(actor, clientRequestId));
     }
 
     @PostMapping("/drafts/guardians/{guardianId}/requests/{requestId}/approvals")

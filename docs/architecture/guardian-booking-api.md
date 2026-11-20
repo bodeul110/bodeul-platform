@@ -1,6 +1,6 @@
 # 보호자 예약 승인 API 연결
 
-기준일: 2026-09-29. Android 준비, 비활성 보호자의 기존 승인 조회·철회, 서버 원문 전달 계약은 2026-10-28에 보충했다. 원문 API의 Android 데이터 계층과 V27 파기 연결은 2026-10-29에 보충했다.
+최종 갱신: 2026-11-20. Android 보호자 작성 화면과 읽기 전용 접수증 조회 계약을 반영했다.
 
 ## 설계 판단
 
@@ -38,7 +38,7 @@
 
 버전과 확인 금액은 JSON 정수, 성인 확인은 JSON boolean만 받는다. 클라이언트가 보낸 시각·fingerprint·역할·승인 정책 값은 사용하지 않는다. 성인 여부는 환자의 자기선언이며 출생일 검증이나 법정대리인 증명 절차를 구현한 것은 아니다.
 
-서버의 원문 저장·목록·조회와 저장된 원문으로 승인·접수하는 경로는 아래와 같이 준비했다. Android에는 기존 직접 본문 전달 API의 Repository, 전체 본문 확인·승인·철회·접수 상태 제어와 debug 합성 화면이 있다. 새 원문 API의 전용 Repository는 #502로 `dev`에 병합했다. 2026-11-07 후속 화면은 [수신함](../design/guardian-booking-inbox.md)의 목록·상세·마스킹 상대방 표시와 환자 승인/철회까지이며 개발 진입 기본 OFF·Release 고정 OFF다. 보호자 새 요청 작성·상대방 지정·접수 복구와 실제 환경 개방은 남아 있다. 보호자가 서버에서 환자 정보를 검색해 승인을 대신하는 경로도 없다. [Android 연결 설계](../design/guardian-booking-android.md)와 [저장 원문 데이터 계층](../design/guardian-booking-android-drafts.md)을 따른다.
+Android [수신함](../design/guardian-booking-inbox.md)은 보호자가 작성한 원문을 환자 승인과 예약 접수에 사용한다. [접수증 조회](../design/guardian-booking-compose-receipts.md)는 원문과 별개여서 원문 파기 뒤에도 가능하다. 환자는 자기 코드를 보호자에게 직접 전달한다. 환자 검색이나 보호자가 환자 승인을 대신하는 경로는 없다. 기존 [직접 본문 API](../design/guardian-booking-android.md)와 [저장 원문 데이터 계층](../design/guardian-booking-android-drafts.md)은 구분하며 개발 진입은 기본 OFF, Release는 고정 OFF다.
 
 ## 서버 원문 전달
 
@@ -51,6 +51,9 @@
 | `GET /drafts/guardians/{guardianId}/requests/{requestId}` | 지정 환자 또는 작성 보호자 | `{request, appointment, patient, guardian}`. `appointment`는 정규화된 생성 command, 상대방 표시는 현재 프로필의 `{name, maskedPhone}` |
 | `POST /drafts/guardians/{guardianId}/requests/{requestId}/approvals` | 지정 환자 | `expectedVersion`, `adultPatientConfirmed`; 클라이언트 원문 대신 저장 원문으로 승인 |
 | `POST /drafts/guardians/{guardianId}/requests/{requestId}/create` | 작성 보호자 | `grantId`, `approvalVersion`; 저장 원문으로 접수하며 응답은 기존 최소 접수증만 반환 |
+| `GET /receipts` | 신청자이기도 한 보호자 본인 | 최근 신청 50건 중 현재 유효한 참여관계의 접수증만 반환. `?clientRequestId=<UUID>`를 주면 기간·순번과 무관하게 해당 요청만 확인 |
+
+접수증 목록의 필드는 `clientRequestId`, `appointmentId`, `publicCode`뿐이다. 사용자·역할은 인증된 계정에서 결정하며, 쿼리 매개변수로 지정한 요청도 같은 권한 검사를 거친다. 원문을 읽거나 승인·예약을 변경하지 않는다. 접수 응답 유실 직후 빈 결과나 조회 오류는 이전 요청의 미접수 증거가 아니다.
 
 `request`에는 `patientUserId`, `guardianUserId`, `clientRequestId`, `createdAt`, `expiresAt`만 포함한다. 서버 프로필은 상대방 표시용으로 이름과 전화번호 끝 4자리만 제공하며 이메일·Firebase UID는 추가하지 않는다. 원문 안의 환자 연락처는 보호자가 제출하고 서버 프로필 일치를 확인한 입력이다. 프로필 일치는 통신사 본인 인증이나 실명 확인을 의미하지 않는다.
 

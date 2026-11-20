@@ -55,6 +55,7 @@ class GuardianBookingDraftServiceTests {
                 () -> service.submit(GUARDIAN, PATIENT.id(), command),
                 () -> service.get(PATIENT, GUARDIAN.id(), REQUEST),
                 () -> service.list(PATIENT),
+                () -> service.recentReceipts(GUARDIAN, null),
                 () -> service.grant(PATIENT, GUARDIAN.id(), REQUEST, 0, true),
                 () -> service.create(GUARDIAN, GUARDIAN.id(), REQUEST, UUID.randomUUID(), 1))) {
             assertThatThrownBy(action::run).isInstanceOfSatisfying(GuardianBookingException.class,
@@ -132,9 +133,24 @@ class GuardianBookingDraftServiceTests {
 
     @Test
     void nonGuardianCannotSubmitAndNonPatientCannotGrant() {
+        assertThatThrownBy(() -> service.recentReceipts(PATIENT, REQUEST)).isInstanceOf(GuardianBookingException.class);
         assertThatThrownBy(() -> service.submit(PATIENT, PATIENT.id(), command)).isInstanceOf(GuardianBookingException.class);
         assertThatThrownBy(() -> service.grant(GUARDIAN, GUARDIAN.id(), REQUEST, 0, true)).isInstanceOf(GuardianBookingException.class);
         verifyNoInteractions(repository, booking);
+    }
+
+    @Test
+    void receiptsOnlyExposeActivePairsWithoutLoadingDraftsOrCreatingAppointments() {
+        var receipt = new GuardianBookingDraftRepository.ReceiptSummary(REQUEST, UUID.randomUUID(), "TEST-419");
+        var hidden = new GuardianBookingDraftRepository.ReceiptSummary(UUID.randomUUID(), UUID.randomUUID(), "OTHER");
+        when(repository.recentReceipts(GUARDIAN.id(), null)).thenReturn(List.of(
+                new GuardianBookingDraftRepository.ReceiptCandidate(PATIENT.id(), receipt),
+                new GuardianBookingDraftRepository.ReceiptCandidate(UUID.randomUUID(), hidden)));
+        when(approvals.eligibleParticipants(eq(GUARDIAN), anyList())).thenReturn(Set.of(new ParticipantPair(PATIENT.id(), GUARDIAN.id())));
+        assertThat(service.recentReceipts(GUARDIAN, null)).containsExactly(receipt);
+        verify(repository).recentReceipts(GUARDIAN.id(), null);
+        verifyNoMoreInteractions(repository);
+        verifyNoInteractions(booking);
     }
 
     @Test

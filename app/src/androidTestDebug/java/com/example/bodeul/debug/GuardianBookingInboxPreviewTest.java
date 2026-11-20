@@ -13,6 +13,9 @@ import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -35,6 +38,28 @@ public class GuardianBookingInboxPreviewTest {
         assertFalse(context.getResources().getBoolean(R.bool.bodeul_guardian_booking_inbox_enabled));
         assertFalse(context.getPackageManager().getActivityInfo(
                 new ComponentName(context, GuardianBookingInboxActivity.class), 0).exported);
+    }
+
+    @Test public void composeLayoutRequestsNoPersonalizedLearningForEveryTextField() {
+        try (var scenario = launch("guardian")) {
+            scenario.onActivity(activity -> assertEquals(7,
+                    assertPrivateKeyboardOptions(activity.findViewById(R.id.guardianComposeRoot))));
+        }
+    }
+
+    private static int assertPrivateKeyboardOptions(View view) {
+        if (view instanceof EditText field) {
+            assertTrue("키보드 학습 제외 누락: " + field.getResources().getResourceEntryName(field.getId()),
+                    (field.getImeOptions() & EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0);
+            return 1;
+        }
+        int fields = 0;
+        if (view instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                fields += assertPrivateKeyboardOptions(group.getChildAt(i));
+            }
+        }
+        return fields;
     }
 
     @Test public void listLoadsMaskedParticipantsAndFullBody_thenGrantsAndRevokes() {
@@ -142,7 +167,31 @@ public class GuardianBookingInboxPreviewTest {
         }
     }
 
-    private static void openFirst() { onView(withId(R.id.textGuardianBookingInboxRowTitle)).perform(click()); }
+    @Test public void patientCodeIsOptInAndClearedOnBackground() {
+        try (var scenario = launch("empty")) {
+            onView(withId(R.id.buttonGuardianBookingCompose)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+            onView(withId(R.id.textGuardianBookingOwnCode)).check(matches(withText("")));
+            onView(withId(R.id.buttonGuardianBookingOwnCode)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingOwnCode)).check(matches(withText(containsString("10000000-"))));
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.onActivity(a -> assertEquals("", ((TextView)a.findViewById(R.id.textGuardianBookingOwnCode)).getText().toString()));
+        }
+    }
+
+    @Test public void approvedGuardianCreatesThenReadsReceiptWithNoDetailOrPatientButtons() {
+        try (var scenario = launch("guardian-approved")) {
+            openFirst();
+            onView(withId(R.id.buttonGuardianBookingCreate)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingInboxRowTitle)).check(matches(withText(containsString("TEST-419"))));
+            scenario.moveToState(Lifecycle.State.CREATED);
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            onView(withId(R.id.buttonGuardianBookingReceipts)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingInboxRowTitle)).check(matches(withText(containsString("TEST-419"))));
+            onView(withId(R.id.guardianBookingReviewRoot)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+        }
+    }
+
+    private static void openFirst() { onView(withId(R.id.textGuardianBookingInboxRowTitle)).perform(scrollTo(), click()); }
     private static ActivityScenario<GuardianBookingInboxPreviewActivity> launch(String scenario) {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         return ActivityScenario.launch(new Intent(context, GuardianBookingInboxPreviewActivity.class).putExtra("scenario", scenario));

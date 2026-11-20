@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guardian_booking_compose">대리예약 작성</string>
+    <string name="guardian_booking_patient_show">내 환자 코드 확인</string>
+    <string name="guardian_booking_patient_code">환자 코드: %1$s\n예약을 부탁한 보호자에게만 알려 주세요.</string>
+    <string name="guardian_booking_receipts_title">내 최근 접수증</string>
+    <string name="guardian_booking_receipts_failed">접수 내역을 조회하지 못했습니다. 새 예약을 만들지 말고 잠시 후 다시 확인해 주세요.</string>
+    <string name="guardian_booking_receipts_empty">최근 조회 범위에서 확인된 접수증이 없습니다. 방금 접수했다면 잠시 후 다시 확인해 주세요.</string>
+    <string name="guardian_booking_check_one">이 요청의 접수증 확인</string>
+    <string name="guardian_booking_receipt_match">이 요청의 접수증을 확인했습니다.</string>
+    <string name="guardian_booking_draft_sent">환자에게 승인 요청을 보냈습니다. 아직 예약이 접수된 것은 아닙니다.</string>
+    <string name="guardian_booking_draft_uncertain">승인 요청이 저장됐는지 확인하지 못했습니다. 수신함을 확인하거나 같은 내용으로 다시 보내세요.</string>
+    <string name="guardian_booking_retry_draft">같은 승인 요청 다시 보내기</string>
+    <string name="guardian_booking_draft_send">환자에게 승인 요청 보내기</string>
+    <string name="guardian_booking_review">보낼 내용 확인</string>
+    <string name="guardian_booking_edit">작성 내용 수정</string>
+    <string name="guardian_booking_invalid_patient_code">환자가 직접 전달한 환자 코드 전체를 입력해 주세요. 보호자 본인 코드는 사용할 수 없습니다.</string>
+    <string name="guardian_booking_invalid_fields">환자 이름·연락처·상태, 만남 장소, 결제 수단과 미래의 예약 일시를 확인해 주세요.</string>
+    <string name="guardian_booking_form_patient">환자 지정</string>
+    <string name="guardian_booking_form_code">환자에게 받은 코드</string>
+    <string name="guardian_booking_form_name">환자 프로필 이름</string>
+    <string name="guardian_booking_form_phone">환자 프로필 전화번호</string>
+    <string name="guardian_booking_form_condition">환자 상태</string>
+    <string name="guardian_booking_form_medication">복약 정보 (선택)</string>
+    <string name="guardian_booking_form_notes">요청사항 (선택)</string>
+    <string name="guardian_booking_form_meeting">만남 장소</string>
+    <string name="guardian_booking_form_when">예약 날짜·시간 선택</string>
+    <string name="guardian_booking_form_hospital">%1$s · %2$s</string>
+    <string name="guardian_booking_form_mobility">이동 보조</string>
+    <string name="guardian_booking_form_trip">이동 범위</string>
+    <string name="guardian_booking_form_gender">희망 매니저 성별</string>
+    <string name="guardian_booking_form_payment">결제 수단</string>
+    <string name="guardian_booking_form_schedule">동행 내용</string>
+    <string name="guardian_booking_confirm_title">승인 요청 내용 확인</string>
+    <string name="guardian_booking_confirm_summary">환자 코드: %1$s\n\n%2$s</string>
+    <string name="guardian_booking_receipt_request">요청 번호: %1$s</string>
+    <string name="guardian_booking_back_inbox">수신함으로</string>
+    <string name="guardian_booking_pick_payment">선택해 주세요</string>
+    <string-array name="guardian_booking_mobility_options">
+        <item>@string/guardian_booking_independent</item>
+        <item>@string/guardian_booking_walking_aid</item>
+        <item>@string/guardian_booking_wheelchair</item>
+    </string-array>
+    <string-array name="guardian_booking_trip_options">
+        <item>@string/guardian_booking_one_way</item>
+        <item>@string/guardian_booking_round_trip</item>
+    </string-array>
+    <string-array name="guardian_booking_gender_options">
+        <item>@string/guardian_booking_any_gender</item>
+        <item>@string/guardian_booking_female</item>
+        <item>@string/guardian_booking_male</item>
+    </string-array>
+    <string-array name="guardian_booking_payment_options">
+        <item>@string/guardian_booking_pick_payment</item>
+        <item>@string/guardian_booking_bank_transfer</item>
+        <item>@string/guardian_booking_card</item>
+        <item>@string/guardian_booking_easy_pay</item>
+        <item>@string/guardian_booking_on_site</item>
+    </string-array>
+</resources>

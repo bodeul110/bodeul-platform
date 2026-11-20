@@ -85,16 +85,31 @@ class GuardianBookingDraftService {
 
     public List<DraftSummary> list(AppUser actor) {
         requireActor(actor);
-        // 동기화만 활성화된 범위도 JDBC 연결을 유지하므로 목록은 두 범위 모두 거부한다.
-        if (TransactionSynchronizationManager.isActualTransactionActive()
-                || TransactionSynchronizationManager.isSynchronizationActive()) {
-            throw new IllegalTransactionStateException("예약 초안 목록은 DB 트랜잭션 밖에서 조회해야 합니다.");
-        }
+        requireOutsideTransaction();
         List<DraftSummary> candidates = drafts.listActive(actor, clock.instant());
         var eligible = approvals.eligibleParticipants(actor, candidates.stream()
                 .map(summary -> new ParticipantPair(summary.patientUserId(), summary.guardianUserId())).toList());
         return candidates.stream().filter(summary -> eligible.contains(
                 new ParticipantPair(summary.patientUserId(), summary.guardianUserId()))).toList();
+    }
+
+    public List<GuardianBookingDraftRepository.ReceiptSummary> recentReceipts(AppUser actor, UUID requestId) {
+        requireActor(actor);
+        if (actor.role() != AppUserRole.GUARDIAN) throw GuardianBookingException.denied();
+        requireOutsideTransaction();
+        var candidates = drafts.recentReceipts(actor.id(), requestId);
+        var eligible = approvals.eligibleParticipants(actor, candidates.stream()
+                .map(row -> new ParticipantPair(row.patientId(), actor.id())).toList());
+        return candidates.stream().filter(row -> eligible.contains(new ParticipantPair(row.patientId(), actor.id())))
+                .map(GuardianBookingDraftRepository.ReceiptCandidate::receipt).toList();
+    }
+
+    private void requireOutsideTransaction() {
+        // 외부 계정 상태를 확인하는 동안 JDBC 연결을 점유하지 않는다.
+        if (TransactionSynchronizationManager.isActualTransactionActive()
+                || TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalTransactionStateException("예약 목록은 DB 트랜잭션 밖에서 조회해야 합니다.");
+        }
     }
 
     @Transactional

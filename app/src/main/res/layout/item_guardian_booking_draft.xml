@@ -31,6 +31,7 @@
             android:textSize="14sp" />
     </LinearLayout>
     <ImageView
+        android:id="@+id/guardianInboxRowChevron"
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:importantForAccessibility="no"

@@ -27,6 +27,31 @@ public class CoreApiGuardianBookingDraftRepositoryTest {
     private static final String ROOT = CoreApiGuardianBookingRepository.ROOT;
     private static final String PATH = ROOT + "/drafts/guardians/" + GUARDIAN + "/requests/" + REQUEST;
 
+    @Test public void recoveryGetsOnlyCurrentGuardiansReceiptsAndRejectsDuplicateRows() throws Exception {
+        JSONObject item = new JSONObject().put("clientRequestId", REQUEST.toString())
+                .put("appointmentId", GRANT.toString()).put("publicCode", "TEST-419");
+        var sender = (CoreApiGuardianBookingRepository.Sender) (method, path, body) -> {
+            assertEquals("GET", method);
+            assertEquals("/api/auth/me", path);
+            assertNull(body);
+            return me(false);
+        };
+        var result = receiptListRequest(null, sender, path -> {
+            assertEquals(ROOT + "/receipts", path);
+            return new JSONArray().put(item);
+        });
+        assertEquals(REQUEST, result.get(0).requestId);
+        assertEquals("TEST-419", result.get(0).receipt.getPublicCode());
+        assertThrows(JSONException.class, () -> receiptListRequest(null, sender, path -> new JSONArray().put(item).put(item)));
+        assertEquals(1, receiptListRequest(REQUEST, sender, path -> {
+            assertEquals(ROOT + "/receipts?clientRequestId=" + REQUEST, path);
+            return new JSONArray().put(item);
+        }).size());
+        assertThrows(JSONException.class, () -> receiptListRequest(GRANT, sender, path -> new JSONArray().put(item)));
+        assertThrows(CoreApiAuthenticatedClient.ApiException.class, () -> receiptListRequest(null,
+                (method, path, body) -> me(true), path -> { throw new AssertionError("환자 접수증 조회 금지"); }));
+    }
+
     @Test
     public void reference_preservesIdentityWithoutOriginalBody() {
         GuardianBookingDraftReference reference = reference();

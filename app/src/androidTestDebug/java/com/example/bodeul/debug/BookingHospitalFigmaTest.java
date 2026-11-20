@@ -3,9 +3,11 @@ package com.example.bodeul.debug;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.*;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
 import android.app.Activity;
 import android.content.Context;
@@ -70,6 +72,40 @@ public class BookingHospitalFigmaTest {
         BookingHospitalFigmaPreviewActivity.testSearch = null;
     }
 
+    @Test public void guardianWritesReviewsAndSendsApprovalRequestNotBooking() {
+        Context ctx = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        try (var scenario = ActivityScenario.<GuardianBookingInboxPreviewActivity>launch(
+                new Intent(ctx, GuardianBookingInboxPreviewActivity.class).putExtra("scenario", "guardian"))) {
+            onView(withId(R.id.buttonGuardianBookingCompose)).perform(scrollTo(), click());
+            onView(withText("검증 병원")).perform(click());
+            choose("내과");
+            onView(withId(R.id.buttonConfirmBookingDepartment)).perform(click());
+            onView(withId(R.id.guardianFormHospital)).check(matches(withText(containsString("검증 병원"))));
+            field(R.id.guardianFormCode, "10000000-0000-0000-0000-000000000001");
+            field(R.id.guardianFormName, "합성 환자");
+            field(R.id.guardianFormPhone, "01000000000");
+            onView(withId(R.id.guardianFormWhen)).perform(scrollTo(), click());
+            onView(withId(android.R.id.button1)).perform(click());
+            onView(withId(android.R.id.button1)).perform(click());
+            field(R.id.guardianFormMeeting, "1층");
+            field(R.id.guardianFormCondition, "보행 보조");
+            scenario.onActivity(a -> ((android.widget.Spinner)a.findViewById(R.id.guardianFormPayment)).setSelection(1));
+            onView(withId(R.id.guardianFormReview)).perform(scrollTo(), click());
+            onView(withId(R.id.guardianComposeSummary)).check(matches(withText(containsString("보행 보조"))));
+            onView(withId(R.id.guardianFormEdit)).perform(scrollTo(), click());
+            onView(withId(R.id.guardianFormName)).check(matches(withText("합성 환자")));
+            onView(withId(R.id.guardianFormReview)).perform(scrollTo(), click());
+            onView(withId(R.id.guardianFormSend)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingInboxMessage)).check(matches(withText(R.string.guardian_booking_draft_sent)));
+            onView(withId(R.id.guardianFormName)).check(matches(withText("")));
+            onView(withId(R.id.textGuardianBookingInboxRowTitle)).perform(scrollTo(), click());
+            onView(withId(R.id.textGuardianBookingSummary)).check(matches(withText(containsString("보행 보조"))));
+            onView(withId(R.id.buttonGuardianBookingCreate)).check(matches(withEffectiveVisibility(Visibility.GONE)));
+        }
+    }
+
+    private static void field(int id, String value) { onView(withId(id)).perform(scrollTo(), replaceText(value), closeSoftKeyboard()); }
+
     @Test public void selectionNeedsConfirmationAndReturnsCoordinates() {
         try (ActivityScenario<BookingHospitalFigmaPreviewActivity> scenario = launch("", "")) {
             onView(withText("검증 병원")).perform(click());
@@ -77,8 +113,8 @@ public class BookingHospitalFigmaTest {
             choose("외과");
             onView(withId(R.id.buttonConfirmBookingDepartment)).check(matches(isCompletelyDisplayed()));
             scenario.recreate();
-            onView(withTagValue(is((Object) "외과"))).check(matches(isSelected()));
-            onView(withId(R.id.buttonConfirmBookingDepartment)).perform(click());
+            onView(withTagValue(is((Object) "외과"))).inRoot(isDialog()).check(matches(isSelected()));
+            onView(withId(R.id.buttonConfirmBookingDepartment)).inRoot(isDialog()).perform(click());
             android.app.Instrumentation.ActivityResult activityResult = scenario.getResult();
             assertEquals(Activity.RESULT_OK, activityResult.getResultCode());
             BookingHospitalSelection result = BookingHospitalSelectorActivity.parseResult(activityResult.getResultData());
@@ -156,9 +192,9 @@ public class BookingHospitalFigmaTest {
             onView(withText(R.string.error_required_field)).check(matches(isDisplayed()));
             onView(withId(R.id.inputManualDepartment)).perform(replaceText(" 특수 진료과 "), closeSoftKeyboard());
             scenario.recreate();
-            onView(withId(R.id.inputManualHospital)).check(matches(withText("수정 병원")));
-            onView(withId(R.id.inputManualDepartment)).check(matches(withText(" 특수 진료과 ")));
-            onView(withId(android.R.id.button1)).perform(click());
+            onView(withId(R.id.inputManualHospital)).inRoot(isDialog()).check(matches(withText("수정 병원")));
+            onView(withId(R.id.inputManualDepartment)).inRoot(isDialog()).check(matches(withText(" 특수 진료과 ")));
+            onView(withId(android.R.id.button1)).inRoot(isDialog()).perform(click());
             BookingHospitalSelection result = BookingHospitalSelectorActivity.parseResult(scenario.getResult().getResultData());
             assertEquals("수정 병원", result.getHospitalName());
             assertEquals("특수 진료과", result.getDepartmentName());
