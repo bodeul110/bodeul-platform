@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.AppCompatTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/FinalProfileSegment" android:layout_marginEnd="4dp" android:minWidth="48dp"
+    android:background="@drawable/bg_batch_chip" android:clickable="true" android:focusable="true" />

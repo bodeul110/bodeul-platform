@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 import com.example.bodeul.MainActivity;
 import com.example.bodeul.ui.booking.ClientBookingHistoryActivity;
 import com.example.bodeul.ui.booking.ClientCalendarActivity;
-import com.example.bodeul.ui.chat.CompanionChatActivity;
+import com.example.bodeul.ui.chat.ChatRoomsActivity;
 import com.example.bodeul.ui.profile.ClientProfileActivity;
 
 /**
@@ -36,7 +36,7 @@ public final class ClientBottomNavigationRouter {
                 intent = new Intent(activity, ClientBookingHistoryActivity.class);
                 break;
             case COMPANION_ROOM:
-                intent = CompanionChatActivity.createIntent(activity);
+                intent = ChatRoomsActivity.createIntent(activity);
                 break;
             case PROFILE:
                 intent = new Intent(activity, ClientProfileActivity.class);

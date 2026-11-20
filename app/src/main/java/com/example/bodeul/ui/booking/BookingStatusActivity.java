@@ -114,6 +114,12 @@ public class BookingStatusActivity extends AppCompatActivity {
                 currentScreenModel == null ? null : currentScreenModel.getPrimaryAction()));
         findViewById(R.id.buttonBookingStatusMap).setOnClickListener(view -> openHospitalMap());
         findViewById(R.id.buttonBookingStatusFinalReport).setOnClickListener(view -> openFinalReport());
+        findViewById(R.id.buttonBookingStatusTimeline).setOnClickListener(view -> {
+            if (!loading && currentUser != null && currentUser.getRole() != UserRole.MANAGER
+                    && ClientProgressBinder.hasSession(currentDetail)) {
+                startActivity(ClientProgressActivity.createIntent(this,currentDetail.getAppointmentRequest().getId()));
+            }
+        });
         buttonSecondary.setOnClickListener(view -> handleAction(
                 currentScreenModel == null ? null : currentScreenModel.getSecondaryAction()
         ));
@@ -305,6 +311,8 @@ public class BookingStatusActivity extends AppCompatActivity {
                 followUpRecord
         );
         bookingStatusBinder.bindScreen(currentScreenModel);
+        findViewById(R.id.buttonBookingStatusTimeline).setVisibility(currentUser != null && currentUser.getRole() != UserRole.MANAGER
+                && ClientProgressBinder.hasSession(detail) ? View.VISIBLE : View.GONE);
         findViewById(R.id.buttonBookingStatusFinalReport).setVisibility(
                 detail.getAppointmentRequest().getStatus() == AppointmentStatus.COMPLETED
                         ? View.VISIBLE : View.GONE);

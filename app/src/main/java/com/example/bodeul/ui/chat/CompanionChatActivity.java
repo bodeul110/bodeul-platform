@@ -43,6 +43,7 @@ import com.example.bodeul.firebase.CompanionChatPushContract;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
 import com.example.bodeul.ui.booking.BookingStatusActivity;
+import com.example.bodeul.ui.booking.ClientProgressActivity;
 import com.example.bodeul.ui.manager.ManagerGuideActivity;
 import com.example.bodeul.util.DocumentPreviewLauncher;
 import com.example.bodeul.util.StatePanelHelper;
@@ -301,7 +302,7 @@ public class CompanionChatActivity extends AppCompatActivity {
     private void openProgress() {
         if (currentScreen == null) return;
         if (currentScreen.isManager()) startActivity(new Intent(this, ManagerGuideActivity.class));
-        else startActivity(BookingStatusActivity.createIntent(this, currentScreen.getRequestId()));
+        else startActivity(ClientProgressActivity.createIntent(this, currentScreen.getRequestId()));
     }
 
     private void openDetails() {

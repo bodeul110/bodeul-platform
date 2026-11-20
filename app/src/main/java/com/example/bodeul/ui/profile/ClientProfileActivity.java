@@ -14,7 +14,7 @@ import com.example.bodeul.domain.model.User;
 import com.example.bodeul.ui.auth.AuthFlowRouter;
 import com.example.bodeul.ui.auth.ProfileCompletionActivity;
 import com.example.bodeul.ui.auth.RoleSelectionActivity;
-import com.example.bodeul.ui.chat.CompanionChatActivity;
+import com.example.bodeul.ui.chat.ChatRoomsActivity;
 import com.example.bodeul.ui.home.ClientHomeInsets;
 import com.example.bodeul.ui.manager.ManagerActivity;
 import com.example.bodeul.ui.navigation.*;
@@ -49,7 +49,7 @@ public class ClientProfileActivity extends AppCompatActivity {
             navigation.setSelectedItemId(R.id.navManagerProfile);
             navigation.setOnItemSelectedListener(item -> {
                 if (user == null || item.getItemId() == R.id.navManagerProfile) return false;
-                if (item.getItemId() == R.id.navManagerChat) startActivity(CompanionChatActivity.createIntent(this));
+                if (item.getItemId() == R.id.navManagerChat) startActivity(ChatRoomsActivity.createIntent(this));
                 else {
                     startActivity(ManagerActivity.createTabIntent(this, item.getItemId()));
                     finish();

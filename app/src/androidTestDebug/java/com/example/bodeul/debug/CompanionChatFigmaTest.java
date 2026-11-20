@@ -546,8 +546,12 @@ public class CompanionChatFigmaTest {
     @Test public void detailsAndProgressKeepRequestAndMoreHasSessionInformation() {
         try (ActivityScenario<CompanionChatPreviewActivity> scenario = launch()) {
             onView(withId(R.id.buttonCompanionChatDetails)).perform(click());
+            assertEquals(com.example.bodeul.ui.booking.BookingStatusActivity.class.getName(),
+                    CompanionChatPreviewActivity.lastNavigation.getComponent().getClassName());
             assertEquals("request", CompanionChatPreviewActivity.lastNavigation.getStringExtra("requestId"));
             onView(withId(R.id.buttonCompanionChatProgress)).perform(click());
+            assertEquals(com.example.bodeul.ui.booking.ClientProgressActivity.class.getName(),
+                    CompanionChatPreviewActivity.lastNavigation.getComponent().getClassName());
             assertEquals("request", CompanionChatPreviewActivity.lastNavigation.getStringExtra("requestId"));
             onView(withId(R.id.buttonCompanionChatMore)).perform(click());
             onView(withText(R.string.final_chat_info)).perform(click());

@@ -59,6 +59,7 @@ import com.example.bodeul.ui.booking.BookingPaymentApprovalActivity;
 import com.example.bodeul.ui.booking.ClientBookingHistoryActivity;
 import com.example.bodeul.ui.booking.ClientCalendarActivity;
 import com.example.bodeul.ui.booking.BookingAppointmentSelectorActivity;
+import com.example.bodeul.ui.chat.ChatRoomsActivity;
 import com.example.bodeul.ui.chat.CompanionChatActivity;
 import com.example.bodeul.ui.profile.ClientProfileActivity;
 import com.example.bodeul.ui.profile.ProfileSettingsActivity;
@@ -295,20 +296,21 @@ public class ClientNavigationReturnTest {
     }
 
     @Test
-    public void chatDetailBackAndHomeMenuReuseExistingHome() {
+    public void roomDirectoryAndDetailCanBothReturnToExistingHome() {
         for (AppointmentRequest existing : data.getAppointmentRequestsForUser(patient.getId(), UserRole.PATIENT)) {
             existing.setStatus(AppointmentStatus.CANCELED);
         }
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             MainActivity home = awaitActivity(MainActivity.class);
             click(home, R.id.clientNavCompanionRoom);
-            CompanionChatActivity chat = awaitActivity(CompanionChatActivity.class);
-            assertTrue(chat.findViewById(R.id.clientBottomNavigation) == null);
-            click(chat, R.id.buttonBackCompanionChat);
+            ChatRoomsActivity rooms = awaitActivity(ChatRoomsActivity.class);
+            assertNavigationBounds(rooms, R.id.clientNavCompanionRoom);
+            click(rooms, R.id.buttonSettingsDetailBack);
             assertSame(home, awaitActivity(MainActivity.class));
             assertNavigationBounds(home, R.id.clientNavHome);
-            click(home, R.id.clientNavCompanionRoom);
-            chat = awaitActivity(CompanionChatActivity.class);
+            instrumentation.runOnMainSync(() -> home.startActivity(CompanionChatActivity.createIntent(home)));
+            CompanionChatActivity chat = awaitActivity(CompanionChatActivity.class);
+            assertTrue(chat.findViewById(R.id.clientBottomNavigation) == null);
             click(chat, R.id.buttonCompanionChatMore);
             onView(androidx.test.espresso.matcher.ViewMatchers.withText(R.string.final_chat_home))
                     .perform(androidx.test.espresso.action.ViewActions.click());
@@ -331,7 +333,10 @@ public class ClientNavigationReturnTest {
             click(home, R.id.buttonHomeHeroPrimary);
             BookingActivity booking = awaitActivity(BookingActivity.class);
             fillLocalBooking(booking);
-            assertNavigationBounds(booking, R.id.clientNavScheduleHistory);
+            click(booking, R.id.buttonBookingSelf);
+            click(booking, R.id.buttonBookingNext);
+            click(booking, R.id.buttonBookingNext);
+            assertBookingFooterBounds(booking, R.id.buttonBookingNext);
 
             click(booking, R.id.buttonBookingHealthProfile);
             BookingHealthProfileActivity health = awaitActivity(BookingHealthProfileActivity.class);
@@ -344,14 +349,14 @@ public class ClientNavigationReturnTest {
                         .show(WindowInsetsCompat.Type.ime());
             });
             awaitIme(health, true);
-            onView(withId(R.id.inputBookingHealthProfileCondition)).check(matches(isCompletelyDisplayed()));
+            // 키보드로 줄어든 영역에서도 사용자가 질환 입력란 전체까지 스크롤할 수 있어야 한다.
+            onView(withId(R.id.inputBookingHealthProfileCondition)).perform(scrollTo()).check(matches(isCompletelyDisplayed()));
             onView(withId(R.id.inputBookingHealthProfileCondition)).perform(closeSoftKeyboard());
             awaitIme(health, false);
             click(health, R.id.buttonBookingHealthProfileComplete);
             assertSame(booking, awaitActivity(BookingActivity.class));
-            assertNavigationBounds(booking, R.id.clientNavScheduleHistory);
-
-            scrollAboveNavigation(booking, R.id.buttonSubmitBooking);
+            click(booking, R.id.buttonBookingNext);
+            assertBookingFooterBounds(booking, R.id.buttonSubmitBooking);
             onView(withId(R.id.buttonSubmitBooking)).perform(
                     androidx.test.espresso.action.ViewActions.click());
             BookingPaymentApprovalActivity payment = awaitActivity(BookingPaymentApprovalActivity.class);
@@ -382,16 +387,13 @@ public class ClientNavigationReturnTest {
             history = awaitActivity(ClientBookingHistoryActivity.class);
             assertNavigationBounds(history, R.id.clientNavScheduleHistory);
             click(history, R.id.clientNavCompanionRoom);
-            CompanionChatActivity chat = awaitActivity(CompanionChatActivity.class);
-            // 완성본의 채팅 상세는 탭 대신 뒤로가기와 메뉴로 기존 홈에 복귀한다.
-            assertTrue(chat.findViewById(R.id.clientBottomNavigation) == null);
-            click(chat, R.id.buttonBackCompanionChat);
+            ChatRoomsActivity rooms = awaitActivity(ChatRoomsActivity.class);
+            assertNavigationBounds(rooms, R.id.clientNavCompanionRoom);
+            click(rooms, R.id.buttonSettingsDetailBack);
             assertSame(home, awaitActivity(MainActivity.class));
             click(home, R.id.clientNavCompanionRoom);
-            chat = awaitActivity(CompanionChatActivity.class);
-            click(chat, R.id.buttonCompanionChatMore);
-            onView(androidx.test.espresso.matcher.ViewMatchers.withText(R.string.final_chat_home))
-                    .perform(androidx.test.espresso.action.ViewActions.click());
+            rooms = awaitActivity(ChatRoomsActivity.class);
+            click(rooms, R.id.clientNavHome);
             assertSame(home, awaitActivity(MainActivity.class));
             click(home, R.id.clientNavProfile);
             ClientProfileActivity profile = awaitActivity(ClientProfileActivity.class);
@@ -452,30 +454,14 @@ public class ClientNavigationReturnTest {
         throw new AssertionError("실제 키보드 표시 상태: " + visible.get() + ", 기대: " + expected);
     }
 
-    private void scrollAboveNavigation(Activity activity, int id) {
-        onView(withId(id)).perform(scrollTo());
-        instrumentation.runOnMainSync(() -> {
-            View target = activity.findViewById(id);
-            View navigation = activity.findViewById(R.id.clientBottomNavigation);
-            int[] targetPosition = new int[2];
-            int[] navigationPosition = new int[2];
-            target.getLocationOnScreen(targetPosition);
-            navigation.getLocationOnScreen(navigationPosition);
-            int gap = Math.round(16 * activity.getResources().getDisplayMetrics().density);
-            int overlap = targetPosition[1] + target.getHeight() + gap - navigationPosition[1];
-            // Espresso scrollTo는 위에 겹친 고정 메뉴를 모른다. 실제 스크롤로 버튼을 메뉴 위에 둔다.
-            if (overlap > 0) {
-                ((ScrollView) activity.findViewById(R.id.scrollBooking)).scrollBy(0, overlap);
-            }
-        });
-        instrumentation.waitForIdleSync();
+    private void assertBookingFooterBounds(Activity activity, int id) {
         onView(withId(id)).check(matches(isCompletelyDisplayed()));
         instrumentation.runOnMainSync(() -> {
             Rect target = new Rect();
-            Rect navigation = new Rect();
             assertTrue(activity.findViewById(id).getGlobalVisibleRect(target));
-            assertTrue(activity.findViewById(R.id.clientBottomNavigation).getGlobalVisibleRect(navigation));
-            assertTrue("접수 버튼이 하단 메뉴에 가려짐", target.bottom <= navigation.top);
+            View root = activity.getWindow().getDecorView();
+            int safeBottom = ViewCompat.getRootWindowInsets(root).getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+            assertTrue("예약 단계 버튼이 시스템 바에 가려짐", target.bottom <= root.getHeight() - safeBottom);
         });
     }
 
