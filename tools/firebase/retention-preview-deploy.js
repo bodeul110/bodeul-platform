@@ -1,9 +1,6 @@
 "use strict";
 
 const {execFileSync} = require("node:child_process");
-const {mkdtempSync, readFileSync, rmSync, rmdirSync} = require("node:fs");
-const {tmpdir} = require("node:os");
-const {join} = require("node:path");
 const {isDeepStrictEqual} = require("node:util");
 const {setTimeout: sleep} = require("node:timers/promises");
 
@@ -98,7 +95,7 @@ function patchBody(fn, storageSource) {
   };
 }
 
-function sourceZip(sha, dir, cwd = process.cwd()) {
+function sourceZip(sha, cwd = process.cwd()) {
   requireThat(/^[a-f0-9]{40}$/.test(sha), "배포 원본은 커밋 SHA 40자로 지정해야 합니다.");
   const tree = sha + ":functions";
   const paths = ["index.js", "package.json", "package-lock.json", "src"];
@@ -107,9 +104,8 @@ function sourceZip(sha, dir, cwd = process.cwd()) {
       entries.some((e) => e.endsWith("\tsrc/retention.js")) &&
       entries.every((e) => /^100644 blob [a-f0-9]{40}\t(index\.js|package(?:-lock)?\.json|src\/(?:[\w-]+\/)*[\w-]+\.js)$/.test(e)),
   "배포 원본 파일 또는 파일 유형이 예상과 다릅니다.");
-  const path = join(dir, "function.zip");
-  execFileSync("git", ["archive", "--format=zip", "--output=" + path, tree, "--", ...paths], {cwd});
-  return readFileSync(path);
+  // 작업 폴더나 임시 파일을 다시 읽지 않고 검토한 Git 객체에서 바로 ZIP을 받는다.
+  return execFileSync("git", ["archive", "--format=zip", tree, "--", ...paths], {cwd, maxBuffer: 8 * 1024 * 1024});
 }
 
 async function deploy() {
@@ -125,40 +121,34 @@ async function deploy() {
   };
   const before = await api(target);
   checkFunction(before);
-  const dir = mkdtempSync(join(tmpdir(), "bodeul-retention-dev-"));
-  try {
-    const zip = sourceZip(sha, dir);
-    const ticket = await api(location + "/functions:generateUploadUrl", "POST", {environment: "GEN_2"});
-    checkUpload(ticket);
-    // 서명된 주소에는 Google 인증 헤더를 보내지 않으며, 주소와 응답 본문은 로그에 남기지 않는다.
-    const put = await fetch(ticket.uploadUrl, {method: "PUT", headers: {"content-type": "application/zip"},
-      body: zip, redirect: "error", signal: AbortSignal.timeout(60000)});
-    requireThat(put.ok, "함수 소스 업로드 실패: HTTP " + put.status);
-    guard();
-    const current = await api(target);
-    requireThat(before.updateTime && before.updateTime === current.updateTime, "검증 중 함수 설정이 변경됐습니다.");
-    const update = await api(target + "?updateMask=buildConfig.source,serviceConfig.environmentVariables",
-        "PATCH", patchBody(current, ticket.storageSource));
-    const operation = /^projects\/(bodeul-dev|533563500316)\/locations\/asia-northeast3\/operations\/[\w.-]+$/;
-    requireThat(operation.test(update.name), "개발 리전의 배포 작업을 확인하지 못했습니다.");
-    let op = update;
-    const deadline = Date.now() + 18 * 60 * 1000;
-    while (!op.done) {
-      requireThat(Date.now() < deadline, "배포 결과 대기 시간이 지났습니다. 새 실행을 시작하기 전에 개발 함수 상태를 확인하세요.");
-      await sleep(8000);
-      op = await api(update.name);
-    }
-    requireThat(!op.error, "개발 함수 배포 실패: " + (op.error?.code || ""));
-    const after = await api(target);
-    checkFunction(after);
-    requireThat(after.serviceConfig.environmentVariables.RETENTION_GUARDIAN_BOOKING_ENABLED === "true" &&
-        after.serviceConfig.revision && after.serviceConfig.revision !== before.serviceConfig.revision,
-    "배포 후 새 리비전 또는 집계 설정을 확인하지 못했습니다.");
-    console.log("개발 함수 배포 완료: " + after.serviceConfig.revision + " / " + sha + " / DRY_RUN");
-  } finally {
-    rmSync(join(dir, "function.zip"), {force: true});
-    rmdirSync(dir);
+  const zip = sourceZip(sha);
+  const ticket = await api(location + "/functions:generateUploadUrl", "POST", {environment: "GEN_2"});
+  checkUpload(ticket);
+  // 서명된 주소에는 Google 인증 헤더를 보내지 않으며, 주소와 응답 본문은 로그에 남기지 않는다.
+  const put = await fetch(ticket.uploadUrl, {method: "PUT", headers: {"content-type": "application/zip"},
+    body: zip, redirect: "error", signal: AbortSignal.timeout(60000)});
+  requireThat(put.ok, "함수 소스 업로드 실패: HTTP " + put.status);
+  guard();
+  const current = await api(target);
+  requireThat(before.updateTime && before.updateTime === current.updateTime, "검증 중 함수 설정이 변경됐습니다.");
+  const update = await api(target + "?updateMask=buildConfig.source,serviceConfig.environmentVariables",
+      "PATCH", patchBody(current, ticket.storageSource));
+  const operation = /^projects\/(bodeul-dev|533563500316)\/locations\/asia-northeast3\/operations\/[\w.-]+$/;
+  requireThat(operation.test(update.name), "개발 리전의 배포 작업을 확인하지 못했습니다.");
+  let op = update;
+  const deadline = Date.now() + 18 * 60 * 1000;
+  while (!op.done) {
+    requireThat(Date.now() < deadline, "배포 결과 대기 시간이 지났습니다. 새 실행을 시작하기 전에 개발 함수 상태를 확인하세요.");
+    await sleep(8000);
+    op = await api(update.name);
   }
+  requireThat(!op.error, "개발 함수 배포 실패: " + (op.error?.code || ""));
+  const after = await api(target);
+  checkFunction(after);
+  requireThat(after.serviceConfig.environmentVariables.RETENTION_GUARDIAN_BOOKING_ENABLED === "true" &&
+      after.serviceConfig.revision && after.serviceConfig.revision !== before.serviceConfig.revision,
+  "배포 후 새 리비전 또는 집계 설정을 확인하지 못했습니다.");
+  console.log("개발 함수 배포 완료: " + after.serviceConfig.revision + " / " + sha + " / DRY_RUN");
 }
 
 module.exports = {checkDispatch, checkEnvironment, checkFunction, checkUpload, patchBody, sourceZip};

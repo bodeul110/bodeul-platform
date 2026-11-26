@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {execFileSync} = require("node:child_process");
-const {mkdtempSync, mkdirSync, writeFileSync, rmSync} = require("node:fs");
+const {mkdtempSync, mkdirSync, readdirSync, writeFileSync, rmSync} = require("node:fs");
 const {tmpdir} = require("node:os");
 const {join} = require("node:path");
 const {checkDispatch, checkEnvironment, checkFunction, checkUpload, patchBody, sourceZip} = require("../retention-preview-deploy");
@@ -104,13 +104,15 @@ test("배포 ZIP은 지정한 커밋의 함수 파일만 포함하고 심볼릭 
   git("commit", "--quiet", "-m", "fixture");
   const commit = git("rev-parse", "HEAD");
   writeFileSync(join(dir, "src", "untracked.js"), "fixture");
-  const zip = sourceZip(commit, cwd, cwd);
+  const before = readdirSync(cwd);
+  const zip = sourceZip(commit, cwd);
+  assert.deepEqual(readdirSync(cwd), before);
   assert.equal(zip.subarray(0, 2).toString(), "PK");
   for (const name of ["index.js", "src/retention.js", "package.json", "package-lock.json"]) assert.ok(zip.includes(Buffer.from(name)));
   for (const name of ["ignored-fixture.txt", "untracked.js"]) assert.ok(!zip.includes(Buffer.from(name)));
-  assert.throws(() => sourceZip("HEAD", cwd, cwd));
+  assert.throws(() => sourceZip("HEAD", cwd));
   const blob = git("rev-parse", "HEAD:functions/index.js");
   git("update-index", "--add", "--cacheinfo", "120000," + blob + ",functions/src/link.js");
   git("commit", "--quiet", "-m", "fixture-link");
-  assert.throws(() => sourceZip(git("rev-parse", "HEAD"), cwd, cwd), /파일 유형/);
+  assert.throws(() => sourceZip(git("rev-parse", "HEAD"), cwd), /파일 유형/);
 });
