@@ -28,4 +28,6 @@ Android·관리자 웹 UI 및 역할은 바꾸지 않는다. 기존 월간 보�
 
 ## 회귀 검증
 
+개발 정기 함수의 전용 계정 설정, 승인 배포 및 실제 실행 확인은 [개발 보존 함수 배포](../operations/firebase/retention-preview-deploy.md)를 따른다. PR 병합이나 로컬 테스트만으로 정기 실행이 검증된 것으로 보지 않는다.
+
 `core-api`의 `db/verification/verify_guardian_booking_approval_migration.sh`는 CI의 새 로컬 PostgreSQL DB에서 Java 권한·rollback 테스트와 `functions/postgres-tests/guardian-booking-retention.test.js`를 실행한다. Node 22와 Functions lockfile의 의존성을 사용하며, 후자는 실제 파기 실행기와 원문 SQL·집계를 연결해 검증한다. 일반 Functions 단위 테스트와 별도이며 실제 개발·운영 DB에서는 실행하지 않는다.
