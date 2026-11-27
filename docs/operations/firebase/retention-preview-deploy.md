@@ -17,7 +17,7 @@
 ## 최초 설정
 
 1. 개발 프로젝트 번호 `533563500316`, 리전 `asia-northeast3`, 기존 함수와 Cloud Scheduler의 현재 리비전·대상·호출 계정을 확인한다. 새 서비스 계정에 키를 만들지 않는다.
-2. GitHub 환경 `firebase-retention-preview`는 사용자 `bodeul110`의 독립 승인, 본인 승인·관리자 우회 금지, `dev` 브랜치만 허용하도록 구성한다. WIF 공급자 `github-actions/bodeul-retention-dev`는 여기서는 **비활성**이다. IAM 스크립트는 GitHub 발급자, 주체 매핑, 저장소 ID·소유자 ID·저장소명·브랜치·이벤트·워크플로 참조·환경을 모두 제한하는 조건식 전체를 검사한다. 일부 조건만 맞거나 검토본과 표기(공백·순서 포함)가 달라도 권한을 부여하지 않는다. 풀 전체에 권한을 주지 않는다.
+2. GitHub 환경 `firebase-retention-preview`는 사용자 `bodeul110`의 독립 승인, 본인 승인·관리자 우회 금지, `dev` 브랜치만 허용하도록 구성한다. WIF 공급자 `github-actions/bodeul-retention-dev`는 여기서는 **비활성**이다. IAM 스크립트는 GitHub 발급자, 주체 매핑, 저장소 ID·소유자 ID·저장소명·브랜치·이벤트·워크플로 참조·환경을 확인한다. 여기에 재사용 워크플로 제한도 필요하다. GitHub가 `job_workflow_ref`를 보내는 경우 승인된 `workflow_ref`와 같아야 한다. 이 제한을 빼거나 검토본과 표기(공백·순서 포함)가 달라지면 중단한다. 풀 전체에 권한을 주지 않는다.
 3. 개발 프로젝트에서 맞춤 역할 생성과 리소스 IAM 설정 권한을 **이미** 보유한 관리자가 저장소 루트에서 다음 스크립트를 실행한다. 첫 줄은 조회용 계획이다. 두 번째 명령은 담당자의 이메일을 묻고, Enter만 누르면 변경 없이 끝난다. Windows PowerShell 5.1을 지원한다.
 
    ```powershell
@@ -31,6 +31,13 @@
    - 실행: `datastore.entities.get/list`만 포함한 역할을 `projects/bodeul-dev/databases/(default)`로 제한한다. 시크릿 접근은 `RETENTION_DATABASE_URL:2`와 `RETENTION_DATABASE_CA_CERT:1`의 정확한 버전만 허용한다. 버전 교체에는 별도 권한·배포 검토가 필요하다.
 5. WIF가 비활성이고 배포자에게 함수 변경 권한이 없는 상태에서 기존 함수의 상태·삭제 차단·고정 시크릿을 확인한다. 권한 있는 관리자가 Cloud Functions v2 PATCH의 `updateMask`를 `buildConfig.serviceAccount,buildConfig.dockerRepository,serviceConfig.serviceAccountEmail`로 제한해 **기존 함수**를 전환한다. 소스·환경변수·스케줄을 함께 바꾸지 않는다. 작업 완료 후 함수가 `ACTIVE`이고 전용 빌드 계정·전용 저장소·전용 실행 계정과 기존 스케줄러 대상이 맞는지 재조회한다.
 6. 그 이후에만 `bodeulRetentionDevStage`(업로드 준비·작업 조회)를 개발 배포 계정에, `bodeulRetentionDevRelease`(함수 조회·갱신)를 **해당 함수에서만** 같은 계정에 부여한다. 이 절차가 검토되어 보호된 `dev`에 반영된 뒤 WIF를 활성화한다. 함수 IAM을 설정하지 못하면 프로젝트 전체의 함수 편집자로 대체하지 않는다.
+
+이미 설정한 공급자는 활성화 직전에 아래 명령으로만 대조한다. `-CheckTrust`는 프로젝트와 공급자를 읽은 뒤 종료하며, `-Apply`와 같은 신뢰 조건을 검사한다. 점검이 실패하면 기존 클라우드 조건을 줄이지 말고 차이를 검토한다.
+
+```powershell
+$account = Read-Host '개발 WIF 조회 계정 이메일'
+powershell.exe -NoProfile -File .\tools\firebase\iam\configure-retention-preview-boundaries.ps1 -CheckTrust -Account $account
+```
 
 ## 배포 및 실제 확인
 

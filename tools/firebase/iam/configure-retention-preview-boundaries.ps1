@@ -3,7 +3,8 @@
 param(
     [string] $Account,
     [switch] $Apply,
-    [string] $ConfirmProject
+    [string] $ConfirmProject,
+    [switch] $CheckTrust
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,7 +20,8 @@ $roles = [ordered]@{
     bodeulRetentionDevRelease = @('cloudfunctions.functions.get', 'cloudfunctions.functions.update')
 }
 
-if (-not $Apply) {
+if ($CheckTrust -and $Apply) { throw '-CheckTrust와 -Apply는 함께 사용할 수 없습니다.' }
+if (-not $Apply -and -not $CheckTrust) {
     Write-Output "대상: $project / $region / cleanupExpiredData"
     foreach ($entry in $roles.GetEnumerator()) { Write-Output "역할 정의만 생성: $($entry.Key) = $($entry.Value -join ', ')" }
     Write-Output "WIF 단일 주체 → $deploy / workloadIdentityUser"
@@ -28,8 +30,9 @@ if (-not $Apply) {
     Write-Output '조회용 계획입니다. 역할 정의를 배포자에게 부여하거나 함수·WIF 상태를 바꾸지 않습니다.'
     return
 }
-if ($ConfirmProject -cne $project) { throw '적용할 때에는 -ConfirmProject bodeul-dev를 입력하세요.' }
+if ($Apply -and $ConfirmProject -cne $project) { throw '적용할 때에는 -ConfirmProject bodeul-dev를 입력하세요.' }
 if (-not $Account) {
+    if ($CheckTrust) { throw '읽기 전용 점검에는 -Account로 조회 계정을 지정하세요.' }
     $Account = Read-Host '이 프로젝트의 기존 IAM 담당자 이메일 (모르면 Enter를 눌러 변경 없이 종료)'
     if ([string]::IsNullOrWhiteSpace($Account)) { Write-Output '변경 없이 종료했습니다.'; return }
 }
@@ -68,11 +71,16 @@ $expectedCondition = @(
     "assertion.event_name=='workflow_dispatch'"
     "assertion.workflow_ref=='bodeul110/bodeul-platform/.github/workflows/firebase-rules.yml@refs/heads/dev'"
     "assertion.environment=='firebase-retention-preview'"
+    '(!has(assertion.job_workflow_ref) || assertion.job_workflow_ref==assertion.workflow_ref)'
 ) -join ' && '
 if (-not [string]::Equals($provider.oidc.issuerUri, 'https://token.actions.githubusercontent.com', [StringComparison]::Ordinal) -or
     -not [string]::Equals($provider.attributeMapping.'google.subject', "'bodeul-retention-dev-419:' + assertion.repository_id", [StringComparison]::Ordinal) -or
     -not [string]::Equals($provider.attributeCondition, $expectedCondition, [StringComparison]::Ordinal)) {
     throw 'WIF 신뢰 설정이 검토한 GitHub 발급자·주체 매핑·승인 조건과 다릅니다. 권한을 변경하지 않습니다.'
+}
+if ($CheckTrust) {
+    Write-Output '개발 WIF는 비활성이며 신뢰 설정이 일치합니다. 프로젝트와 공급자만 조회했습니다.'
+    return
 }
 foreach ($email in @($deploy, $build, $run)) {
     $sa = Invoke-CloudJson @('iam', 'service-accounts', 'describe', $email)
