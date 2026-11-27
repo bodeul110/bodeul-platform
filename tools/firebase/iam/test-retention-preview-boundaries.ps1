@@ -10,13 +10,15 @@ $claims = @(
     "assertion.workflow_ref=='bodeul110/bodeul-platform/.github/workflows/firebase-rules.yml@refs/heads/dev'"
     "assertion.environment=='firebase-retention-preview'"
 )
+$jobWorkflowGuard = '(!has(assertion.job_workflow_ref) || assertion.job_workflow_ref==assertion.workflow_ref)'
+$allConditions = $claims + $jobWorkflowGuard
 $validProvider = @{
     state='ACTIVE'; disabled=$true
     oidc=@{issuerUri='https://token.actions.githubusercontent.com'}
     attributeMapping=@{'google.subject'="'bodeul-retention-dev-419:' + assertion.repository_id"}
-    attributeCondition=($claims -join ' && ')
+    attributeCondition=($allConditions -join ' && ')
 }
-$retentionIamFixture = @{roles=@{}; policies=@{}; changes=@(); provider=$validProvider; calls=0}
+$retentionIamFixture = @{roles=@{}; policies=@{}; changes=@(); provider=$validProvider; calls=0; rejected=0}
 
 # gcloud 명령은 메모리 안의 개발 리소스로만 처리한다.
 function gcloud {
@@ -66,29 +68,46 @@ function gcloud {
 
 function Assert-TrustRejected ([hashtable] $Provider, [string] $Case) {
     $retentionIamFixture.provider = $Provider
-    $before = $retentionIamFixture.calls
-    $rejected = $false
-    try { $null = & $scriptPath @common }
-    catch { $rejected = $_.Exception.Message -like '*WIF 신뢰 설정*' }
-    finally { $retentionIamFixture.provider = $validProvider }
-    if (-not $rejected -or $retentionIamFixture.calls -ne ($before + 2) -or $retentionIamFixture.changes.Count -ne 0) {
-        throw "프로젝트와 공급자 조회 직후 변경 없이 중단하지 않았습니다: $Case"
-    }
+    try {
+        foreach ($mode in @($readOnly, $common)) {
+            $before = $retentionIamFixture.calls
+            $rejected = $false
+            try { $null = & $scriptPath @mode }
+            catch { $rejected = $_.Exception.Message -like '*WIF 신뢰 설정*' }
+            if (-not $rejected -or $retentionIamFixture.calls -ne ($before + 2) -or $retentionIamFixture.changes.Count -ne 0) {
+                throw "프로젝트와 공급자 조회 직후 변경 없이 중단하지 않았습니다: $Case"
+            }
+        }
+        $retentionIamFixture.rejected++
+    } finally { $retentionIamFixture.provider = $validProvider }
 }
 
 $null = & $scriptPath
 if ($retentionIamFixture.calls -ne 0) { throw '기본 실행은 클라우드 호출을 하면 안 됩니다.' }
 $common = @{Account='fixture@example.invalid'; Apply=$true; ConfirmProject='bodeul-dev'}
+$readOnly = @{Account='fixture@example.invalid'; CheckTrust=$true}
+$failed = $false
+try { $null = & $scriptPath @common -CheckTrust } catch { $failed = $_.Exception.Message -like '*함께 사용할 수 없습니다*' }
+if (-not $failed -or $retentionIamFixture.calls -ne 0) { throw '읽기 전용 점검과 적용을 함께 허용했습니다.' }
+$null = & $scriptPath @readOnly
+if ($retentionIamFixture.calls -ne 2 -or $retentionIamFixture.changes.Count -ne 0) { throw '읽기 전용 점검이 프로젝트·공급자 조회에서 끝나지 않았습니다.' }
 $bad = $validProvider.Clone()
 $bad.Remove('attributeCondition')
 Assert-TrustRejected $bad '조건 없음'
 foreach ($claim in $claims) {
     $bad = $validProvider.Clone()
-    $bad.attributeCondition = ($claims | Where-Object { $_ -cne $claim }) -join ' && '
+    $bad.attributeCondition = ($allConditions | Where-Object { $_ -cne $claim }) -join ' && '
     Assert-TrustRejected $bad "필수 조건 누락: $claim"
     $bad.attributeCondition = $validProvider.attributeCondition.Replace($claim, $claim.Replace("=='", "=='other-"))
     Assert-TrustRejected $bad "필수 조건 값 변경: $claim"
 }
+$bad = $validProvider.Clone()
+$bad.attributeCondition = $claims -join ' && '
+Assert-TrustRejected $bad '기존 7개 조건만 있고 재사용 워크플로 제한 없음'
+$bad.attributeCondition = $validProvider.attributeCondition.Replace('!has(assertion.job_workflow_ref)', 'has(assertion.job_workflow_ref)')
+Assert-TrustRejected $bad '호출된 워크플로 참조 존재 조건 변경'
+$bad.attributeCondition = $validProvider.attributeCondition.Replace('==assertion.workflow_ref)', '==assertion.ref)')
+Assert-TrustRejected $bad '호출된 워크플로 참조 비교 대상 변경'
 $bad = $validProvider.Clone()
 $bad.attributeCondition += ' || true'
 Assert-TrustRejected $bad '허용 범위를 넓히는 조건 추가'
@@ -111,4 +130,4 @@ $retentionIamFixture.provider.disabled = $false
 $failed = $false
 try { $null = & $scriptPath @common } catch { $failed = $_.Exception.Message -like '*비활성*' }
 if (-not $failed -or $retentionIamFixture.changes.Count -ne 6) { throw '활성화된 WIF에서 설정을 계속했습니다.' }
-Write-Output 'IAM 계획·최초 설정·재실행·기존 역할 충돌·활성 공급자 차단 및 WIF 신뢰 조건 거부 18건 통과'
+Write-Output "IAM 계획·읽기 전용 점검·최초 설정·재실행·기존 역할 충돌·활성 공급자 차단 및 WIF 신뢰 조건 거부 $($retentionIamFixture.rejected)건(조회·적용 모두) 통과"
