@@ -4,7 +4,7 @@
 
 ## 권한을 나누는 이유
 
-기존 함수의 빌드·실행 계정에는 개발 프로젝트의 `Editor` 역할이 있다. 그 계정을 GitHub에서 사용할 수 있게 하거나 Firebase 전체 배포 권한을 주지 않는다. 대신 전용 서비스 계정과 Docker 저장소를 쓰며, 기존 계정의 권한은 건드리지 않는다. 이미지 빌드·저장 비용이 발생할 수 있다.
+전환 전 함수는 개발 프로젝트의 `Editor` 역할이 있는 계정으로 빌드·실행됐다. 그 계정을 GitHub에 연결하거나 Firebase 전체 배포 권한을 주는 대신, 이 함수만 전용 서비스 계정과 Docker 저장소로 옮겼다. [개발 리비전과 권한 확인 기록](https://github.com/bodeul110/bodeul-platform/issues/419#issuecomment-7207240151)은 정기 작업의 DB 실행 결과와 구분한다. 이미지 빌드·저장 비용이 발생할 수 있다.
 
 | 전용 계정 | 허용하는 작업 | 허용하지 않는 작업 |
 | --- | --- | --- |
@@ -17,7 +17,7 @@
 ## 최초 설정
 
 1. 개발 프로젝트 번호 `533563500316`, 리전 `asia-northeast3`, 기존 함수와 Cloud Scheduler의 현재 리비전·대상·호출 계정을 확인한다. 새 서비스 계정에 키를 만들지 않는다.
-2. GitHub 환경 `firebase-retention-preview`는 사용자 `bodeul110`의 독립 승인, 본인 승인·관리자 우회 금지, `dev` 브랜치만 허용하도록 구성한다. WIF 공급자 `github-actions/bodeul-retention-dev`는 여기서는 **비활성**이다. 저장소·소유자 ID, 워크플로 경로, 수동 실행, 환경, 브랜치가 모두 일치해야 한다. 풀 전체에 권한을 주지 않는다.
+2. GitHub 환경 `firebase-retention-preview`는 사용자 `bodeul110`의 독립 승인, 본인 승인·관리자 우회 금지, `dev` 브랜치만 허용하도록 구성한다. WIF 공급자 `github-actions/bodeul-retention-dev`는 여기서는 **비활성**이다. IAM 스크립트는 GitHub 발급자, 주체 매핑, 저장소 ID·소유자 ID·저장소명·브랜치·이벤트·워크플로 참조·환경을 모두 제한하는 조건식 전체를 검사한다. 일부 조건만 맞거나 검토본과 표기(공백·순서 포함)가 달라도 권한을 부여하지 않는다. 풀 전체에 권한을 주지 않는다.
 3. 개발 프로젝트에서 맞춤 역할 생성과 리소스 IAM 설정 권한을 **이미** 보유한 관리자가 저장소 루트에서 다음 스크립트를 실행한다. 첫 줄은 조회용 계획이다. 두 번째 명령은 담당자의 이메일을 묻고, Enter만 누르면 변경 없이 끝난다. Windows PowerShell 5.1을 지원한다.
 
    ```powershell
@@ -40,6 +40,7 @@
   gh workflow run firebase-rules.yml --repo bodeul110/bodeul-platform --ref dev -f deploy_retention_preview=true -f confirm_dev_sha=<검토한-dev-SHA-40자>
   ```
 
+- OIDC 토큰을 요청할 수 있는 배포 job의 외부 Actions는 공식 저장소의 전체 커밋 SHA에 고정한다. 버전을 바꿀 때는 릴리스 태그가 가리키는 커밋을 확인하고 SHA와 옆의 버전 주석을 함께 검토한다.
 - 요청자와 다른 승인자가 환경과 SHA를 확인한다. 테스트와 승인 후 같은 SHA를 다시 확인하고 추적된 함수 소스만 업로드한다. 기존 함수의 소스 및 환경변수 필드만 갱신하며 `RETENTION_APPLY_ENABLED=false`, `RETENTION_GUARDIAN_BOOKING_ENABLED=true`로 고정한다. 배포 성공은 새 리비전·계정·시크릿 연결까지 확인했다는 뜻이며, 정기 실행 성공을 뜻하지 않는다.
 - 기존 작업 `firebase-schedule-cleanupExpiredData-asia-northeast3`(매일 04:45, 서울)의 다음 실행을 확인한다. 앞당길 필요가 있으면 진행 중인 실행이 없는지 먼저 확인하고 기존 스케줄러를 한 번만 호출한다. GitHub 배포자에게 호출 권한은 주지 않는다.
 - **해당 호출 이후** 개발 DB `bodeul.retention_job_runs`의 새 행에서 `mode=DRY_RUN`, `status=COMPLETED`, `guardian_draft_checked=true`, `guardian_drafts_purged=0` 및 다른 실제 삭제 지표가 모두 0인지 확인한다. 후보·잔여 수는 0일 필요가 없고 dry-run에서는 서로 같아야 한다. 새 행이 없거나 실패하면 검증 미완료다. 이슈에는 시각·리비전·집계만 남기고 원문·비밀값·개인 식별자는 남기지 않는다.

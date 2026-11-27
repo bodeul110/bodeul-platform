@@ -56,9 +56,23 @@ function Has-Binding ($Policy, [string] $Role, [string] $Member) {
 $p = Invoke-CloudJson @('projects', 'describe', $project)
 if ([string]$p.projectNumber -cne '533563500316') { throw '개발 프로젝트 번호가 다릅니다.' }
 $provider = Invoke-CloudJson @('iam', 'workload-identity-pools', 'providers', 'describe', $repo, '--location=global', '--workload-identity-pool=github-actions')
-if ($provider.disabled -ne $true -or $provider.state -cne 'ACTIVE' -or
-    $provider.attributeMapping.'google.subject' -cne "'bodeul-retention-dev-419:' + assertion.repository_id") {
-    throw '준비 단계에서는 지정한 WIF가 비활성이고 주체 매핑이 일치해야 합니다.'
+if ($provider.disabled -ne $true -or $provider.state -cne 'ACTIVE') {
+    throw '준비 단계에서는 지정한 WIF 공급자가 비활성이어야 합니다.'
+}
+# CEL을 부분 해석하지 않고 검토한 식 전체를 대조한다. 조건이 바뀌면 권한을 부여하기 전에 멈춘다.
+$expectedCondition = @(
+    "assertion.repository_id=='1209358990'"
+    "assertion.repository_owner_id=='275679915'"
+    "assertion.repository=='bodeul110/bodeul-platform'"
+    "assertion.ref=='refs/heads/dev'"
+    "assertion.event_name=='workflow_dispatch'"
+    "assertion.workflow_ref=='bodeul110/bodeul-platform/.github/workflows/firebase-rules.yml@refs/heads/dev'"
+    "assertion.environment=='firebase-retention-preview'"
+) -join ' && '
+if (-not [string]::Equals($provider.oidc.issuerUri, 'https://token.actions.githubusercontent.com', [StringComparison]::Ordinal) -or
+    -not [string]::Equals($provider.attributeMapping.'google.subject', "'bodeul-retention-dev-419:' + assertion.repository_id", [StringComparison]::Ordinal) -or
+    -not [string]::Equals($provider.attributeCondition, $expectedCondition, [StringComparison]::Ordinal)) {
+    throw 'WIF 신뢰 설정이 검토한 GitHub 발급자·주체 매핑·승인 조건과 다릅니다. 권한을 변경하지 않습니다.'
 }
 foreach ($email in @($deploy, $build, $run)) {
     $sa = Invoke-CloudJson @('iam', 'service-accounts', 'describe', $email)
